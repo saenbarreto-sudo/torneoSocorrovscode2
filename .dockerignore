@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.env
+.env.local
+attached_assets
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+
+**/.pnpm
+.pnpm/
+.pnpm-store
+**/.pnpm-store
+pnpm-debug.log*

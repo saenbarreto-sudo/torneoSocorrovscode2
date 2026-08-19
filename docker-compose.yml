@@ -3,6 +3,54 @@
 # Detener: docker compose down
 # Borrar datos: docker compose down -v
 services:
+  # Frontend (Vite). Build context es la raíz del repo porque es un
+  # monorepo pnpm: el frontend depende de paquetes hermanos en lib/.
+  web:
+    build:
+      context: .
+      dockerfile: artifacts/torneo-socorro/Dockerfile
+    working_dir: /app
+    command: sh -c "pnpm install --filter '@workspace/torneo-socorro...' && pnpm --filter @workspace/torneo-socorro run dev"
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      FRONTEND_PORT: "5173"
+      BASE_PATH: ${BASE_PATH:-/}
+      API_HOST: api
+      API_PORT: "4000"
+    volumes:
+      - .:/app
+      # node_modules viven solo en volúmenes con nombre (nunca en el host),
+      # así "pnpm install" corre siempre dentro del contenedor.
+      - web_root_node_modules:/app/node_modules
+      - web_app_node_modules:/app/artifacts/torneo-socorro/node_modules
+      - web_api_client_node_modules:/app/lib/api-client-react/node_modules
+    depends_on:
+      - api
+
+  # Backend (Express). Mismo motivo para el build context: necesita los
+  # paquetes hermanos lib/db y lib/api-zod del monorepo pnpm.
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    working_dir: /app
+    command: sh -c "pnpm install --filter '@workspace/api-server...' && pnpm --filter @workspace/api-server run dev"
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      PORT: "4000"
+      DATABASE_URL: postgresql://torneo:torneo@db:5432/torneo_socorro
+      AUTH_SECRET: ${AUTH_SECRET}
+    volumes:
+      - .:/app
+      - api_root_node_modules:/app/node_modules
+      - api_app_node_modules:/app/artifacts/api-server/node_modules
+      - api_db_node_modules:/app/lib/db/node_modules
+      - api_zod_node_modules:/app/lib/api-zod/node_modules
+    depends_on:
+      - db
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -17,3 +65,10 @@ services:
 
 volumes:
   torneo_socorro_db_data:
+  web_root_node_modules:
+  web_app_node_modules:
+  web_api_client_node_modules:
+  api_root_node_modules:
+  api_app_node_modules:
+  api_db_node_modules:
+  api_zod_node_modules:
