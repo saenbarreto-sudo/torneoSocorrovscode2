@@ -87,12 +87,13 @@ export default defineConfig({
     fs: {
       strict: true,
     },
-    // Reenvía /api hacia el backend local (api-server) para desarrollo en
-    // VSCode. En Replit el propio router se encarga de esto, pero fuera de
-    // Replit hace falta este proxy explícito.
+    // Reenvía /api hacia el backend (api-server) para desarrollo en VSCode.
+    // En Replit el propio router se encarga de esto, pero fuera de Replit
+    // hace falta este proxy explícito. API_HOST permite apuntar a otro host
+    // que no sea "localhost" (p. ej. "api" cuando se corre en Docker Compose).
     proxy: {
       '/api': {
-        target: `http://localhost:${process.env.API_PORT ?? '4000'}`,
+        target: `http://${process.env.API_HOST ?? 'localhost'}:${process.env.API_PORT ?? '4000'}`,
         changeOrigin: true,
       },
     },
