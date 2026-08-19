@@ -1,0 +1,201 @@
+import { Router, type IRouter } from "express";
+import { eq, sql, type SQL } from "drizzle-orm";
+import { db, pagosTable, equiposTable, tarjetasTable } from "@workspace/db";
+import { requireAuth, writeAccess } from "../lib/permissions";
+import {
+  CreatePagoBody,
+  CreatePagoResponse,
+  GetPagosResponse,
+  GetPagosQueryParams,
+  UpdatePagoBody,
+  UpdatePagoParams,
+  UpdatePagoResponse,
+  DeletePagoParams,
+  GetPagosResumenEquiposResponse,
+} from "@workspace/api-zod";
+
+const router: IRouter = Router();
+
+// Sistema de numeración de recibos por concepto, tal como lo maneja Olga:
+// cada concepto lleva su propio consecutivo (INS001, INS002...; A001,
+// A002...; R001...), en vez de un solo número global mezclando todo.
+const PREFIJOS_CONCEPTO: Record<string, string> = {
+  Inscripcion: "INS",
+  Amarillas: "A",
+  Rojas: "R",
+  Carnet: "C",
+  Multas: "M",
+  FOFI: "F",
+};
+
+function prefijoParaConcepto(concepto: string): string {
+  return PREFIJOS_CONCEPTO[concepto] ?? "P";
+}
+
+async function siguienteCodigoRecibo(concepto: string): Promise<string> {
+  const prefijo = prefijoParaConcepto(concepto);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(pagosTable)
+    .where(eq(pagosTable.concepto, concepto));
+  const siguiente = Number(count ?? 0) + 1;
+  return `${prefijo}${String(siguiente).padStart(3, "0")}`;
+}
+
+function mapPago(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    nRecibo: row.n_recibo ?? row.nRecibo ?? null,
+    codigoRecibo: row.codigo_recibo ?? row.codigoRecibo ?? null,
+    equipoId: row.equipo_id ?? row.equipoId,
+    equipoNombre: row.equipo_nombre ?? row.equipoNombre ?? "",
+    concepto: row.concepto,
+    monto: Number(row.monto),
+    semana: row.semana ?? null,
+    mes: row.mes ?? null,
+    fecha: row.fecha ?? null,
+    tarjetaId: row.tarjeta_id ?? row.tarjetaId ?? null,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+  };
+}
+
+router.get("/pagos/resumen-equipos", async (_req, res): Promise<void> => {
+  const rows = await db.execute(sql`
+    SELECT
+      e.id as equipo_id,
+      e.nombre as equipo_nombre,
+      e.deuda_inscripcion as deuda_total,
+      COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0)::int as pagado,
+      (e.deuda_inscripcion - COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0))::int as saldo,
+      CASE WHEN e.deuda_inscripcion > 0
+        THEN ROUND(COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0) / e.deuda_inscripcion::numeric, 4)
+        ELSE 0
+      END as porcentaje_pagado
+    FROM equipos e
+    LEFT JOIN pagos p ON p.equipo_id = e.id
+    WHERE e.activo = true
+    GROUP BY e.id, e.nombre, e.deuda_inscripcion
+    ORDER BY pagado DESC
+  `);
+  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
+    equipoId: r.equipo_id,
+    equipoNombre: r.equipo_nombre,
+    deudaTotal: Number(r.deuda_total),
+    pagado: Number(r.pagado),
+    saldo: Number(r.saldo),
+    porcentajePagado: Number(r.porcentaje_pagado),
+  }));
+  res.json(GetPagosResumenEquiposResponse.parse(data));
+});
+
+router.get("/pagos", async (req, res): Promise<void> => {
+  const query = GetPagosQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+
+  const conditions: SQL[] = [];
+  if (query.data.equipoId != null) {
+    conditions.push(sql`p.equipo_id = ${query.data.equipoId}`);
+  }
+  if (query.data.concepto) {
+    conditions.push(sql`p.concepto = ${query.data.concepto}`);
+  }
+  const whereClause =
+    conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
+
+  const rows = await db.execute(sql`
+    SELECT p.*, e.nombre as equipo_nombre
+    FROM pagos p
+    JOIN equipos e ON e.id = p.equipo_id
+    WHERE 1=1
+    ${whereClause}
+    ORDER BY p.created_at DESC
+  `);
+  const data = rows.rows.map(mapPago);
+  res.json(GetPagosResponse.parse(data));
+});
+
+router.post("/pagos", requireAuth, writeAccess.pagos, async (req, res): Promise<void> => {
+  const parsed = CreatePagoBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  // Si el pago liquida una tarjeta amarilla puntual, verificamos que exista
+  // y aún no esté pagada antes de continuar.
+  if (parsed.data.tarjetaId != null) {
+    const [tarjeta] = await db.select().from(tarjetasTable).where(eq(tarjetasTable.id, parsed.data.tarjetaId));
+    if (!tarjeta) {
+      res.status(400).json({ error: "La tarjeta indicada no existe" });
+      return;
+    }
+    if (tarjeta.pagada) {
+      res.status(409).json({ error: "Esa tarjeta ya fue marcada como pagada" });
+      return;
+    }
+  }
+
+  const count = await db.select({ count: sql<number>`count(*)` }).from(pagosTable);
+  const nRecibo = (Number(count[0]?.count ?? 0) + 1);
+  const codigoRecibo = await siguienteCodigoRecibo(parsed.data.concepto);
+  const [inserted] = await db.insert(pagosTable).values({ ...parsed.data, nRecibo, codigoRecibo }).returning();
+
+  if (parsed.data.tarjetaId != null) {
+    await db.update(tarjetasTable).set({ pagada: true }).where(eq(tarjetasTable.id, parsed.data.tarjetaId));
+  }
+
+  const [equipo] = await db.select().from(equiposTable).where(eq(equiposTable.id, inserted.equipoId));
+  res.status(201).json(CreatePagoResponse.parse({
+    ...inserted,
+    equipoNombre: equipo?.nombre ?? "",
+    createdAt: inserted.createdAt.toISOString(),
+  }));
+});
+
+router.patch("/pagos/:id", requireAuth, writeAccess.pagos, async (req, res): Promise<void> => {
+  const params = UpdatePagoParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = UpdatePagoBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [updated] = await db.update(pagosTable).set(parsed.data).where(eq(pagosTable.id, params.data.id)).returning();
+  if (!updated) {
+    res.status(404).json({ error: "Pago not found" });
+    return;
+  }
+  const [equipo] = await db.select().from(equiposTable).where(eq(equiposTable.id, updated.equipoId));
+  res.json(UpdatePagoResponse.parse({
+    ...updated,
+    equipoNombre: equipo?.nombre ?? "",
+    createdAt: updated.createdAt.toISOString(),
+  }));
+});
+
+router.delete("/pagos/:id", requireAuth, writeAccess.pagos, async (req, res): Promise<void> => {
+  const params = DeletePagoParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [deleted] = await db.delete(pagosTable).where(eq(pagosTable.id, params.data.id)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Pago not found" });
+    return;
+  }
+  // Si este pago liquidaba una tarjeta amarilla, al borrarlo esa tarjeta
+  // vuelve a quedar pendiente (reaparece en la lista de amonestados).
+  if (deleted.tarjetaId != null) {
+    await db.update(tarjetasTable).set({ pagada: false }).where(eq(tarjetasTable.id, deleted.tarjetaId));
+  }
+  res.sendStatus(204);
+});
+
+export default router;

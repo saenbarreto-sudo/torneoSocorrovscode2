@@ -1,0 +1,19 @@
+# Base de datos local para desarrollo en VSCode.
+# Uso: docker compose up -d
+# Detener: docker compose down
+# Borrar datos: docker compose down -v
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: torneo
+      POSTGRES_PASSWORD: torneo
+      POSTGRES_DB: torneo_socorro
+    ports:
+      - "5432:5432"
+    volumes:
+      - torneo_socorro_db_data:/var/lib/postgresql/data
+
+volumes:
+  torneo_socorro_db_data:

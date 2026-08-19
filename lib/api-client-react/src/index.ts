@@ -1,0 +1,10 @@
+export * from "./generated/api";
+export * from "./generated/api.schemas";
+export { setBaseUrl, setAuthTokenGetter, customFetch, ApiError } from "./custom-fetch";
+export type { AuthTokenGetter } from "./custom-fetch";
+export * from "./custom/auth";
+export * from "./custom/goles";
+export * from "./custom/egresos";
+export * from "./custom/vallas";
+export * from "./custom/planilla";
+export * from "./custom/sanciones";

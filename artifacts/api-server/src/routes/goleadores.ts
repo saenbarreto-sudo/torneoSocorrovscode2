@@ -1,0 +1,71 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { GetGoleadoresResponse, GetVallasResponse } from "@workspace/api-zod";
+import { sql } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+router.get("/goleadores", async (_req, res): Promise<void> => {
+  const rows = await db.execute(sql`
+    SELECT
+      j.id as jugador_id,
+      j.nombre as jugador_nombre,
+      e.nombre as equipo_nombre,
+      COALESCE(SUM(g.cantidad), 0)::int as total_goles
+    FROM jugadores j
+    JOIN equipos e ON e.id = j.equipo_id
+    JOIN goles g ON g.jugador_id = j.id
+    WHERE g.propio = false
+    GROUP BY j.id, j.nombre, e.nombre
+    HAVING SUM(g.cantidad) > 0
+    ORDER BY total_goles DESC, j.nombre ASC
+    LIMIT 10
+  `);
+  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
+    jugadorId: r.jugador_id,
+    jugadorNombre: r.jugador_nombre,
+    equipoNombre: r.equipo_nombre,
+    totalGoles: Number(r.total_goles),
+  }));
+  res.json(GetGoleadoresResponse.parse(data));
+});
+
+/**
+ * Valla menos vencida: goles recibidos por equipo, contando solo partidos
+ * jugados. Los goles de un W.O. (6-0 automático) no cuentan aquí, porque
+ * el reglamento los excluye de vallas y goleadores (Art. 23).
+ */
+router.get("/vallas", async (_req, res): Promise<void> => {
+  const rows = await db.execute(sql`
+    SELECT
+      e.id as equipo_id,
+      e.nombre as equipo_nombre,
+      COUNT(p.id)::int as partidos_jugados,
+      COALESCE(SUM(
+        CASE WHEN p.local_id = e.id THEN p.goles_visitante
+             WHEN p.visitante_id = e.id THEN p.goles_local
+             ELSE 0 END
+      ), 0)::int as goles_recibidos
+    FROM equipos e
+    LEFT JOIN partidos p
+      ON (p.local_id = e.id OR p.visitante_id = e.id)
+      AND p.jugado = true
+      AND p.walkover = false
+    WHERE e.activo = true
+    GROUP BY e.id, e.nombre
+    ORDER BY goles_recibidos ASC, partidos_jugados DESC, e.nombre ASC
+  `);
+  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
+    equipoId: r.equipo_id,
+    equipoNombre: r.equipo_nombre,
+    partidosJugados: Number(r.partidos_jugados),
+    golesRecibidos: Number(r.goles_recibidos),
+    promedio:
+      Number(r.partidos_jugados) > 0
+        ? Number((Number(r.goles_recibidos) / Number(r.partidos_jugados)).toFixed(2))
+        : 0,
+  }));
+  res.json(GetVallasResponse.parse(data));
+});
+
+export default router;

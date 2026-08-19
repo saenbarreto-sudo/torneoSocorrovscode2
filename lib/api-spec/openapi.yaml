@@ -1,0 +1,1089 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Torneo Socorro Senior Master Plus 40 - Tournament Management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: equipos
+    description: Team operations
+  - name: jugadores
+    description: Player operations
+  - name: partidos
+    description: Match operations
+  - name: posiciones
+    description: Standings operations
+  - name: goleadores
+    description: Top scorers
+  - name: tarjetas
+    description: Cards and sanctions
+  - name: pagos
+    description: Payment operations
+  - name: programacion
+    description: Tournament schedule
+  - name: dashboard
+    description: Dashboard summary
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── DASHBOARD ──────────────────────────────────────────────────────────────
+  /dashboard/resumen:
+    get:
+      operationId: getDashboardResumen
+      tags: [dashboard]
+      summary: Tournament summary stats
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResumen"
+
+  # ── EQUIPOS ────────────────────────────────────────────────────────────────
+  /equipos:
+    get:
+      operationId: getEquipos
+      tags: [equipos]
+      summary: List all teams
+      responses:
+        "200":
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipo"
+    post:
+      operationId: createEquipo
+      tags: [equipos]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipo"
+
+  /equipos/{id}:
+    get:
+      operationId: getEquipo
+      tags: [equipos]
+      summary: Get a team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipo"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateEquipo
+      tags: [equipos]
+      summary: Update a team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipoUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipo"
+    delete:
+      operationId: deleteEquipo
+      tags: [equipos]
+      summary: Delete a team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  # ── JUGADORES ──────────────────────────────────────────────────────────────
+  /jugadores:
+    get:
+      operationId: getJugadores
+      tags: [jugadores]
+      summary: List all players
+      parameters:
+        - name: equipoId
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Jugador"
+    post:
+      operationId: createJugador
+      tags: [jugadores]
+      summary: Register a player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JugadorInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jugador"
+
+  /jugadores/{id}:
+    get:
+      operationId: getJugador
+      tags: [jugadores]
+      summary: Get a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Player
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jugador"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateJugador
+      tags: [jugadores]
+      summary: Update a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JugadorUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jugador"
+    delete:
+      operationId: deleteJugador
+      tags: [jugadores]
+      summary: Delete a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  # ── PARTIDOS ───────────────────────────────────────────────────────────────
+  /partidos:
+    get:
+      operationId: getPartidos
+      tags: [partidos]
+      summary: List matches
+      parameters:
+        - name: semana
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: equipoId
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Partido"
+    post:
+      operationId: createPartido
+      tags: [partidos]
+      summary: Create a match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartidoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partido"
+
+  /partidos/{id}:
+    get:
+      operationId: getPartido
+      tags: [partidos]
+      summary: Get a match
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partido"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePartido
+      tags: [partidos]
+      summary: Update a match result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartidoUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partido"
+    delete:
+      operationId: deletePartido
+      tags: [partidos]
+      summary: Delete a match
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  # ── POSICIONES ─────────────────────────────────────────────────────────────
+  /posiciones:
+    get:
+      operationId: getPosiciones
+      tags: [posiciones]
+      summary: Get standings table
+      responses:
+        "200":
+          description: Standings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PosicionEquipo"
+
+  # ── GOLEADORES ─────────────────────────────────────────────────────────────
+  /goleadores:
+    get:
+      operationId: getGoleadores
+      tags: [goleadores]
+      summary: Top scorers list
+      responses:
+        "200":
+          description: List of scorers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goleador"
+
+  # ── TARJETAS ───────────────────────────────────────────────────────────────
+  /tarjetas:
+    get:
+      operationId: getTarjetas
+      tags: [tarjetas]
+      summary: List cards/sanctions
+      parameters:
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [amarilla, roja]
+        - name: jugadorId
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tarjeta"
+    post:
+      operationId: createTarjeta
+      tags: [tarjetas]
+      summary: Register a card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TarjetaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tarjeta"
+
+  /tarjetas/{id}:
+    patch:
+      operationId: updateTarjeta
+      tags: [tarjetas]
+      summary: Update a card/sanction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TarjetaUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tarjeta"
+    delete:
+      operationId: deleteTarjeta
+      tags: [tarjetas]
+      summary: Delete a card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  /amonestados:
+    get:
+      operationId: getAmonestados
+      tags: [tarjetas]
+      summary: Players with cards summary (fairplay)
+      responses:
+        "200":
+          description: List of warned players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AmonestadoResumen"
+
+  # ── PAGOS ──────────────────────────────────────────────────────────────────
+  /pagos:
+    get:
+      operationId: getPagos
+      tags: [pagos]
+      summary: List all payment receipts
+      parameters:
+        - name: equipoId
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: concepto
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pago"
+    post:
+      operationId: createPago
+      tags: [pagos]
+      summary: Register a payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PagoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pago"
+
+  /pagos/{id}:
+    patch:
+      operationId: updatePago
+      tags: [pagos]
+      summary: Update a payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PagoUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pago"
+    delete:
+      operationId: deletePago
+      tags: [pagos]
+      summary: Delete a payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  /pagos/resumen-equipos:
+    get:
+      operationId: getPagosResumenEquipos
+      tags: [pagos]
+      summary: Payment summary per team (inscriptions, debts)
+      responses:
+        "200":
+          description: Payment summary per team
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PagoEquipoResumen"
+
+  # ── PROGRAMACION ───────────────────────────────────────────────────────────
+  /programacion:
+    get:
+      operationId: getProgramacion
+      tags: [programacion]
+      summary: List tournament schedule weeks
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SemanaFecha"
+    post:
+      operationId: createSemanaFecha
+      tags: [programacion]
+      summary: Add a scheduled week
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanaFechaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanaFecha"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    # ── DASHBOARD ────────────────────────────────────────────────────────────
+    DashboardResumen:
+      type: object
+      required: [totalEquipos, totalJugadores, totalPartidosJugados, totalPartidosProgramados, golesPorEquipo, topGoleador, proximaFecha]
+      properties:
+        totalEquipos:
+          type: number
+        totalJugadores:
+          type: number
+        totalPartidosJugados:
+          type: number
+        totalPartidosProgramados:
+          type: number
+        totalGoles:
+          type: number
+        totalAmarillas:
+          type: number
+        totalRojas:
+          type: number
+        topGoleador:
+          $ref: "#/components/schemas/Goleador"
+        proximaFecha:
+          type: ["string", "null"]
+        recaudacionTotal:
+          type: number
+
+    # ── EQUIPOS ──────────────────────────────────────────────────────────────
+    Equipo:
+      type: object
+      required: [id, nombre]
+      properties:
+        id:
+          type: number
+        nombre:
+          type: string
+        delegado:
+          type: ["string", "null"]
+        telefono:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        activo:
+          type: boolean
+        createdAt:
+          type: string
+
+    EquipoInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        delegado:
+          type: string
+        telefono:
+          type: string
+        color:
+          type: string
+        activo:
+          type: boolean
+
+    EquipoUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        delegado:
+          type: string
+        telefono:
+          type: string
+        color:
+          type: string
+        activo:
+          type: boolean
+
+    # ── JUGADORES ────────────────────────────────────────────────────────────
+    Jugador:
+      type: object
+      required: [id, nombre, equipoId, equipoNombre]
+      properties:
+        id:
+          type: number
+        cedula:
+          type: ["string", "null"]
+        nombre:
+          type: string
+        fechaNacimiento:
+          type: ["string", "null"]
+        equipoId:
+          type: number
+        equipoNombre:
+          type: string
+        nCarnet:
+          type: ["number", "null"]
+        activo:
+          type: boolean
+        createdAt:
+          type: string
+
+    JugadorInput:
+      type: object
+      required: [nombre, equipoId]
+      properties:
+        cedula:
+          type: string
+        nombre:
+          type: string
+          minLength: 1
+        fechaNacimiento:
+          type: string
+        equipoId:
+          type: number
+        nCarnet:
+          type: number
+        activo:
+          type: boolean
+
+    JugadorUpdate:
+      type: object
+      properties:
+        cedula:
+          type: string
+        nombre:
+          type: string
+        fechaNacimiento:
+          type: string
+        equipoId:
+          type: number
+        nCarnet:
+          type: number
+        activo:
+          type: boolean
+
+    # ── PARTIDOS ─────────────────────────────────────────────────────────────
+    Partido:
+      type: object
+      required: [id, semana, localId, localNombre, visitanteId, visitanteNombre, jugado]
+      properties:
+        id:
+          type: number
+        semana:
+          type: number
+        fecha:
+          type: ["string", "null"]
+        hora:
+          type: ["string", "null"]
+        localId:
+          type: number
+        localNombre:
+          type: string
+        visitanteId:
+          type: number
+        visitanteNombre:
+          type: string
+        golesLocal:
+          type: ["number", "null"]
+        golesVisitante:
+          type: ["number", "null"]
+        jugado:
+          type: boolean
+        fase:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PartidoInput:
+      type: object
+      required: [semana, localId, visitanteId]
+      properties:
+        semana:
+          type: number
+        fecha:
+          type: string
+        hora:
+          type: string
+        localId:
+          type: number
+        visitanteId:
+          type: number
+        golesLocal:
+          type: number
+        golesVisitante:
+          type: number
+        jugado:
+          type: boolean
+        fase:
+          type: string
+
+    PartidoUpdate:
+      type: object
+      properties:
+        semana:
+          type: number
+        fecha:
+          type: string
+        hora:
+          type: string
+        localId:
+          type: number
+        visitanteId:
+          type: number
+        golesLocal:
+          type: number
+        golesVisitante:
+          type: number
+        jugado:
+          type: boolean
+        fase:
+          type: string
+
+    # ── POSICIONES ───────────────────────────────────────────────────────────
+    PosicionEquipo:
+      type: object
+      required: [posicion, equipoId, equipoNombre, pj, pg, pe, pp, gf, gc, df, pts]
+      properties:
+        posicion:
+          type: number
+        equipoId:
+          type: number
+        equipoNombre:
+          type: string
+        pj:
+          type: number
+        pg:
+          type: number
+        pe:
+          type: number
+        pp:
+          type: number
+        gf:
+          type: number
+        gc:
+          type: number
+        df:
+          type: number
+        pts:
+          type: number
+        pjLocal:
+          type: number
+        pgLocal:
+          type: number
+        peLocal:
+          type: number
+        ppLocal:
+          type: number
+        gfLocal:
+          type: number
+        gcLocal:
+          type: number
+        pjVisitante:
+          type: number
+        pgVisitante:
+          type: number
+        peVisitante:
+          type: number
+        ppVisitante:
+          type: number
+        gfVisitante:
+          type: number
+        gcVisitante:
+          type: number
+
+    # ── GOLEADORES ───────────────────────────────────────────────────────────
+    Goleador:
+      type: object
+      required: [jugadorId, jugadorNombre, equipoNombre, totalGoles]
+      properties:
+        jugadorId:
+          type: number
+        jugadorNombre:
+          type: string
+        equipoNombre:
+          type: string
+        totalGoles:
+          type: number
+
+    # ── TARJETAS ─────────────────────────────────────────────────────────────
+    Tarjeta:
+      type: object
+      required: [id, jugadorId, jugadorNombre, equipoNombre, tipo, semana]
+      properties:
+        id:
+          type: number
+        jugadorId:
+          type: number
+        jugadorNombre:
+          type: string
+        equipoNombre:
+          type: string
+        tipo:
+          type: string
+          enum: [amarilla, roja]
+        semana:
+          type: number
+        fecha:
+          type: ["string", "null"]
+        partidoId:
+          type: ["number", "null"]
+        valor:
+          type: ["number", "null"]
+        pagada:
+          type: boolean
+        sancion:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    TarjetaInput:
+      type: object
+      required: [jugadorId, tipo, semana]
+      properties:
+        jugadorId:
+          type: number
+        tipo:
+          type: string
+          enum: [amarilla, roja]
+        semana:
+          type: number
+        fecha:
+          type: string
+        partidoId:
+          type: number
+        valor:
+          type: number
+        pagada:
+          type: boolean
+        sancion:
+          type: string
+
+    TarjetaUpdate:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [amarilla, roja]
+        semana:
+          type: number
+        fecha:
+          type: string
+        valor:
+          type: number
+        pagada:
+          type: boolean
+        sancion:
+          type: string
+
+    AmonestadoResumen:
+      type: object
+      required: [jugadorId, jugadorNombre, equipoNombre, amarillas, rojas]
+      properties:
+        jugadorId:
+          type: number
+        jugadorNombre:
+          type: string
+        equipoNombre:
+          type: string
+        amarillas:
+          type: number
+        rojas:
+          type: number
+        sancionFechas:
+          type: ["number", "null"]
+
+    # ── PAGOS ────────────────────────────────────────────────────────────────
+    Pago:
+      type: object
+      required: [id, equipoId, equipoNombre, concepto, monto, semana]
+      properties:
+        id:
+          type: number
+        nRecibo:
+          type: ["number", "null"]
+        codigoRecibo:
+          type: ["string", "null"]
+        equipoId:
+          type: number
+        equipoNombre:
+          type: string
+        concepto:
+          type: string
+        monto:
+          type: number
+        semana:
+          type: ["number", "null"]
+        mes:
+          type: ["string", "null"]
+        fecha:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PagoInput:
+      type: object
+      required: [equipoId, concepto, monto]
+      properties:
+        equipoId:
+          type: number
+        concepto:
+          type: string
+        monto:
+          type: number
+        semana:
+          type: number
+        mes:
+          type: string
+        fecha:
+          type: string
+
+    PagoUpdate:
+      type: object
+      properties:
+        concepto:
+          type: string
+        monto:
+          type: number
+        semana:
+          type: number
+        mes:
+          type: string
+        fecha:
+          type: string
+
+    PagoEquipoResumen:
+      type: object
+      required: [equipoId, equipoNombre, deudaTotal, pagado, saldo, porcentajePagado]
+      properties:
+        equipoId:
+          type: number
+        equipoNombre:
+          type: string
+        deudaTotal:
+          type: number
+        pagado:
+          type: number
+        saldo:
+          type: number
+        porcentajePagado:
+          type: number
+
+    # ── PROGRAMACION ─────────────────────────────────────────────────────────
+    SemanaFecha:
+      type: object
+      required: [id, semana]
+      properties:
+        id:
+          type: number
+        semana:
+          type: number
+        nombreSemana:
+          type: ["string", "null"]
+        fechaDesde:
+          type: ["string", "null"]
+        fechaHasta:
+          type: ["string", "null"]
+        esFestivo:
+          type: boolean
+
+    SemanaFechaInput:
+      type: object
+      required: [semana]
+      properties:
+        semana:
+          type: number
+        nombreSemana:
+          type: string
+        fechaDesde:
+          type: string
+        fechaHasta:
+          type: string
+        esFestivo:
+          type: boolean
