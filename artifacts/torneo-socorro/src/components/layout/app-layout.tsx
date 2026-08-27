@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter"
 import { cn } from "@/lib/utils"
 import { TorneoSocorroLogo } from "@/components/logo"
 import { canAccessRoute, ROLE_LABELS, useAuth } from "@/lib/auth"
+import { ModeToggle } from "@/components/mode-toggle"
 import {
   Sheet,
   SheetContent,
@@ -117,6 +118,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <NavLinks items={visibleNavItems} location={location} />
         </nav>
 
+        <ModeToggle showLabel className="mx-4 mb-1" />
+
         <button
           onClick={logout}
           className="mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white transition-colors"
@@ -194,13 +197,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <TorneoSocorroLogo className="h-8 w-11 shrink-0" />
             <h1 className="text-sm font-bold text-white truncate">TORNEO SOCORRO</h1>
           </div>
-          <button
-            onClick={logout}
-            aria-label="Cerrar sesión"
-            className="p-2 -mr-2 rounded-md hover:bg-sidebar-accent"
-          >
-            <LogOut className="h-5 w-5 text-sidebar-foreground/80" />
-          </button>
+          <div className="flex items-center -mr-2">
+            <ModeToggle />
+            <button
+              onClick={logout}
+              aria-label="Cerrar sesión"
+              className="p-2 rounded-md hover:bg-sidebar-accent"
+            >
+              <LogOut className="h-5 w-5 text-sidebar-foreground/80" />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8">

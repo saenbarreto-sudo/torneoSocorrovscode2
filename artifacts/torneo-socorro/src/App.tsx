@@ -7,6 +7,7 @@ import Login from '@/pages/login';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthProvider, canAccessRoute, useAuth } from '@/lib/auth';
+import { ThemeProvider } from '@/components/theme-provider';
 import { Loader2 } from 'lucide-react';
 
 import Dashboard from '@/pages/dashboard';
@@ -87,14 +88,16 @@ function Gate() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Gate />
-        </AuthProvider>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <Gate />
+          </AuthProvider>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

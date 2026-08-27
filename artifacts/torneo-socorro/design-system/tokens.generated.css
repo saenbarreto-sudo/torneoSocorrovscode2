@@ -1,0 +1,153 @@
+/* Design Tokens - Auto-generated */
+/* Do not edit directly - modify tokens.json instead */
+/*
+ * REFERENCE ONLY - DO NOT @import THIS FILE INTO src/index.css OR ANY BUILD ENTRY.
+ *
+ * This is a derived, documentation-purpose mirror of the tokens already defined
+ * in src/index.css. The generator that produced it resolves/flattens token
+ * references into literal values, which collapses the raw-var + @theme-inline
+ * indirection that src/index.css relies on for its Tailwind v4 `.dark`-class
+ * theme switch. Importing this file would fight or duplicate that mechanism.
+ *
+ * src/index.css remains the single build-time source of truth for all tokens.
+ * See ../DESIGN.md for the full explanation.
+ */
+
+/* === PRIMITIVES === */
+:root {
+  --primitive-color-light-background: 0 0% 100%;
+  --primitive-color-light-foreground: 273 45% 12%;
+  --primitive-color-light-border: 273 20% 88%;
+  --primitive-color-light-card: 0 0% 100%;
+  --primitive-color-light-card-foreground: 273 45% 12%;
+  --primitive-color-light-card-border: 273 20% 88%;
+  --primitive-color-light-sidebar: 273 51% 18%;
+  --primitive-color-light-sidebar-foreground: 0 0% 98%;
+  --primitive-color-light-sidebar-border: 273 45% 12%;
+  --primitive-color-light-sidebar-primary: 340 74% 30%;
+  --primitive-color-light-sidebar-primary-foreground: 0 0% 100%;
+  --primitive-color-light-sidebar-accent: 273 40% 28%;
+  --primitive-color-light-sidebar-accent-foreground: 0 0% 100%;
+  --primitive-color-light-sidebar-ring: 340 74% 45%;
+  --primitive-color-light-popover: 0 0% 100%;
+  --primitive-color-light-popover-foreground: 273 45% 12%;
+  --primitive-color-light-popover-border: 273 20% 88%;
+  --primitive-color-light-primary: 273 51% 32%;
+  --primitive-color-light-primary-foreground: 0 0% 100%;
+  --primitive-color-light-secondary: 340 74% 27%;
+  --primitive-color-light-secondary-foreground: 0 0% 100%;
+  --primitive-color-light-muted: 273 15% 95%;
+  --primitive-color-light-muted-foreground: 273 15% 40%;
+  --primitive-color-light-accent: 340 74% 96%;
+  --primitive-color-light-accent-foreground: 340 74% 27%;
+  --primitive-color-light-destructive: 340 74% 35%;
+  --primitive-color-light-destructive-foreground: 0 0% 100%;
+  --primitive-color-light-input: 273 20% 85%;
+  --primitive-color-light-ring: 273 51% 32%;
+  --primitive-color-dark-background: 273 45% 8%;
+  --primitive-color-dark-foreground: 0 0% 98%;
+  --primitive-color-dark-border: 273 30% 20%;
+  --primitive-color-dark-card: 273 45% 10%;
+  --primitive-color-dark-card-foreground: 0 0% 98%;
+  --primitive-color-dark-card-border: 273 30% 20%;
+  --primitive-color-dark-sidebar: 273 51% 10%;
+  --primitive-color-dark-sidebar-foreground: 0 0% 98%;
+  --primitive-color-dark-sidebar-border: 273 45% 16%;
+  --primitive-color-dark-sidebar-primary: 340 74% 35%;
+  --primitive-color-dark-sidebar-primary-foreground: 0 0% 100%;
+  --primitive-color-dark-sidebar-accent: 273 40% 20%;
+  --primitive-color-dark-sidebar-accent-foreground: 0 0% 100%;
+  --primitive-color-dark-sidebar-ring: 340 74% 45%;
+  --primitive-color-dark-popover: 273 45% 10%;
+  --primitive-color-dark-popover-foreground: 0 0% 98%;
+  --primitive-color-dark-popover-border: 273 30% 20%;
+  --primitive-color-dark-primary: 340 74% 40%;
+  --primitive-color-dark-primary-foreground: 0 0% 100%;
+  --primitive-color-dark-secondary: 273 30% 20%;
+  --primitive-color-dark-secondary-foreground: 0 0% 98%;
+  --primitive-color-dark-muted: 273 30% 18%;
+  --primitive-color-dark-muted-foreground: 273 15% 70%;
+  --primitive-color-dark-accent: 273 30% 20%;
+  --primitive-color-dark-accent-foreground: 0 0% 98%;
+  --primitive-color-dark-destructive: 340 74% 40%;
+  --primitive-color-dark-destructive-foreground: 0 0% 100%;
+  --primitive-color-dark-input: 273 30% 22%;
+  --primitive-color-dark-ring: 340 74% 45%;
+  --primitive-radius-base: 0.4rem;
+  --primitive-font-sans: 'Plus Jakarta Sans', sans-serif;
+  --primitive-font-mono: 'Space Mono', monospace;
+}
+
+/* === SEMANTIC === */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 273 45% 12%;
+  --border: 273 20% 88%;
+  --card: 0 0% 100%;
+  --card-foreground: 273 45% 12%;
+  --card-border: 273 20% 88%;
+  --sidebar: 273 51% 18%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-border: 273 45% 12%;
+  --sidebar-primary: 340 74% 30%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 273 40% 28%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 340 74% 45%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 273 45% 12%;
+  --popover-border: 273 20% 88%;
+  --primary: 273 51% 32%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 340 74% 27%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 273 15% 95%;
+  --muted-foreground: 273 15% 40%;
+  --accent: 340 74% 96%;
+  --accent-foreground: 340 74% 27%;
+  --destructive: 340 74% 35%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 273 20% 85%;
+  --ring: 273 51% 32%;
+  --radius: 0.4rem;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* === COMPONENTS === */
+:root {
+
+}
+
+/* === DARK MODE === */
+.dark {
+  --background: 273 45% 8%;
+  --foreground: 0 0% 98%;
+  --border: 273 30% 20%;
+  --card: 273 45% 10%;
+  --card-foreground: 0 0% 98%;
+  --card-border: 273 30% 20%;
+  --sidebar: 273 51% 10%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-border: 273 45% 16%;
+  --sidebar-primary: 340 74% 35%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 273 40% 20%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 340 74% 45%;
+  --popover: 273 45% 10%;
+  --popover-foreground: 0 0% 98%;
+  --popover-border: 273 30% 20%;
+  --primary: 340 74% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 273 30% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 273 30% 18%;
+  --muted-foreground: 273 15% 70%;
+  --accent: 273 30% 20%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 340 74% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 273 30% 22%;
+  --ring: 340 74% 45%;
+}
