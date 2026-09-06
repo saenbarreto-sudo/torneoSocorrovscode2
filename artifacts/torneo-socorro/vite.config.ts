@@ -87,6 +87,15 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // Dentro de Docker en Windows/Mac los cambios de archivo del host no
+    // llegan al contenedor por inotify, así que Vite no recarga solo. Con
+    // VITE_USE_POLLING=true (lo pone docker-compose.yml) revisa los archivos
+    // periódicamente. Fuera de Docker se deja el modo nativo, que es más
+    // liviano.
+    watch:
+      process.env.VITE_USE_POLLING === 'true'
+        ? { usePolling: true, interval: 400 }
+        : undefined,
     // Reenvía /api hacia el backend (api-server) para desarrollo en VSCode.
     // En Replit el propio router se encarga de esto, pero fuera de Replit
     // hace falta este proxy explícito. API_HOST permite apuntar a otro host

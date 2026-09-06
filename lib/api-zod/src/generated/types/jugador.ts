@@ -17,6 +17,24 @@ export interface Jugador {
   equipoNombre: string;
   /** @nullable */
   nCarnet?: number | null;
+  /** @nullable */
+  foto?: string | null;
+  /** @nullable */
+  fechaFoto?: string | null;
+  carnetPagado?: boolean;
+  /** @nullable */
+  carnetValor?: number | null;
+  /** @nullable */
+  carnetFechaEntrega?: string | null;
+  /** @nullable */
+  carnetQuienRecibio?: string | null;
+  /** @nullable */
+  ultimoEquipoId?: number | null;
+  /** @nullable */
+  ultimoEquipoNombre?: string | null;
+  /** @nullable */
+  ultimoEquipoFechaFin?: string | null;
   activo?: boolean;
+  partidosJugados?: number;
   createdAt?: string;
 }

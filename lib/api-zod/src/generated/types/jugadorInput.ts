@@ -13,5 +13,14 @@ export interface JugadorInput {
   fechaNacimiento?: string;
   equipoId: number;
   nCarnet?: number;
+  foto?: string;
+  fechaFoto?: string;
   activo?: boolean;
+  carnetPagado?: boolean;
+  /** @nullable */
+  carnetValor?: number | null;
+  /** @nullable */
+  carnetFechaEntrega?: string | null;
+  /** @nullable */
+  carnetQuienRecibio?: string | null;
 }

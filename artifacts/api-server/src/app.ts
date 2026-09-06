@@ -26,8 +26,11 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 8mb: la foto de carnet del jugador viaja como data URL (base64) dentro
+// del body JSON normal, y el límite por defecto de Express (100kb) se
+// queda corto para eso.
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 
 app.use("/api", router);
 

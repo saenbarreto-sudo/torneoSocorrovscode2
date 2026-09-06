@@ -14,6 +14,7 @@ import Dashboard from '@/pages/dashboard';
 import Posiciones from '@/pages/posiciones';
 import Equipos from '@/pages/equipos';
 import Jugadores from '@/pages/jugadores';
+import FichaJugador from '@/pages/ficha-jugador';
 import Partidos from '@/pages/partidos';
 import Goleadores from '@/pages/goleadores';
 import Vallas from '@/pages/vallas';
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/posiciones">{() => <Protected path="/posiciones" component={Posiciones} />}</Route>
         <Route path="/equipos">{() => <Protected path="/equipos" component={Equipos} />}</Route>
         <Route path="/jugadores">{() => <Protected path="/jugadores" component={Jugadores} />}</Route>
+        <Route path="/jugadores/:id">{() => <Protected path="/jugadores" component={FichaJugador} />}</Route>
         <Route path="/partidos">{() => <Protected path="/partidos" component={Partidos} />}</Route>
         <Route path="/goleadores">{() => <Protected path="/goleadores" component={Goleadores} />}</Route>
         <Route path="/vallas">{() => <Protected path="/vallas" component={Vallas} />}</Route>

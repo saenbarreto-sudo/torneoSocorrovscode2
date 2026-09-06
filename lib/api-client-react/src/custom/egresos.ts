@@ -4,7 +4,28 @@
 // (customFetch + react-query) para integrarse igual que los demás hooks.
 import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
 import { customFetch, type ErrorType } from "../custom-fetch";
-import type { Egreso, EgresoInput } from "../generated/api.schemas";
+
+// Tipos definidos aquí porque el tag "egresos" se excluye del cliente de
+// React en orval.config.ts (ver ese archivo). Deben coincidir con los
+// schemas "Egreso" y "EgresoInput" de openapi.yaml.
+export interface Egreso {
+  id: number;
+  fecha: string;
+  descripcion: string;
+  /** @nullable */
+  categoria?: string | null;
+  valor: number;
+  createdAt?: string;
+}
+
+export interface EgresoInput {
+  /** @minLength 1 */
+  fecha: string;
+  /** @minLength 1 */
+  descripcion: string;
+  categoria?: string;
+  valor: number;
+}
 
 export const getGetEgresosQueryKey = () => ["/api/egresos"] as const;
 

@@ -14,4 +14,6 @@ export interface TarjetaUpdate {
   valor?: number;
   pagada?: boolean;
   sancion?: string;
+  /** @minimum 0 */
+  fechasSancion?: number;
 }

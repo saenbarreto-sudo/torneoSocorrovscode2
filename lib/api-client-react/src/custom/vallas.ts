@@ -2,7 +2,16 @@
 // No es generado por orval; sigue el mismo patrón que custom/goles.ts.
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { customFetch, type ErrorType } from "../custom-fetch";
-import type { Valla } from "../generated/api.schemas";
+
+// Tipo definido aquí porque el tag "vallas" se excluye del cliente de React
+// en orval.config.ts. Debe coincidir con el schema "Valla" de openapi.yaml.
+export interface Valla {
+  equipoId: number;
+  equipoNombre: string;
+  partidosJugados: number;
+  golesRecibidos: number;
+  promedio?: number;
+}
 
 export const getGetVallasQueryKey = () => ["/api/vallas"] as const;
 

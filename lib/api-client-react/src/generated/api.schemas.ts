@@ -16,73 +16,6 @@ export interface Goleador {
   totalGoles: number;
 }
 
-export interface PlanillaJugador {
-  jugadorId: number;
-  jugadorNombre: string;
-  equipoId: number;
-  /** @nullable */
-  nCarnet?: number | null;
-  jugo: boolean;
-  /** @nullable */
-  dorsal?: number | null;
-  titular: boolean;
-  goles: number;
-  amarillas: number;
-  rojas: number;
-  fechasSancion?: number;
-}
-
-export interface Planilla {
-  partidoId: number;
-  localId: number;
-  visitanteId: number;
-  /** @nullable */
-  arbitro?: string | null;
-  /** @nullable */
-  mesa?: string | null;
-  jugadores: PlanillaJugador[];
-}
-
-export interface SavePlanillaInput {
-  arbitro?: string;
-  mesa?: string;
-  valorAmarilla?: number;
-  valorRoja?: number;
-  jugadores: {
-    jugadorId: number;
-    jugo: boolean;
-    dorsal?: number | null;
-    titular?: boolean;
-    goles?: number;
-    amarillas?: number;
-    rojas?: number;
-    fechasSancion?: number;
-  }[];
-}
-
-export interface Sancion {
-  tarjetaId: number;
-  jugadorId: number;
-  jugadorNombre: string;
-  equipoId: number;
-  equipoNombre: string;
-  tipo: string;
-  semana: number;
-  /** @nullable */
-  fecha?: string | null;
-  fechasSancion: number;
-  fechasCumplidas: number;
-  fechasPendientes: number;
-}
-
-export interface Valla {
-  equipoId: number;
-  equipoNombre: string;
-  partidosJugados: number;
-  golesRecibidos: number;
-  promedio?: number;
-}
-
 export interface DashboardResumen {
   totalEquipos: number;
   totalJugadores: number;
@@ -122,7 +55,12 @@ export interface EquipoInput {
   telefono?: string;
   color?: string;
   activo?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
   puntosBonificacion?: number;
+  /** @minimum 0 */
   deudaInscripcion?: number;
 }
 
@@ -134,7 +72,12 @@ export interface EquipoUpdate {
   telefono?: string;
   color?: string;
   activo?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
   puntosBonificacion?: number;
+  /** @minimum 0 */
   deudaInscripcion?: number;
 }
 
@@ -149,6 +92,23 @@ export interface Jugador {
   equipoNombre: string;
   /** @nullable */
   nCarnet?: number | null;
+  /** @nullable */
+  foto?: string | null;
+  /** @nullable */
+  fechaFoto?: string | null;
+  carnetPagado?: boolean;
+  /** @nullable */
+  carnetValor?: number | null;
+  /** @nullable */
+  carnetFechaEntrega?: string | null;
+  /** @nullable */
+  carnetQuienRecibio?: string | null;
+  /** @nullable */
+  ultimoEquipoId?: number | null;
+  /** @nullable */
+  ultimoEquipoNombre?: string | null;
+  /** @nullable */
+  ultimoEquipoFechaFin?: string | null;
   activo?: boolean;
   partidosJugados?: number;
   createdAt?: string;
@@ -161,7 +121,16 @@ export interface JugadorInput {
   fechaNacimiento?: string;
   equipoId: number;
   nCarnet?: number;
+  foto?: string;
+  fechaFoto?: string;
   activo?: boolean;
+  carnetPagado?: boolean;
+  /** @nullable */
+  carnetValor?: number | null;
+  /** @nullable */
+  carnetFechaEntrega?: string | null;
+  /** @nullable */
+  carnetQuienRecibio?: string | null;
 }
 
 export interface JugadorUpdate {
@@ -170,7 +139,28 @@ export interface JugadorUpdate {
   fechaNacimiento?: string;
   equipoId?: number;
   nCarnet?: number;
+  foto?: string;
+  fechaFoto?: string;
   activo?: boolean;
+  carnetPagado?: boolean;
+  /** @nullable */
+  carnetValor?: number | null;
+  /** @nullable */
+  carnetFechaEntrega?: string | null;
+  /** @nullable */
+  carnetQuienRecibio?: string | null;
+}
+
+export interface JugadorHistorialEquipo {
+  equipoId: number;
+  equipoNombre: string;
+  fechaInicio: string;
+  /** @nullable */
+  fechaFin: string | null;
+  partidosJugados: number;
+  goles: number;
+  amarillas: number;
+  rojas: number;
 }
 
 export interface Partido {
@@ -306,6 +296,7 @@ export interface TarjetaInput {
   valor?: number;
   pagada?: boolean;
   sancion?: string;
+  /** @minimum 0 */
   fechasSancion?: number;
 }
 
@@ -324,6 +315,7 @@ export interface TarjetaUpdate {
   valor?: number;
   pagada?: boolean;
   sancion?: string;
+  /** @minimum 0 */
   fechasSancion?: number;
 }
 
@@ -383,25 +375,6 @@ export interface PagoEquipoResumen {
   pagado: number;
   saldo: number;
   porcentajePagado: number;
-}
-
-export interface Egreso {
-  id: number;
-  fecha: string;
-  descripcion: string;
-  /** @nullable */
-  categoria?: string | null;
-  valor: number;
-  createdAt?: string;
-}
-
-export interface EgresoInput {
-  /** @minLength 1 */
-  fecha: string;
-  /** @minLength 1 */
-  descripcion: string;
-  categoria?: string;
-  valor: number;
 }
 
 export interface SemanaFecha {

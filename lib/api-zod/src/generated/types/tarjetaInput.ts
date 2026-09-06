@@ -16,4 +16,6 @@ export interface TarjetaInput {
   valor?: number;
   pagada?: boolean;
   sancion?: string;
+  /** @minimum 0 */
+  fechasSancion?: number;
 }

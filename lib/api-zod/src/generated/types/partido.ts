@@ -24,5 +24,12 @@ export interface Partido {
   jugado: boolean;
   /** @nullable */
   fase?: string | null;
+  /** @nullable */
+  arbitro?: string | null;
+  /** @nullable */
+  mesa?: string | null;
+  walkover?: boolean;
+  /** @nullable */
+  walkoverGanadorId?: number | null;
   createdAt?: string;
 }

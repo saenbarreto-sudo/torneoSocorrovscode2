@@ -2,7 +2,55 @@
 // operación). No es generado por orval; sigue el patrón de custom/goles.ts.
 import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
 import { customFetch, type ErrorType } from "../custom-fetch";
-import type { Planilla, SavePlanillaInput } from "../generated/api.schemas";
+
+// Los tipos viven aquí (y no en "generated/api.schemas") a propósito: el
+// endpoint está documentado en openapi.yaml, pero se excluye del cliente de
+// React en orval.config.ts para conservar los hooks de este archivo, así que
+// orval no emite sus tipos. Deben coincidir con los schemas "Planilla",
+// "PlanillaJugador" y "SavePlanillaInput" del contrato.
+export interface PlanillaJugador {
+  jugadorId: number;
+  jugadorNombre: string;
+  equipoId: number;
+  /** @nullable */
+  nCarnet?: number | null;
+  jugo: boolean;
+  /** @nullable */
+  dorsal?: number | null;
+  titular: boolean;
+  goles: number;
+  amarillas: number;
+  rojas: number;
+  fechasSancion?: number;
+}
+
+export interface Planilla {
+  partidoId: number;
+  localId: number;
+  visitanteId: number;
+  /** @nullable */
+  arbitro?: string | null;
+  /** @nullable */
+  mesa?: string | null;
+  jugadores: PlanillaJugador[];
+}
+
+export interface SavePlanillaInput {
+  arbitro?: string;
+  mesa?: string;
+  valorAmarilla?: number;
+  valorRoja?: number;
+  jugadores: {
+    jugadorId: number;
+    jugo: boolean;
+    dorsal?: number | null;
+    titular?: boolean;
+    goles?: number;
+    amarillas?: number;
+    rojas?: number;
+    fechasSancion?: number;
+  }[];
+}
 
 export const getGetPlanillaQueryKey = (partidoId: number) => ["/api/partidos", partidoId, "planilla"] as const;
 

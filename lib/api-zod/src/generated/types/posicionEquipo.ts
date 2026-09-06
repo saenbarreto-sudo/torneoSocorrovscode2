@@ -10,6 +10,8 @@ export interface PosicionEquipo {
   posicion: number;
   equipoId: number;
   equipoNombre: string;
+  puntosBonificacion?: number;
+  puntajeFairplay?: number;
   pj: number;
   pg: number;
   pe: number;

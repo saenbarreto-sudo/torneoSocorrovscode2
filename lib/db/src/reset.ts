@@ -20,7 +20,7 @@ import path from "node:path";
 import { randomBytes, scryptSync } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "./index";
-import { equiposTable, jugadoresTable, usuariosTable } from "./schema";
+import { equiposTable, jugadoresTable, jugadorEquipoHistorialTable, usuariosTable } from "./schema";
 
 interface JugadorImport {
   cedula: string;
@@ -106,9 +106,19 @@ async function main() {
       .filter((f): f is NonNullable<typeof f> => f !== null);
 
     console.log(`Insertando ${filas.length} jugadores...`);
+    const hoy = new Date().toISOString().slice(0, 10);
     const LOTE = 200;
     for (let i = 0; i < filas.length; i += LOTE) {
-      await tx.insert(jugadoresTable).values(filas.slice(i, i + LOTE));
+      const insertados = await tx
+        .insert(jugadoresTable)
+        .values(filas.slice(i, i + LOTE))
+        .returning({ id: jugadoresTable.id, equipoId: jugadoresTable.equipoId });
+      // Abre el primer (y único, por ahora) registro de historial de equipo
+      // de cada jugador, para que "equipo actual" / historial por equipo
+      // funcionen desde el primer día.
+      await tx.insert(jugadorEquipoHistorialTable).values(
+        insertados.map((j) => ({ jugadorId: j.id, equipoId: j.equipoId, fechaInicio: hoy, fechaFin: null })),
+      );
     }
 
     console.log("Creando usuarios base...");

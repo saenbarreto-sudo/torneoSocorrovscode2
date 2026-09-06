@@ -10,7 +10,15 @@ export interface EquipoInput {
   /** @minLength 1 */
   nombre: string;
   delegado?: string;
+  delegado2?: string;
   telefono?: string;
   color?: string;
   activo?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  puntosBonificacion?: number;
+  /** @minimum 0 */
+  deudaInscripcion?: number;
 }

@@ -6,19 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Equipo {
+export interface Usuario {
   id: number;
+  username: string;
   nombre: string;
+  rol: string;
   /** @nullable */
-  delegado?: string | null;
-  /** @nullable */
-  delegado2?: string | null;
-  /** @nullable */
-  telefono?: string | null;
-  /** @nullable */
-  color?: string | null;
+  equipoId?: number | null;
   activo?: boolean;
-  puntosBonificacion?: number;
-  deudaInscripcion?: number;
   createdAt?: string;
 }

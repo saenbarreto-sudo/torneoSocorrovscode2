@@ -60,6 +60,11 @@ export const GetEquiposResponse = zod.array(GetEquiposResponseItem)
  * @summary Create a team
  */
 
+export const createEquipoBodyPuntosBonificacionMin = 0;
+export const createEquipoBodyPuntosBonificacionMax = 1;
+
+export const createEquipoBodyDeudaInscripcionMin = 0;
+
 
 
 export const CreateEquipoBody = zod.object({
@@ -69,8 +74,8 @@ export const CreateEquipoBody = zod.object({
   "telefono": zod.string().optional(),
   "color": zod.string().optional(),
   "activo": zod.boolean().optional(),
-  "puntosBonificacion": zod.number().min(0).max(1).optional(),
-  "deudaInscripcion": zod.number().min(0).optional()
+  "puntosBonificacion": zod.number().min(createEquipoBodyPuntosBonificacionMin).max(createEquipoBodyPuntosBonificacionMax).optional(),
+  "deudaInscripcion": zod.number().min(createEquipoBodyDeudaInscripcionMin).optional()
 })
 
 export const CreateEquipoResponse = zod.object({
@@ -116,6 +121,11 @@ export const UpdateEquipoParams = zod.object({
 })
 
 
+export const updateEquipoBodyPuntosBonificacionMin = 0;
+export const updateEquipoBodyPuntosBonificacionMax = 1;
+
+export const updateEquipoBodyDeudaInscripcionMin = 0;
+
 
 
 export const UpdateEquipoBody = zod.object({
@@ -125,8 +135,8 @@ export const UpdateEquipoBody = zod.object({
   "telefono": zod.string().optional(),
   "color": zod.string().optional(),
   "activo": zod.boolean().optional(),
-  "puntosBonificacion": zod.number().min(0).max(1).optional(),
-  "deudaInscripcion": zod.number().min(0).optional()
+  "puntosBonificacion": zod.number().min(updateEquipoBodyPuntosBonificacionMin).max(updateEquipoBodyPuntosBonificacionMax).optional(),
+  "deudaInscripcion": zod.number().min(updateEquipoBodyDeudaInscripcionMin).optional()
 })
 
 export const UpdateEquipoResponse = zod.object({
@@ -168,6 +178,15 @@ export const GetJugadoresResponseItem = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
   "nCarnet": zod.number().nullish(),
+  "foto": zod.string().nullish(),
+  "fechaFoto": zod.string().nullish(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish(),
+  "ultimoEquipoId": zod.number().nullish(),
+  "ultimoEquipoNombre": zod.string().nullish(),
+  "ultimoEquipoFechaFin": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "partidosJugados": zod.number().optional(),
   "createdAt": zod.string().optional()
@@ -187,7 +206,13 @@ export const CreateJugadorBody = zod.object({
   "fechaNacimiento": zod.string().optional(),
   "equipoId": zod.number(),
   "nCarnet": zod.number().optional(),
-  "activo": zod.boolean().optional()
+  "foto": zod.string().optional(),
+  "fechaFoto": zod.string().optional(),
+  "activo": zod.boolean().optional(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish()
 })
 
 export const CreateJugadorResponse = zod.object({
@@ -198,6 +223,15 @@ export const CreateJugadorResponse = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
   "nCarnet": zod.number().nullish(),
+  "foto": zod.string().nullish(),
+  "fechaFoto": zod.string().nullish(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish(),
+  "ultimoEquipoId": zod.number().nullish(),
+  "ultimoEquipoNombre": zod.string().nullish(),
+  "ultimoEquipoFechaFin": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "partidosJugados": zod.number().optional(),
   "createdAt": zod.string().optional()
@@ -219,6 +253,15 @@ export const GetJugadorResponse = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
   "nCarnet": zod.number().nullish(),
+  "foto": zod.string().nullish(),
+  "fechaFoto": zod.string().nullish(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish(),
+  "ultimoEquipoId": zod.number().nullish(),
+  "ultimoEquipoNombre": zod.string().nullish(),
+  "ultimoEquipoFechaFin": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "partidosJugados": zod.number().optional(),
   "createdAt": zod.string().optional()
@@ -238,7 +281,13 @@ export const UpdateJugadorBody = zod.object({
   "fechaNacimiento": zod.string().optional(),
   "equipoId": zod.number().optional(),
   "nCarnet": zod.number().optional(),
-  "activo": zod.boolean().optional()
+  "foto": zod.string().optional(),
+  "fechaFoto": zod.string().optional(),
+  "activo": zod.boolean().optional(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish()
 })
 
 export const UpdateJugadorResponse = zod.object({
@@ -249,6 +298,15 @@ export const UpdateJugadorResponse = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
   "nCarnet": zod.number().nullish(),
+  "foto": zod.string().nullish(),
+  "fechaFoto": zod.string().nullish(),
+  "carnetPagado": zod.boolean().optional(),
+  "carnetValor": zod.number().nullish(),
+  "carnetFechaEntrega": zod.string().nullish(),
+  "carnetQuienRecibio": zod.string().nullish(),
+  "ultimoEquipoId": zod.number().nullish(),
+  "ultimoEquipoNombre": zod.string().nullish(),
+  "ultimoEquipoFechaFin": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "partidosJugados": zod.number().optional(),
   "createdAt": zod.string().optional()
@@ -263,6 +321,26 @@ export const DeleteJugadorParams = zod.object({
 })
 
 export const DeleteJugadorResponse = zod.void()
+
+
+/**
+ * @summary Per-team career stats for a player (goals, cards, matches played)
+ */
+export const GetJugadorHistorialParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJugadorHistorialResponseItem = zod.object({
+  "equipoId": zod.number(),
+  "equipoNombre": zod.string(),
+  "fechaInicio": zod.string(),
+  "fechaFin": zod.string().nullable(),
+  "partidosJugados": zod.number(),
+  "goles": zod.number(),
+  "amarillas": zod.number(),
+  "rojas": zod.number()
+})
+export const GetJugadorHistorialResponse = zod.array(GetJugadorHistorialResponseItem)
 
 
 /**
@@ -463,144 +541,6 @@ export const GetGoleadoresResponse = zod.array(GetGoleadoresResponseItem)
 
 
 /**
- * @summary Least-beaten defenses (valla menos vencida)
- */
-export const GetVallasResponseItem = zod.object({
-  "equipoId": zod.number(),
-  "equipoNombre": zod.string(),
-  "partidosJugados": zod.number(),
-  "golesRecibidos": zod.number(),
-  "promedio": zod.number().optional()
-})
-export const GetVallasResponse = zod.array(GetVallasResponseItem)
-
-
-/**
- * @summary Active suspensions with matches served / remaining
- */
-export const GetSancionesResponseItem = zod.object({
-  "tarjetaId": zod.number(),
-  "jugadorId": zod.number(),
-  "jugadorNombre": zod.string(),
-  "equipoId": zod.number(),
-  "equipoNombre": zod.string(),
-  "tipo": zod.string(),
-  "semana": zod.number(),
-  "fecha": zod.string().nullish(),
-  "fechasSancion": zod.number(),
-  "fechasCumplidas": zod.number(),
-  "fechasPendientes": zod.number()
-})
-export const GetSancionesResponse = zod.array(GetSancionesResponseItem)
-
-
-/**
- * @summary Match roster (planilla)
- */
-export const GetPlanillaParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const PlanillaJugador = zod.object({
-  "jugadorId": zod.number(),
-  "jugadorNombre": zod.string(),
-  "equipoId": zod.number(),
-  "nCarnet": zod.number().nullish(),
-  "jugo": zod.boolean(),
-  "dorsal": zod.number().nullish(),
-  "titular": zod.boolean(),
-  "goles": zod.number(),
-  "amarillas": zod.number(),
-  "rojas": zod.number(),
-  "fechasSancion": zod.number().optional()
-})
-
-export const GetPlanillaResponse = zod.object({
-  "partidoId": zod.number(),
-  "localId": zod.number(),
-  "visitanteId": zod.number(),
-  "arbitro": zod.string().nullish(),
-  "mesa": zod.string().nullish(),
-  "jugadores": zod.array(PlanillaJugador)
-})
-
-export const SavePlanillaBody = zod.object({
-  "arbitro": zod.string().optional(),
-  "mesa": zod.string().optional(),
-  "valorAmarilla": zod.number().optional(),
-  "valorRoja": zod.number().optional(),
-  "jugadores": zod.array(zod.object({
-    "jugadorId": zod.number(),
-    "jugo": zod.boolean(),
-    "dorsal": zod.number().nullish(),
-    "titular": zod.boolean().optional(),
-    "goles": zod.number().min(0).optional(),
-    "amarillas": zod.number().min(0).max(2).optional(),
-    "rojas": zod.number().min(0).max(1).optional(),
-    "fechasSancion": zod.number().min(0).max(20).optional()
-  }))
-})
-
-
-/**
- * @summary List goals for a match (or all goals)
- */
-export const GetGolesQueryParams = zod.object({
-  "partidoId": zod.coerce.number().optional()
-})
-
-export const GetGolesResponseItem = zod.object({
-  "id": zod.number(),
-  "jugadorId": zod.number(),
-  "jugadorNombre": zod.string(),
-  "equipoNombre": zod.string(),
-  "partidoId": zod.number().nullish(),
-  "semana": zod.number(),
-  "fecha": zod.string().nullish(),
-  "cantidad": zod.number(),
-  "propio": zod.boolean().optional(),
-  "createdAt": zod.string().optional()
-})
-export const GetGolesResponse = zod.array(GetGolesResponseItem)
-
-
-/**
- * @summary Register a goal (or goals) for a player in a match
- */
-export const CreateGolBody = zod.object({
-  "jugadorId": zod.number(),
-  "partidoId": zod.number().optional(),
-  "semana": zod.number(),
-  "fecha": zod.string().optional(),
-  "cantidad": zod.number().min(1).optional(),
-  "propio": zod.boolean().optional()
-})
-
-export const CreateGolResponse = zod.object({
-  "id": zod.number(),
-  "jugadorId": zod.number(),
-  "jugadorNombre": zod.string(),
-  "equipoNombre": zod.string(),
-  "partidoId": zod.number().nullish(),
-  "semana": zod.number(),
-  "fecha": zod.string().nullish(),
-  "cantidad": zod.number(),
-  "propio": zod.boolean().optional(),
-  "createdAt": zod.string().optional()
-})
-
-
-/**
- * @summary Delete a goal entry
- */
-export const DeleteGolParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const DeleteGolResponse = zod.void()
-
-
-/**
  * @summary List cards/sanctions
  */
 export const GetTarjetasQueryParams = zod.object({
@@ -630,6 +570,10 @@ export const GetTarjetasResponse = zod.array(GetTarjetasResponseItem)
 /**
  * @summary Register a card
  */
+export const createTarjetaBodyFechasSancionMin = 0;
+
+
+
 export const CreateTarjetaBody = zod.object({
   "jugadorId": zod.number(),
   "tipo": zod.enum(['amarilla', 'roja']),
@@ -639,7 +583,7 @@ export const CreateTarjetaBody = zod.object({
   "valor": zod.number().optional(),
   "pagada": zod.boolean().optional(),
   "sancion": zod.string().optional(),
-  "fechasSancion": zod.number().min(0).optional()
+  "fechasSancion": zod.number().min(createTarjetaBodyFechasSancionMin).optional()
 })
 
 export const CreateTarjetaResponse = zod.object({
@@ -666,6 +610,10 @@ export const UpdateTarjetaParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateTarjetaBodyFechasSancionMin = 0;
+
+
+
 export const UpdateTarjetaBody = zod.object({
   "tipo": zod.enum(['amarilla', 'roja']).optional(),
   "semana": zod.number().optional(),
@@ -673,7 +621,7 @@ export const UpdateTarjetaBody = zod.object({
   "valor": zod.number().optional(),
   "pagada": zod.boolean().optional(),
   "sancion": zod.string().optional(),
-  "fechasSancion": zod.number().min(0).optional()
+  "fechasSancion": zod.number().min(updateTarjetaBodyFechasSancionMin).optional()
 })
 
 export const UpdateTarjetaResponse = zod.object({
@@ -827,50 +775,6 @@ export const GetPagosResumenEquiposResponse = zod.array(GetPagosResumenEquiposRe
 
 
 /**
- * @summary List expenses (egresos)
- */
-export const GetEgresosResponseItem = zod.object({
-  "id": zod.number(),
-  "fecha": zod.string(),
-  "descripcion": zod.string(),
-  "categoria": zod.string().nullish(),
-  "valor": zod.number(),
-  "createdAt": zod.string().optional()
-})
-export const GetEgresosResponse = zod.array(GetEgresosResponseItem)
-
-
-/**
- * @summary Register an expense
- */
-export const CreateEgresoBody = zod.object({
-  "fecha": zod.string().min(1),
-  "descripcion": zod.string().min(1),
-  "categoria": zod.string().optional(),
-  "valor": zod.number().min(0)
-})
-
-export const CreateEgresoResponse = zod.object({
-  "id": zod.number(),
-  "fecha": zod.string(),
-  "descripcion": zod.string(),
-  "categoria": zod.string().nullish(),
-  "valor": zod.number(),
-  "createdAt": zod.string().optional()
-})
-
-
-/**
- * @summary Delete an expense
- */
-export const DeleteEgresoParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const DeleteEgresoResponse = zod.void()
-
-
-/**
  * @summary List tournament schedule weeks
  */
 export const GetProgramacionResponseItem = zod.object({
@@ -903,5 +807,340 @@ export const CreateSemanaFechaResponse = zod.object({
   "fechaHasta": zod.string().nullish(),
   "esFestivo": zod.boolean().optional()
 })
+
+
+/**
+ * @summary Sign in and obtain a bearer token
+ */
+
+
+
+
+export const LoginBody = zod.object({
+  "username": zod.string().min(1),
+  "password": zod.string().min(1)
+})
+
+export const LoginResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "nombre": zod.string(),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish()
+})
+})
+
+
+/**
+ * @summary Current session user (used to restore the session on reload)
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "nombre": zod.string(),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish()
+})
+
+
+/**
+ * @summary List user accounts (admin only)
+ */
+export const GetUsuariosResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "nombre": zod.string(),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish(),
+  "activo": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+export const GetUsuariosResponse = zod.array(GetUsuariosResponseItem)
+
+
+/**
+ * @summary Create a user account (admin only)
+ */
+
+export const createUsuarioBodyPasswordMin = 4;
+
+
+
+
+export const CreateUsuarioBody = zod.object({
+  "username": zod.string().min(1),
+  "password": zod.string().min(createUsuarioBodyPasswordMin),
+  "nombre": zod.string().min(1),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish(),
+  "activo": zod.boolean().optional()
+})
+
+export const CreateUsuarioResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "nombre": zod.string(),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish(),
+  "activo": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a user account (admin only)
+ */
+export const UpdateUsuarioParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const updateUsuarioBodyPasswordMin = 4;
+
+
+
+
+export const UpdateUsuarioBody = zod.object({
+  "username": zod.string().min(1).optional(),
+  "password": zod.string().min(updateUsuarioBodyPasswordMin).optional(),
+  "nombre": zod.string().min(1).optional(),
+  "rol": zod.string().optional(),
+  "equipoId": zod.number().nullish(),
+  "activo": zod.boolean().optional()
+})
+
+export const UpdateUsuarioResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "nombre": zod.string(),
+  "rol": zod.string(),
+  "equipoId": zod.number().nullish(),
+  "activo": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a user account (admin only)
+ */
+export const DeleteUsuarioParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteUsuarioResponse = zod.void()
+
+
+/**
+ * @summary Least-beaten defenses (valla menos vencida)
+ */
+export const GetVallasResponseItem = zod.object({
+  "equipoId": zod.number(),
+  "equipoNombre": zod.string(),
+  "partidosJugados": zod.number(),
+  "golesRecibidos": zod.number(),
+  "promedio": zod.number().optional()
+})
+export const GetVallasResponse = zod.array(GetVallasResponseItem)
+
+
+/**
+ * @summary Active suspensions with matches served / remaining
+ */
+export const GetSancionesResponseItem = zod.object({
+  "tarjetaId": zod.number(),
+  "jugadorId": zod.number(),
+  "jugadorNombre": zod.string(),
+  "equipoId": zod.number(),
+  "equipoNombre": zod.string(),
+  "tipo": zod.string(),
+  "semana": zod.number(),
+  "fecha": zod.string().nullish(),
+  "fechasSancion": zod.number(),
+  "fechasCumplidas": zod.number(),
+  "fechasPendientes": zod.number()
+})
+export const GetSancionesResponse = zod.array(GetSancionesResponseItem)
+
+
+/**
+ * @summary Match roster (planilla)
+ */
+export const GetPlanillaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPlanillaResponse = zod.object({
+  "partidoId": zod.number(),
+  "localId": zod.number(),
+  "visitanteId": zod.number(),
+  "arbitro": zod.string().nullish(),
+  "mesa": zod.string().nullish(),
+  "jugadores": zod.array(zod.object({
+  "jugadorId": zod.number(),
+  "jugadorNombre": zod.string(),
+  "equipoId": zod.number(),
+  "nCarnet": zod.number().nullish(),
+  "jugo": zod.boolean(),
+  "dorsal": zod.number().nullish(),
+  "titular": zod.boolean(),
+  "goles": zod.number(),
+  "amarillas": zod.number(),
+  "rojas": zod.number(),
+  "fechasSancion": zod.number().optional()
+}))
+})
+
+
+/**
+ * @summary Save the full match roster and recompute the score
+ */
+export const SavePlanillaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const savePlanillaBodyJugadoresItemGolesMin = 0;
+
+export const savePlanillaBodyJugadoresItemAmarillasMin = 0;
+export const savePlanillaBodyJugadoresItemAmarillasMax = 2;
+
+export const savePlanillaBodyJugadoresItemRojasMin = 0;
+export const savePlanillaBodyJugadoresItemRojasMax = 1;
+
+export const savePlanillaBodyJugadoresItemFechasSancionMin = 0;
+export const savePlanillaBodyJugadoresItemFechasSancionMax = 20;
+
+
+
+export const SavePlanillaBody = zod.object({
+  "arbitro": zod.string().optional(),
+  "mesa": zod.string().optional(),
+  "valorAmarilla": zod.number().optional(),
+  "valorRoja": zod.number().optional(),
+  "jugadores": zod.array(zod.object({
+  "jugadorId": zod.number(),
+  "jugo": zod.boolean(),
+  "dorsal": zod.number().nullish(),
+  "titular": zod.boolean().optional(),
+  "goles": zod.number().min(savePlanillaBodyJugadoresItemGolesMin).optional(),
+  "amarillas": zod.number().min(savePlanillaBodyJugadoresItemAmarillasMin).max(savePlanillaBodyJugadoresItemAmarillasMax).optional(),
+  "rojas": zod.number().min(savePlanillaBodyJugadoresItemRojasMin).max(savePlanillaBodyJugadoresItemRojasMax).optional(),
+  "fechasSancion": zod.number().min(savePlanillaBodyJugadoresItemFechasSancionMin).max(savePlanillaBodyJugadoresItemFechasSancionMax).optional()
+}))
+})
+
+export const SavePlanillaResponse = zod.void()
+
+
+/**
+ * @summary List goals for a match (or all goals)
+ */
+export const GetGolesQueryParams = zod.object({
+  "partidoId": zod.coerce.number().optional()
+})
+
+export const GetGolesResponseItem = zod.object({
+  "id": zod.number(),
+  "jugadorId": zod.number(),
+  "jugadorNombre": zod.string(),
+  "equipoNombre": zod.string(),
+  "partidoId": zod.number().nullish(),
+  "semana": zod.number(),
+  "fecha": zod.string().nullish(),
+  "cantidad": zod.number(),
+  "propio": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+export const GetGolesResponse = zod.array(GetGolesResponseItem)
+
+
+/**
+ * @summary Register a goal (or goals) for a player in a match
+ */
+
+
+
+export const CreateGolBody = zod.object({
+  "jugadorId": zod.number(),
+  "partidoId": zod.number().optional(),
+  "semana": zod.number(),
+  "fecha": zod.string().optional(),
+  "cantidad": zod.number().min(1).optional(),
+  "propio": zod.boolean().optional()
+})
+
+export const CreateGolResponse = zod.object({
+  "id": zod.number(),
+  "jugadorId": zod.number(),
+  "jugadorNombre": zod.string(),
+  "equipoNombre": zod.string(),
+  "partidoId": zod.number().nullish(),
+  "semana": zod.number(),
+  "fecha": zod.string().nullish(),
+  "cantidad": zod.number(),
+  "propio": zod.boolean().optional(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a goal entry
+ */
+export const DeleteGolParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteGolResponse = zod.void()
+
+
+/**
+ * @summary List organization expenses
+ */
+export const GetEgresosResponseItem = zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "descripcion": zod.string(),
+  "categoria": zod.string().nullish(),
+  "valor": zod.number(),
+  "createdAt": zod.string().optional()
+})
+export const GetEgresosResponse = zod.array(GetEgresosResponseItem)
+
+
+/**
+ * @summary Register an expense
+ */
+
+
+export const createEgresoBodyValorMin = 0;
+
+
+
+export const CreateEgresoBody = zod.object({
+  "fecha": zod.string().min(1),
+  "descripcion": zod.string().min(1),
+  "categoria": zod.string().optional(),
+  "valor": zod.number().min(createEgresoBodyValorMin)
+})
+
+export const CreateEgresoResponse = zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "descripcion": zod.string(),
+  "categoria": zod.string().nullish(),
+  "valor": zod.number(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete an expense
+ */
+export const DeleteEgresoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteEgresoResponse = zod.void()
 
 

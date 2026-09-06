@@ -9,6 +9,7 @@ services:
     build:
       context: .
       dockerfile: artifacts/torneo-socorro/Dockerfile
+    restart: unless-stopped
     working_dir: /app
     command: sh -c "pnpm install --filter '@workspace/torneo-socorro...' && pnpm --filter @workspace/torneo-socorro run dev"
     ports:
@@ -18,6 +19,9 @@ services:
       BASE_PATH: ${BASE_PATH:-/}
       API_HOST: api
       API_PORT: "4000"
+      # Necesario para que Vite vea los cambios de archivos del host desde
+      # el contenedor (inotify no cruza el bind mount en Windows/Mac).
+      VITE_USE_POLLING: "true"
     volumes:
       - .:/app
       # node_modules viven solo en volúmenes con nombre (nunca en el host),
@@ -25,6 +29,10 @@ services:
       - web_root_node_modules:/app/node_modules
       - web_app_node_modules:/app/artifacts/torneo-socorro/node_modules
       - web_api_client_node_modules:/app/lib/api-client-react/node_modules
+      # Solo se usa para correr "pnpm --filter @workspace/api-spec run
+      # codegen" (orval) cuando cambia el contrato de la API, vía
+      # "docker compose run --rm web ...". No lo toca el "command" de arriba.
+      - api_spec_node_modules:/app/lib/api-spec/node_modules
     depends_on:
       - api
 
@@ -34,6 +42,7 @@ services:
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
     working_dir: /app
     command: sh -c "pnpm install --filter '@workspace/api-server...' && pnpm --filter @workspace/api-server run dev"
     ports:
@@ -68,6 +77,7 @@ volumes:
   web_root_node_modules:
   web_app_node_modules:
   web_api_client_node_modules:
+  api_spec_node_modules:
   api_root_node_modules:
   api_app_node_modules:
   api_db_node_modules:

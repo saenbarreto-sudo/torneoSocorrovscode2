@@ -13,10 +13,33 @@ const titleTransformer: InputTransformerFn = (config) => {
   return config;
 };
 
+// Endpoints cuyos hooks de React se mantienen a mano en
+// "lib/api-client-react/src/custom/". No es que falten en el contrato: están
+// documentados en openapi.yaml (y el cliente zod SÍ los genera, porque el
+// backend los usa para validar). Se excluyen solo del cliente de React
+// porque las versiones a mano agregan comportamiento que orval no genera:
+// invalidación de caché de react-query (p. ej. al guardar una planilla hay
+// que refrescar posiciones, goleadores, tarjetas y vallas).
+// Si algún día se quiere usar el hook generado, hay que borrar el archivo
+// correspondiente en "custom/" y sacar su tag de esta lista.
+const TAGS_CON_HOOKS_A_MANO = [
+  "auth",
+  "goles",
+  "planilla",
+  "vallas",
+  "sanciones",
+  "egresos",
+  "usuarios",
+];
+
 export default defineConfig({
   "api-client-react": {
     input: {
       target: "./openapi.yaml",
+      filters: {
+        mode: "exclude",
+        tags: TAGS_CON_HOOKS_A_MANO,
+      },
       override: {
         transformer: titleTransformer,
       },

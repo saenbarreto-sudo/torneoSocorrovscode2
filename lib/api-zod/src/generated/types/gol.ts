@@ -5,24 +5,18 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
-import type { TarjetaTipo } from './tarjetaTipo';
 
-export interface Tarjeta {
+export interface Gol {
   id: number;
   jugadorId: number;
   jugadorNombre: string;
   equipoNombre: string;
-  tipo: TarjetaTipo;
+  /** @nullable */
+  partidoId?: number | null;
   semana: number;
   /** @nullable */
   fecha?: string | null;
-  /** @nullable */
-  partidoId?: number | null;
-  /** @nullable */
-  valor?: number | null;
-  pagada?: boolean;
-  /** @nullable */
-  sancion?: string | null;
-  fechasSancion?: number;
+  cantidad: number;
+  propio?: boolean;
   createdAt?: string;
 }
