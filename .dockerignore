@@ -15,3 +15,5 @@ attached_assets
 .pnpm-store
 **/.pnpm-store
 pnpm-debug.log*
+# Copias de seguridad de la base: no tienen por qué entrar a la imagen.
+backups/
