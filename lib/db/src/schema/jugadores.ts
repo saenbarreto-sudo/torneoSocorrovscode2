@@ -17,6 +17,8 @@ export const jugadoresTable = pgTable("jugadores", {
   fechaFoto: date("fecha_foto", { mode: "string" }),
   // --- Carnetización ---
   carnetPagado: boolean("carnet_pagado").notNull().default(false),
+  // Fecha en que se pagó el carné, como la lleva la hoja de carnetización.
+  carnetFechaPago: date("carnet_fecha_pago", { mode: "string" }),
   carnetValor: integer("carnet_valor"),
   carnetFechaEntrega: date("carnet_fecha_entrega", { mode: "string" }),
   // Quién recibió el carné físico (normalmente el delegado del equipo).

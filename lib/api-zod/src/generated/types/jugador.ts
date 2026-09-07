@@ -23,6 +23,8 @@ export interface Jugador {
   fechaFoto?: string | null;
   carnetPagado?: boolean;
   /** @nullable */
+  carnetFechaPago?: string | null;
+  /** @nullable */
   carnetValor?: number | null;
   /** @nullable */
   carnetFechaEntrega?: string | null;

@@ -109,6 +109,16 @@ docker compose exec api pnpm --filter @workspace/db run reset
 datos (partidos, pagos, jugadores, equipos y usuarios) antes de cargar los
 reales. Al terminar muestra los usuarios con los que puedes entrar.
 
+```bash
+# 3. Completar las fichas con el resto de los datos del Excel de carnés
+docker compose exec api pnpm --filter @workspace/db run import-carnetizacion
+```
+
+Este último llena la fecha de la foto, la carnetización (fecha de pago, valor,
+entrega y quién lo recibió) y el equipo de la temporada anterior de cada
+jugador. Se puede correr las veces que haga falta: no borra nada y no toca a
+los jugadores que ya se hayan editado desde la aplicación.
+
 Si solo quieres reemplazar los jugadores sin tocar partidos ni pagos:
 
 ```bash
@@ -116,6 +126,22 @@ docker compose exec api pnpm --filter @workspace/db run import-jugadores
 ```
 
 Cada vez que cambie el esquema en `lib/db/src/schema`, vuelve a correr `push`.
+
+### De dónde sale cada dato de la ficha
+
+Los tres archivos JSON de `lib/db/src/data/` están depurados del Excel
+`Base de Datos Carné 2026`, que tiene una hoja por temporada:
+
+| Dato de la ficha | Hoja del Excel |
+|---|---|
+| Cédula, nombre, fecha de nacimiento, N.º de carné, equipo | `BD_Carnet 2025 - 2026` |
+| Fecha de la foto | `BD_Carnet 2025 - 2026` (columna "Foto 40") |
+| Último equipo anterior y trayectoria | `BD_Carnet 2024 - 2025` (columna "Equipo 40") |
+| Pago del carné, valor, entrega y quién lo recibió | `BD_Carnet 2021` |
+
+Las columnas de la categoría 50 se ignoran a propósito: esa categoría no aplica
+al torneo. La **foto del jugador** no está en el Excel; se sube una por una
+desde la ficha.
 
 ---
 
@@ -277,6 +303,7 @@ Si ambos terminan sin errores, el proyecto está sano.
 | Restaurar la base | `pnpm db:restore <archivo>` |
 | Crear/actualizar tablas | `docker compose exec api pnpm --filter @workspace/db run push` |
 | Cargar datos reales (borra todo) | `docker compose exec api pnpm --filter @workspace/db run reset` |
+| Completar fichas desde el Excel | `docker compose exec api pnpm --filter @workspace/db run import-carnetizacion` |
 | Reiniciar tras cambiar el backend | `docker compose restart api` |
 | Regenerar la API | ver paso 9 |
 

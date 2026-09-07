@@ -17,6 +17,8 @@ export interface JugadorUpdate {
   activo?: boolean;
   carnetPagado?: boolean;
   /** @nullable */
+  carnetFechaPago?: string | null;
+  /** @nullable */
   carnetValor?: number | null;
   /** @nullable */
   carnetFechaEntrega?: string | null;

@@ -98,6 +98,8 @@ export interface Jugador {
   fechaFoto?: string | null;
   carnetPagado?: boolean;
   /** @nullable */
+  carnetFechaPago?: string | null;
+  /** @nullable */
   carnetValor?: number | null;
   /** @nullable */
   carnetFechaEntrega?: string | null;
@@ -126,6 +128,8 @@ export interface JugadorInput {
   activo?: boolean;
   carnetPagado?: boolean;
   /** @nullable */
+  carnetFechaPago?: string | null;
+  /** @nullable */
   carnetValor?: number | null;
   /** @nullable */
   carnetFechaEntrega?: string | null;
@@ -143,6 +147,8 @@ export interface JugadorUpdate {
   fechaFoto?: string;
   activo?: boolean;
   carnetPagado?: boolean;
+  /** @nullable */
+  carnetFechaPago?: string | null;
   /** @nullable */
   carnetValor?: number | null;
   /** @nullable */

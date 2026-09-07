@@ -1090,6 +1090,8 @@ components:
         # --- Carnetización ---
         carnetPagado:
           type: boolean
+        carnetFechaPago:
+          type: ["string", "null"]
         carnetValor:
           type: ["number", "null"]
         carnetFechaEntrega:
@@ -1137,6 +1139,8 @@ components:
           type: boolean
         carnetPagado:
           type: boolean
+        carnetFechaPago:
+          type: ["string", "null"]
         carnetValor:
           type: ["number", "null"]
         carnetFechaEntrega:
@@ -1165,6 +1169,8 @@ components:
           type: boolean
         carnetPagado:
           type: boolean
+        carnetFechaPago:
+          type: ["string", "null"]
         carnetValor:
           type: ["number", "null"]
         carnetFechaEntrega:

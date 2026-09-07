@@ -183,6 +183,9 @@ export default function FichaJugador() {
                   <Badge variant="warning">Pendiente</Badge>
                 )}
               </Dato>
+              <Dato label="Fecha de pago">
+                <span className="font-mono tabular-nums">{formatFecha(jugador.carnetFechaPago)}</span>
+              </Dato>
               <Dato label="Valor pagado">
                 <span className="font-mono tabular-nums">{formatPesos(jugador.carnetValor)}</span>
               </Dato>

@@ -45,6 +45,7 @@ const jugadorSchema = z.object({
   fechaFoto: z.string().optional(),
   // --- Carnetización ---
   carnetPagado: z.boolean().optional(),
+  carnetFechaPago: z.string().optional(),
   carnetValor: z.union([z.coerce.number(), z.literal('')]).optional(),
   carnetFechaEntrega: z.string().optional(),
   carnetQuienRecibio: z.string().optional(),
@@ -70,6 +71,7 @@ function valoresPorDefecto(jugador: Jugador | null, defaultEquipoId?: number): J
     foto: jugador?.foto ?? undefined,
     fechaFoto: soloFecha(jugador?.fechaFoto),
     carnetPagado: jugador?.carnetPagado ?? false,
+    carnetFechaPago: soloFecha(jugador?.carnetFechaPago),
     carnetValor: jugador?.carnetValor ?? '',
     carnetFechaEntrega: soloFecha(jugador?.carnetFechaEntrega),
     carnetQuienRecibio: jugador?.carnetQuienRecibio ?? '',
@@ -144,6 +146,7 @@ export function JugadorFormDialog({ open, onOpenChange, jugador, defaultEquipoId
     const data = {
       ...values,
       carnetPagado: values.carnetPagado ?? false,
+      carnetFechaPago: values.carnetFechaPago || null,
       carnetValor: numeroONull(values.carnetValor),
       carnetFechaEntrega: values.carnetFechaEntrega || null,
       carnetQuienRecibio: values.carnetQuienRecibio || null,
@@ -317,6 +320,16 @@ export function JugadorFormDialog({ open, onOpenChange, jugador, defaultEquipoId
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fecha de la foto</FormLabel>
+                      <FormControl><Input type="date" {...field} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="carnetFechaPago"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de pago</FormLabel>
                       <FormControl><Input type="date" {...field} /></FormControl>
                     </FormItem>
                   )}

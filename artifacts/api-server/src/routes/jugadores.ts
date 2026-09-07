@@ -210,6 +210,7 @@ router.get("/jugadores/:id", async (req, res): Promise<void> => {
       foto: jugadoresTable.foto,
       fechaFoto: jugadoresTable.fechaFoto,
       carnetPagado: jugadoresTable.carnetPagado,
+      carnetFechaPago: jugadoresTable.carnetFechaPago,
       carnetValor: jugadoresTable.carnetValor,
       carnetFechaEntrega: jugadoresTable.carnetFechaEntrega,
       carnetQuienRecibio: jugadoresTable.carnetQuienRecibio,
