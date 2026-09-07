@@ -23,6 +23,7 @@ import Pagos from '@/pages/pagos';
 import PagosResumen from '@/pages/pagos-resumen';
 import Egresos from '@/pages/egresos';
 import Programacion from '@/pages/programacion';
+import GenerarCalendario from '@/pages/generar-calendario';
 import Usuarios from '@/pages/usuarios';
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ function Router() {
         <Route path="/pagos/resumen">{() => <Protected path="/pagos/resumen" component={PagosResumen} />}</Route>
         <Route path="/egresos">{() => <Protected path="/egresos" component={Egresos} />}</Route>
         <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
+        <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
         <Route path="/usuarios">{() => <Protected path="/usuarios" component={Usuarios} />}</Route>
         <Route component={NotFound} />
       </Switch>

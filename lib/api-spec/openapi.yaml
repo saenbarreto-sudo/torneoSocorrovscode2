@@ -322,6 +322,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Partido"
 
+  /partidos/lote:
+    post:
+      operationId: createPartidosLote
+      tags: [partidos]
+      summary: Create several matches at once (calendar generator)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartidosLoteInput"
+      responses:
+        "201":
+          description: Result of the bulk creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartidosLoteResult"
+
   /partidos/{id}:
     get:
       operationId: getPartido
@@ -1275,6 +1294,33 @@ components:
         walkover:
           type: boolean
         walkoverGanadorId:
+          type: number
+
+    PartidosLoteInput:
+      type: object
+      required: [partidos]
+      properties:
+        partidos:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PartidoInput"
+        crearSemanas:
+          type: boolean
+          description: >-
+            Si es true, crea en la programación las semanas que todavía no
+            existan, tomando la fecha del primer partido de cada semana.
+
+    PartidosLoteResult:
+      type: object
+      required: [creados, omitidos, semanasCreadas]
+      properties:
+        creados:
+          type: number
+        omitidos:
+          type: number
+          description: Partidos que ya existían con la misma semana y los mismos equipos.
+        semanasCreadas:
           type: number
 
     # ── POSICIONES ───────────────────────────────────────────────────────────

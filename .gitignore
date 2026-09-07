@@ -53,3 +53,7 @@ Thumbs.db
 # Entorno local (VSCode)
 .env
 .env.local
+
+# Copias de seguridad de la base (pnpm db:backup). Contienen datos
+# personales de los jugadores: nunca se suben al repositorio.
+backups/

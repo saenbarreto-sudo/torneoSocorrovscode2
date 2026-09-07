@@ -13,7 +13,9 @@
     "dev:api": "pnpm --filter @workspace/api-server run dev",
     "dev:web": "pnpm --filter @workspace/torneo-socorro run dev",
     "db:import-jugadores": "pnpm --filter @workspace/db run import-jugadores",
-    "db:reset": "pnpm --filter @workspace/db run reset"
+    "db:reset": "pnpm --filter @workspace/db run reset",
+    "db:backup": "node scripts/backup-db.mjs",
+    "db:restore": "node scripts/restore-db.mjs"
   },
   "engines": {
     "node": ">=20.11.0"

@@ -29,10 +29,15 @@ services:
       - web_root_node_modules:/app/node_modules
       - web_app_node_modules:/app/artifacts/torneo-socorro/node_modules
       - web_api_client_node_modules:/app/lib/api-client-react/node_modules
-      # Solo se usa para correr "pnpm --filter @workspace/api-spec run
-      # codegen" (orval) cuando cambia el contrato de la API, vía
-      # "docker compose run --rm web ...". No lo toca el "command" de arriba.
+      # Estos tres solo se usan al regenerar el contrato de la API vía
+      # "docker compose run --rm web ..." (ver README, paso 8). El "command"
+      # de arriba no los toca: quedan vacíos mientras no se haga codegen.
+      # Hacen falta los tres porque después de orval hay que reconstruir los
+      # tipos de todos los paquetes de lib/, y sin sus node_modules el
+      # "tsc --build" no puede resolver zod ni drizzle.
       - api_spec_node_modules:/app/lib/api-spec/node_modules
+      - web_api_zod_node_modules:/app/lib/api-zod/node_modules
+      - web_db_node_modules:/app/lib/db/node_modules
     depends_on:
       - api
 
@@ -78,6 +83,8 @@ volumes:
   web_app_node_modules:
   web_api_client_node_modules:
   api_spec_node_modules:
+  web_api_zod_node_modules:
+  web_db_node_modules:
   api_root_node_modules:
   api_app_node_modules:
   api_db_node_modules:

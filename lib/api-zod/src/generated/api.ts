@@ -414,6 +414,38 @@ export const CreatePartidoResponse = zod.object({
 
 
 /**
+ * @summary Create several matches at once (calendar generator)
+ */
+
+
+
+export const CreatePartidosLoteBody = zod.object({
+  "partidos": zod.array(zod.object({
+  "semana": zod.number(),
+  "fecha": zod.string().optional(),
+  "hora": zod.string().optional(),
+  "localId": zod.number(),
+  "visitanteId": zod.number(),
+  "golesLocal": zod.number().optional(),
+  "golesVisitante": zod.number().optional(),
+  "jugado": zod.boolean().optional(),
+  "fase": zod.string().optional(),
+  "arbitro": zod.string().optional(),
+  "mesa": zod.string().optional(),
+  "walkover": zod.boolean().optional(),
+  "walkoverGanadorId": zod.number().optional()
+})).min(1),
+  "crearSemanas": zod.boolean().optional().describe('Si es true, crea en la programación las semanas que todavía no existan, tomando la fecha del primer partido de cada semana.')
+})
+
+export const CreatePartidosLoteResponse = zod.object({
+  "creados": zod.number(),
+  "omitidos": zod.number().describe('Partidos que ya existían con la misma semana y los mismos equipos.'),
+  "semanasCreadas": zod.number()
+})
+
+
+/**
  * @summary Get a match
  */
 export const GetPartidoParams = zod.object({

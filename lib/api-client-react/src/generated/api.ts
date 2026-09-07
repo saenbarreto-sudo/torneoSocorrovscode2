@@ -42,6 +42,8 @@ import type {
   Partido,
   PartidoInput,
   PartidoUpdate,
+  PartidosLoteInput,
+  PartidosLoteResult,
   PosicionEquipo,
   SemanaFecha,
   SemanaFechaInput,
@@ -1204,6 +1206,77 @@ export const useCreatePartido = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreatePartidoMutationOptions(options));
+    }
+
+export const getCreatePartidosLoteUrl = () => {
+
+
+
+
+  return `/api/partidos/lote`
+}
+
+/**
+ * @summary Create several matches at once (calendar generator)
+ */
+export const createPartidosLote = async (partidosLoteInput: PartidosLoteInput, options?: Parameters<typeof customFetch>[1]): Promise<PartidosLoteResult> => {
+
+  return customFetch<PartidosLoteResult>(getCreatePartidosLoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(partidosLoteInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePartidosLoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartidosLote>>, TError,{data: BodyType<PartidosLoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPartidosLote>>, TError,{data: BodyType<PartidosLoteInput>}, TContext> => {
+
+const mutationKey = ['createPartidosLote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPartidosLote>>, {data: BodyType<PartidosLoteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPartidosLote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePartidosLoteMutationResult = NonNullable<Awaited<ReturnType<typeof createPartidosLote>>>
+    export type CreatePartidosLoteMutationBody = BodyType<PartidosLoteInput>
+    export type CreatePartidosLoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create several matches at once (calendar generator)
+ */
+export const useCreatePartidosLote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartidosLote>>, TError,{data: BodyType<PartidosLoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPartidosLote>>,
+        TError,
+        {data: BodyType<PartidosLoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePartidosLoteMutationOptions(options));
     }
 
 export const getGetPartidoUrl = (id: number,) => {

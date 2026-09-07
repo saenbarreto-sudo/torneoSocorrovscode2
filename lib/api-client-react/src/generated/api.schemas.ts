@@ -207,6 +207,20 @@ export interface PartidoInput {
   walkoverGanadorId?: number;
 }
 
+export interface PartidosLoteInput {
+  /** @minItems 1 */
+  partidos: PartidoInput[];
+  /** Si es true, crea en la programación las semanas que todavía no existan, tomando la fecha del primer partido de cada semana. */
+  crearSemanas?: boolean;
+}
+
+export interface PartidosLoteResult {
+  creados: number;
+  /** Partidos que ya existían con la misma semana y los mismos equipos. */
+  omitidos: number;
+  semanasCreadas: number;
+}
+
 export interface PartidoUpdate {
   semana?: number;
   fecha?: string;

@@ -35,6 +35,8 @@ export * from './pagoInput';
 export * from './pagoUpdate';
 export * from './partido';
 export * from './partidoInput';
+export * from './partidosLoteInput';
+export * from './partidosLoteResult';
 export * from './partidoUpdate';
 export * from './planilla';
 export * from './planillaJugador';

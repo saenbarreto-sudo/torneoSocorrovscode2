@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, type SQL } from "drizzle-orm";
-import { db, partidosTable, equiposTable } from "@workspace/db";
+import { eq, inArray, sql, type SQL } from "drizzle-orm";
+import { db, partidosTable, equiposTable, programacionTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
 import {
@@ -14,6 +14,8 @@ import {
   UpdatePartidoParams,
   UpdatePartidoResponse,
   DeletePartidoParams,
+  CreatePartidosLoteBody,
+  CreatePartidosLoteResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -139,6 +141,106 @@ router.post("/partidos", requireAuth, writeAccess.partidos, async (req, res): Pr
     return;
   }
   res.status(201).json(CreatePartidoResponse.parse(mapPartido(row)));
+});
+
+/**
+ * Creación en lote, para el generador de calendario: el usuario arma la
+ * programación de todas las jornadas, marca los partidos que sí va a jugar y
+ * los guarda de una vez.
+ *
+ * Va todo en una transacción: o entran todos los partidos elegidos, o no entra
+ * ninguno. Media programación guardada sería peor que ninguna, porque no se
+ * vería a simple vista qué faltó.
+ */
+router.post("/partidos/lote", requireAuth, writeAccess.partidos, async (req, res): Promise<void> => {
+  const parsed = CreatePartidosLoteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { partidos, crearSemanas } = parsed.data;
+
+  if (partidos.some((p) => p.localId === p.visitanteId)) {
+    res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo" });
+    return;
+  }
+
+  // Se validan los equipos aquí para poder responder con un mensaje claro:
+  // dejar que falle la llave foránea daría un error de base de datos.
+  const idsEquipos = [...new Set(partidos.flatMap((p) => [p.localId, p.visitanteId]))];
+  const equiposExistentes = await db
+    .select({ id: equiposTable.id })
+    .from(equiposTable)
+    .where(inArray(equiposTable.id, idsEquipos));
+  if (equiposExistentes.length !== idsEquipos.length) {
+    res.status(400).json({ error: "Alguno de los equipos del calendario ya no existe" });
+    return;
+  }
+
+  const semanas = [...new Set(partidos.map((p) => p.semana))].sort((a, b) => a - b);
+
+  const resultado = await db.transaction(async (tx) => {
+    // Un mismo cruce en la misma semana no se programa dos veces. Protege
+    // contra guardar el mismo calendario por accidente (doble clic, o volver
+    // a generarlo con las mismas semanas).
+    const existentes = await tx
+      .select({
+        semana: partidosTable.semana,
+        localId: partidosTable.localId,
+        visitanteId: partidosTable.visitanteId,
+      })
+      .from(partidosTable)
+      .where(inArray(partidosTable.semana, semanas));
+
+    const yaProgramados = new Set(existentes.map((e) => `${e.semana}:${e.localId}:${e.visitanteId}`));
+
+    const aInsertar: typeof partidos = [];
+    let omitidos = 0;
+    for (const p of partidos) {
+      const clave = `${p.semana}:${p.localId}:${p.visitanteId}`;
+      if (yaProgramados.has(clave)) {
+        omitidos++;
+        continue;
+      }
+      yaProgramados.add(clave); // también evita repetidos dentro del mismo lote
+      aInsertar.push(p);
+    }
+
+    if (aInsertar.length > 0) {
+      await tx.insert(partidosTable).values(aInsertar);
+    }
+
+    let semanasCreadas = 0;
+    if (crearSemanas) {
+      const enProgramacion = await tx
+        .select({ semana: programacionTable.semana })
+        .from(programacionTable)
+        .where(inArray(programacionTable.semana, semanas));
+      const yaExisten = new Set(enProgramacion.map((r) => r.semana));
+
+      const nuevas = semanas
+        .filter((s) => !yaExisten.has(s))
+        .map((s) => {
+          const fecha = partidos.find((p) => p.semana === s)?.fecha ?? null;
+          return {
+            semana: s,
+            nombreSemana: `Fecha ${s}`,
+            fechaDesde: fecha,
+            fechaHasta: fecha,
+          };
+        });
+
+      if (nuevas.length > 0) {
+        await tx.insert(programacionTable).values(nuevas);
+        semanasCreadas = nuevas.length;
+      }
+    }
+
+    return { creados: aInsertar.length, omitidos, semanasCreadas };
+  });
+
+  res.status(201).json(CreatePartidosLoteResponse.parse(resultado));
 });
 
 router.get("/partidos/:id", async (req, res): Promise<void> => {
