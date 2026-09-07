@@ -154,7 +154,10 @@ router.get("/jugadores", async (req, res): Promise<void> => {
     .from(jugadoresTable)
     .innerJoin(equiposTable, eq(jugadoresTable.equipoId, equiposTable.id))
     .where(query.data.equipoId != null ? eq(jugadoresTable.equipoId, query.data.equipoId) : undefined)
-    .orderBy(jugadoresTable.nombre);
+    // Por número de carné, que es el orden en el que se lleva la base del
+    // torneo. Los que todavía no tienen carné van al final, y entre iguales
+    // se desempata por nombre.
+    .orderBy(sql`${jugadoresTable.nCarnet} ASC NULLS LAST`, jugadoresTable.nombre);
 
   res.json(GetJugadoresResponse.parse(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() }))));
 });
