@@ -620,6 +620,17 @@ paths:
       operationId: getPagosResumenEquipos
       tags: [pagos]
       summary: Payment summary per team (inscriptions, debts)
+      parameters:
+        - name: concepto
+          in: query
+          required: false
+          description: >-
+            Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas,
+            Amarillas, FOFI). Por defecto Inscripcion, que es el único
+            concepto con un monto adeudado configurado por equipo (deuda de
+            inscripción); para los demás solo se puede mostrar lo pagado.
+          schema:
+            type: string
       responses:
         "200":
           description: Payment summary per team

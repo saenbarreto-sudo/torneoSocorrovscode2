@@ -801,6 +801,10 @@ export const DeletePagoResponse = zod.void()
 /**
  * @summary Payment summary per team (inscriptions, debts)
  */
+export const GetPagosResumenEquiposQueryParams = zod.object({
+  "concepto": zod.coerce.string().optional().describe('Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas, Amarillas, FOFI). Por defecto Inscripcion, que es el único concepto con un monto adeudado configurado por equipo (deuda de inscripción); para los demás solo se puede mostrar lo pagado.')
+})
+
 export const GetPagosResumenEquiposResponseItem = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),

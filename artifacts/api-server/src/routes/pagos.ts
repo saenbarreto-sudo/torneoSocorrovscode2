@@ -12,6 +12,7 @@ import {
   UpdatePagoResponse,
   DeletePagoParams,
   GetPagosResumenEquiposResponse,
+  GetPagosResumenEquiposQueryParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -59,18 +60,38 @@ function mapPago(row: Record<string, unknown>) {
   };
 }
 
-router.get("/pagos/resumen-equipos", async (_req, res): Promise<void> => {
+router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
+  const query = GetPagosResumenEquiposQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const concepto = query.data.concepto ?? "Inscripcion";
+
+  // "Inscripcion" es el único concepto con un monto adeudado configurado
+  // por equipo (equipos.deuda_inscripcion), así que es el único donde
+  // "saldo" y "% pagado" significan algo. Para los demás (Multas, Carnet,
+  // tarjetas, FOFI) no hay una meta contra la cual comparar: solo se puede
+  // mostrar cuánto se ha pagado, y deuda/saldo/porcentaje quedan en 0.
+  const esInscripcion = concepto === "Inscripcion";
+
   const rows = await db.execute(sql`
     SELECT
       e.id as equipo_id,
       e.nombre as equipo_nombre,
-      e.deuda_inscripcion as deuda_total,
-      COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0)::int as pagado,
-      (e.deuda_inscripcion - COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0))::int as saldo,
-      CASE WHEN e.deuda_inscripcion > 0
-        THEN ROUND(COALESCE(SUM(CASE WHEN p.concepto = 'Inscripcion' THEN p.monto ELSE 0 END), 0) / e.deuda_inscripcion::numeric, 4)
-        ELSE 0
-      END as porcentaje_pagado
+      ${esInscripcion ? sql`e.deuda_inscripcion` : sql`0`} as deuda_total,
+      COALESCE(SUM(CASE WHEN p.concepto = ${concepto} THEN p.monto ELSE 0 END), 0)::int as pagado,
+      ${esInscripcion
+        ? sql`(e.deuda_inscripcion - COALESCE(SUM(CASE WHEN p.concepto = ${concepto} THEN p.monto ELSE 0 END), 0))::int`
+        : sql`0`
+      } as saldo,
+      ${esInscripcion
+        ? sql`CASE WHEN e.deuda_inscripcion > 0
+            THEN ROUND(COALESCE(SUM(CASE WHEN p.concepto = ${concepto} THEN p.monto ELSE 0 END), 0) / e.deuda_inscripcion::numeric, 4)
+            ELSE 0
+          END`
+        : sql`0`
+      } as porcentaje_pagado
     FROM equipos e
     LEFT JOIN pagos p ON p.equipo_id = e.id
     WHERE e.activo = true

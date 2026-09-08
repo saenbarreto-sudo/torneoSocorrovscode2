@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useGetPagosResumenEquipos } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatMoney } from '@/lib/utils';
+import { CONCEPTOS, CONCEPTO_LABEL, type Concepto } from '@/lib/conceptos-pago';
 import { FileText, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -9,13 +12,20 @@ import { useAuth, canAccessRoute } from '@/lib/auth';
 
 export default function PagosResumen() {
   const { role } = useAuth();
-  const { data: resumen, isLoading } = useGetPagosResumenEquipos();
+  const [concepto, setConcepto] = useState<Concepto>('Inscripcion');
+  const esInscripcion = concepto === 'Inscripcion';
+
+  const { data: resumen, isLoading } = useGetPagosResumenEquipos({ concepto });
 
   // El backend devuelve la proporción pagada como fracción (0 a 1);
   // aquí se convierte a porcentaje para mostrarla y para el ancho de la barra.
+  // Solo tiene sentido para Inscripción: es el único concepto con un monto
+  // adeudado configurado por equipo (equipos.deudaInscripcion). Para los
+  // demás no hay una meta contra la cual medir "saldo" o "% pagado", así
+  // que se ordena por lo pagado en su lugar.
   const filas = (resumen ?? [])
     .map((eq) => ({ ...eq, porcentaje: Math.round((eq.porcentajePagado ?? 0) * 100) }))
-    .sort((a, b) => b.porcentaje - a.porcentaje);
+    .sort((a, b) => (esInscripcion ? b.porcentaje - a.porcentaje : b.pagado - a.pagado));
 
   const totales = filas.reduce(
     (acc, eq) => ({
@@ -42,18 +52,33 @@ export default function PagosResumen() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Estado de cuenta</h1>
-            <p className="text-muted-foreground mt-1">Pagos de inscripción por equipo</p>
+            <p className="text-muted-foreground mt-1">
+              {esInscripcion ? 'Pagos de inscripción por equipo' : `Pagos de "${CONCEPTO_LABEL[concepto]}" por equipo`}
+            </p>
           </div>
         </div>
 
-        {filas.length > 0 && (
-          <div className="rounded-lg border bg-card px-4 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Equipos a paz y salvo</p>
-            <p className="font-mono font-bold text-primary text-lg">
-              {equiposAlDia} <span className="text-muted-foreground text-sm font-normal">de {filas.length}</span>
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Select value={concepto} onValueChange={(v) => setConcepto(v as Concepto)}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CONCEPTOS.map((c) => (
+                <SelectItem key={c} value={c}>{CONCEPTO_LABEL[c]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {esInscripcion && filas.length > 0 && (
+            <div className="rounded-lg border bg-card px-4 py-2 shrink-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">A paz y salvo</p>
+              <p className="font-mono font-bold text-primary text-lg">
+                {equiposAlDia} <span className="text-muted-foreground text-sm font-normal">de {filas.length}</span>
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -62,57 +87,73 @@ export default function PagosResumen() {
             <TableHeader>
               <TableRow className="bg-sidebar text-sidebar-foreground hover:bg-sidebar">
                 <TableHead className="text-sidebar-foreground">Equipo</TableHead>
-                <TableHead className="text-right text-sidebar-foreground">Inscripción</TableHead>
-                <TableHead className="text-right text-sidebar-foreground">Pagado</TableHead>
-                <TableHead className="text-right text-sidebar-foreground font-bold">Saldo</TableHead>
-                <TableHead className="text-center text-sidebar-foreground w-52">Progreso</TableHead>
+                {esInscripcion ? (
+                  <>
+                    <TableHead className="text-right text-sidebar-foreground">Inscripción</TableHead>
+                    <TableHead className="text-right text-sidebar-foreground">Pagado</TableHead>
+                    <TableHead className="text-right text-sidebar-foreground font-bold">Saldo</TableHead>
+                    <TableHead className="text-center text-sidebar-foreground w-52">Progreso</TableHead>
+                  </>
+                ) : (
+                  <TableHead className="text-right text-sidebar-foreground font-bold">
+                    Pagado por {CONCEPTO_LABEL[concepto]}
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-10">Cargando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={esInscripcion ? 5 : 2} className="text-center py-10">Cargando...</TableCell></TableRow>
               ) : filas.map((eq) => {
                 const alDia = eq.saldo <= 0;
                 return (
                   <TableRow key={eq.equipoId}>
                     <TableCell className="font-bold text-base whitespace-nowrap">{eq.equipoNombre}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">
-                      {formatMoney(eq.deudaTotal)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-semibold">
-                      {formatMoney(eq.pagado)}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-mono font-bold text-lg ${alDia ? 'text-muted-foreground' : 'text-destructive'}`}
-                    >
-                      {alDia ? 'Al día' : formatMoney(eq.saldo)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden"
-                          role="progressbar"
-                          aria-valuenow={eq.porcentaje}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label={`Pagado por ${eq.equipoNombre}`}
+                    {esInscripcion ? (
+                      <>
+                        <TableCell className="text-right font-mono text-muted-foreground">
+                          {formatMoney(eq.deudaTotal)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold">
+                          {formatMoney(eq.pagado)}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono font-bold text-lg ${alDia ? 'text-muted-foreground' : 'text-destructive'}`}
                         >
-                          <div
-                            className={`h-full rounded-full transition-all ${alDia ? 'bg-primary' : 'bg-secondary'}`}
-                            style={{ width: `${Math.min(Math.max(eq.porcentaje, 0), 100)}%` }}
-                          />
-                        </div>
-                        <span className="font-mono text-sm font-bold min-w-[3rem] text-right">
-                          {eq.porcentaje}%
-                        </span>
-                      </div>
-                    </TableCell>
+                          {alDia ? 'Al día' : formatMoney(eq.saldo)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden"
+                              role="progressbar"
+                              aria-valuenow={eq.porcentaje}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-label={`Pagado por ${eq.equipoNombre}`}
+                            >
+                              <div
+                                className={`h-full rounded-full transition-all ${alDia ? 'bg-primary' : 'bg-secondary'}`}
+                                style={{ width: `${Math.min(Math.max(eq.porcentaje, 0), 100)}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-sm font-bold min-w-[3rem] text-right">
+                              {eq.porcentaje}%
+                            </span>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <TableCell className="text-right font-mono font-bold text-lg">
+                        {formatMoney(eq.pagado)}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
               {!isLoading && filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={esInscripcion ? 5 : 2} className="text-center py-10 text-muted-foreground">
                     Registra equipos para llevar su estado de cuenta.
                   </TableCell>
                 </TableRow>
@@ -122,10 +163,16 @@ export default function PagosResumen() {
               <tfoot>
                 <TableRow className="bg-muted/40 font-bold">
                   <TableCell>Total</TableCell>
-                  <TableCell className="text-right font-mono">{formatMoney(totales.deuda)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatMoney(totales.pagado)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatMoney(totales.saldo)}</TableCell>
-                  <TableCell />
+                  {esInscripcion ? (
+                    <>
+                      <TableCell className="text-right font-mono">{formatMoney(totales.deuda)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatMoney(totales.pagado)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatMoney(totales.saldo)}</TableCell>
+                      <TableCell />
+                    </>
+                  ) : (
+                    <TableCell className="text-right font-mono">{formatMoney(totales.pagado)}</TableCell>
+                  )}
                 </TableRow>
               </tfoot>
             )}
@@ -134,7 +181,9 @@ export default function PagosResumen() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        El valor de inscripción de cada equipo se configura en la pestaña Equipos.
+        {esInscripcion
+          ? 'El valor de inscripción de cada equipo se configura en la pestaña Equipos.'
+          : `"${CONCEPTO_LABEL[concepto]}" no tiene un monto fijo por equipo, así que aquí solo se muestra lo pagado, no un saldo pendiente.`}
       </p>
     </div>
   );

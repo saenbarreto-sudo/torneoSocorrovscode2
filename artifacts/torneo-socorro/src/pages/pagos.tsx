@@ -1,5 +1,14 @@
-import { useState } from 'react';
-import { useGetPagos, useCreatePago, useDeletePago, getGetPagosQueryKey, useGetEquipos, type Pago } from '@workspace/api-client-react';
+import { useMemo, useState } from 'react';
+import {
+  useGetPagos,
+  useCreatePago,
+  useDeletePago,
+  getGetPagosQueryKey,
+  useGetEquipos,
+  useGetPagosResumenEquipos,
+  getGetPagosResumenEquiposQueryKey,
+  type Pago,
+} from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,8 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 import { ReciboPago } from '@/components/recibo-pago';
 import { ReciboParaImprimir } from '@/components/recibo-para-imprimir';
-
-const CONCEPTOS = ['Inscripcion', 'Multas', 'Carnet', 'Rojas', 'Amarillas', 'FOFI'];
+import { CONCEPTOS } from '@/lib/conceptos-pago';
 
 const pagoSchema = z.object({
   equipoId: z.coerce.number().min(1, 'Seleccione un equipo'),
@@ -46,12 +54,22 @@ export default function Pagos() {
   const { data: pagos, isLoading } = useGetPagos(
     filtroEquipo !== 'all' ? { equipoId: Number(filtroEquipo) } : undefined
   );
-  
+  // Para el saldo de inscripción que se muestra en el recibo. Sin params
+  // trae el resumen de "Inscripcion" (el default del backend).
+  const { data: resumenInscripcion } = useGetPagosResumenEquipos();
+
   const createMutation = useCreatePago();
   const deleteMutation = useDeletePago();
-  
+
   const [open, setOpen] = useState(false);
   const [pagoRecibo, setPagoRecibo] = useState<Pago | null>(null);
+
+  const saldoDelRecibo = useMemo(() => {
+    if (!pagoRecibo || pagoRecibo.concepto !== 'Inscripcion') return undefined;
+    const fila = resumenInscripcion?.find((r) => r.equipoId === pagoRecibo.equipoId);
+    if (!fila) return undefined;
+    return { deudaTotal: fila.deudaTotal, pagado: fila.pagado, saldo: fila.saldo };
+  }, [pagoRecibo, resumenInscripcion]);
 
   const form = useForm<PagoFormValues>({
     resolver: zodResolver(pagoSchema),
@@ -67,8 +85,10 @@ export default function Pagos() {
     createMutation.mutate({ data }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetPagosQueryKey() });
-        // También invalidar resumen
-        queryClient.invalidateQueries({ queryKey: ['/api/pagos/resumen-equipos'] });
+        // También invalidar el resumen por equipo (para todos los conceptos:
+        // sin "exact", esto alcanza tanto la vista por defecto como
+        // cualquier otro concepto que se haya consultado con un filtro).
+        queryClient.invalidateQueries({ queryKey: getGetPagosResumenEquiposQueryKey() });
         toast({ title: 'Pago registrado exitosamente' });
         setOpen(false);
         form.reset();
@@ -81,7 +101,7 @@ export default function Pagos() {
       deleteMutation.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetPagosQueryKey() });
-          queryClient.invalidateQueries({ queryKey: ['/api/pagos/resumen-equipos'] });
+          queryClient.invalidateQueries({ queryKey: getGetPagosResumenEquiposQueryKey() });
           toast({ title: 'Pago anulado' });
         },
         onError: (err) => {
@@ -280,6 +300,7 @@ export default function Pagos() {
               pago={pagoRecibo}
               equipo={equipos?.find((e) => e.id === pagoRecibo.equipoId)}
               recibidoPor={user?.nombre}
+              saldoInscripcion={saldoDelRecibo}
             />
           )}
           <DialogFooter>
@@ -298,6 +319,7 @@ export default function Pagos() {
         pago={pagoRecibo}
         equipo={equipos?.find((e) => e.id === pagoRecibo?.equipoId)}
         recibidoPor={user?.nombre}
+        saldoInscripcion={saldoDelRecibo}
       />
     </div>
   );

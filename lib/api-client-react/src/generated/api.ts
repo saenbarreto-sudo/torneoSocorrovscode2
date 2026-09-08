@@ -27,6 +27,7 @@ import type {
   EquipoUpdate,
   GetJugadoresParams,
   GetPagosParams,
+  GetPagosResumenEquiposParams,
   GetPartidosParams,
   GetTarjetasParams,
   Goleador,
@@ -2326,20 +2327,27 @@ export const useDeletePago = <TError = ErrorType<unknown>,
       return useMutation(getDeletePagoMutationOptions(options));
     }
 
-export const getGetPagosResumenEquiposUrl = () => {
+export const getGetPagosResumenEquiposUrl = (params?: GetPagosResumenEquiposParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/pagos/resumen-equipos`
+  return stringifiedParams.length > 0 ? `/api/pagos/resumen-equipos?${stringifiedParams}` : `/api/pagos/resumen-equipos`
 }
 
 /**
  * @summary Payment summary per team (inscriptions, debts)
  */
-export const getPagosResumenEquipos = async ( options?: Parameters<typeof customFetch>[1]): Promise<PagoEquipoResumen[]> => {
+export const getPagosResumenEquipos = async (params?: GetPagosResumenEquiposParams, options?: Parameters<typeof customFetch>[1]): Promise<PagoEquipoResumen[]> => {
 
-  return customFetch<PagoEquipoResumen[]>(getGetPagosResumenEquiposUrl(),
+  return customFetch<PagoEquipoResumen[]>(getGetPagosResumenEquiposUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2352,23 +2360,23 @@ export const getPagosResumenEquipos = async ( options?: Parameters<typeof custom
 
 
 
-export const getGetPagosResumenEquiposQueryKey = () => {
+export const getGetPagosResumenEquiposQueryKey = (params?: GetPagosResumenEquiposParams,) => {
     return [
-    `/api/pagos/resumen-equipos`
+    `/api/pagos/resumen-equipos`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPagosResumenEquiposQueryOptions = <TData = Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPagosResumenEquiposQueryOptions = <TData = Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError = ErrorType<unknown>>(params?: GetPagosResumenEquiposParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPagosResumenEquiposQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetPagosResumenEquiposQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPagosResumenEquipos>>> = ({ signal }) => getPagosResumenEquipos({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPagosResumenEquipos>>> = ({ signal }) => getPagosResumenEquipos(params, { signal, ...requestOptions });
 
 
 
@@ -2386,11 +2394,11 @@ export type GetPagosResumenEquiposQueryError = ErrorType<unknown>
  */
 
 export function useGetPagosResumenEquipos<TData = Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetPagosResumenEquiposParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagosResumenEquipos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPagosResumenEquiposQueryOptions(options)
+  const queryOptions = getGetPagosResumenEquiposQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

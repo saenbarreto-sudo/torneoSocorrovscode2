@@ -1,15 +1,7 @@
 import type { Pago, Equipo } from '@workspace/api-client-react';
 import { formatMoney, formatFecha } from '@/lib/utils';
 import { montoEnLetras } from '@/lib/numero-a-letras';
-
-const CONCEPTO_LABEL: Record<string, string> = {
-  Inscripcion: 'Inscripción',
-  Multas: 'Multas',
-  Carnet: 'Carné',
-  Rojas: 'Tarjeta roja',
-  Amarillas: 'Tarjeta amarilla',
-  FOFI: 'FOFI',
-};
+import { CONCEPTO_LABEL } from '@/lib/conceptos-pago';
 
 /**
  * Recibo de caja para una transacción de pago: el diseño en sí. Se usa
@@ -19,16 +11,27 @@ const CONCEPTO_LABEL: Record<string, string> = {
  * (bg-primary, etc.): el recibo siempre se ve igual —fondo blanco, morado y
  * rojo del torneo— sin importar si la app está en modo oscuro.
  */
+/** Lo que le queda debiendo el equipo por inscripción, a hoy (incluye este pago). */
+export interface SaldoInscripcion {
+  deudaTotal: number;
+  pagado: number;
+  saldo: number;
+}
+
 export function ReciboPago({
   pago,
   equipo,
   recibidoPor,
+  saldoInscripcion,
 }: {
   pago: Pago;
   equipo?: Equipo;
   recibidoPor?: string | null;
+  /** Solo se muestra cuando el concepto del recibo es "Inscripcion". */
+  saldoInscripcion?: SaldoInscripcion;
 }) {
   const numero = pago.codigoRecibo ?? (pago.nRecibo ? `#${String(pago.nRecibo).padStart(4, '0')}` : '—');
+  const mostrarSaldo = pago.concepto === 'Inscripcion' && saldoInscripcion != null;
 
   return (
     <div className="bg-white text-[hsl(273_45%_12%)] border border-[hsl(273_20%_85%)] rounded-lg overflow-hidden max-w-md mx-auto">
@@ -92,6 +95,24 @@ export function ReciboPago({
             </div>
           )}
         </div>
+
+        {mostrarSaldo && (
+          <div className="border-t border-[hsl(273_20%_88%)] pt-3">
+            <div className="text-[11px] text-[hsl(273_15%_40%)] uppercase tracking-wide">Saldo de inscripción</div>
+            <div className="flex items-baseline justify-between gap-3 mt-0.5">
+              <span className="text-sm text-[hsl(273_15%_40%)]">
+                Pagado {formatMoney(saldoInscripcion.pagado)} de {formatMoney(saldoInscripcion.deudaTotal)}
+              </span>
+              {saldoInscripcion.saldo <= 0 ? (
+                <span className="font-bold text-green-700">Al día</span>
+              ) : (
+                <span className="font-mono font-bold text-[hsl(340_74%_27%)]">
+                  Saldo: {formatMoney(saldoInscripcion.saldo)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pie: recibido por y firma */}

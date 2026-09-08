@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import type { Pago, Equipo } from '@workspace/api-client-react';
-import { ReciboPago } from './recibo-pago';
+import { ReciboPago, type SaldoInscripcion } from './recibo-pago';
 
 /**
  * Copia del recibo que solo existe para imprimirse: se monta directo bajo
@@ -18,15 +18,17 @@ export function ReciboParaImprimir({
   pago,
   equipo,
   recibidoPor,
+  saldoInscripcion,
 }: {
   pago: Pago | null;
   equipo?: Equipo;
   recibidoPor?: string | null;
+  saldoInscripcion?: SaldoInscripcion;
 }) {
   if (!pago) return null;
   return createPortal(
     <div className="recibo-para-imprimir hidden print:block">
-      <ReciboPago pago={pago} equipo={equipo} recibidoPor={recibidoPor} />
+      <ReciboPago pago={pago} equipo={equipo} recibidoPor={recibidoPor} saldoInscripcion={saldoInscripcion} />
     </div>,
     document.body,
   );
