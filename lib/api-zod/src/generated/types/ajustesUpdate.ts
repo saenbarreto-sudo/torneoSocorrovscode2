@@ -11,6 +11,7 @@ export interface AjustesUpdate {
   valorAmarilla?: number;
   valorRoja?: number;
   valorFofi?: number;
+  valorCarnet?: number;
   valorMultaTorneosAnteriores?: number;
   valorTraspaso?: number;
 }

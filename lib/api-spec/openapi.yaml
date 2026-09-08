@@ -1706,6 +1706,7 @@ components:
           valorAmarilla,
           valorRoja,
           valorFofi,
+          valorCarnet,
           valorMultaTorneosAnteriores,
           valorTraspaso,
           updatedAt,
@@ -1722,6 +1723,8 @@ components:
         valorRoja:
           type: number
         valorFofi:
+          type: number
+        valorCarnet:
           type: number
         valorMultaTorneosAnteriores:
           type: number
@@ -1740,6 +1743,8 @@ components:
         valorRoja:
           type: number
         valorFofi:
+          type: number
+        valorCarnet:
           type: number
         valorMultaTorneosAnteriores:
           type: number

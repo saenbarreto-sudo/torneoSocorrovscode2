@@ -900,6 +900,7 @@ export const GetAjustesResponse = zod.object({
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),
+  "valorCarnet": zod.number(),
   "valorMultaTorneosAnteriores": zod.number(),
   "valorTraspaso": zod.number(),
   "updatedAt": zod.string()
@@ -914,6 +915,7 @@ export const UpdateAjustesBody = zod.object({
   "valorAmarilla": zod.number().optional(),
   "valorRoja": zod.number().optional(),
   "valorFofi": zod.number().optional(),
+  "valorCarnet": zod.number().optional(),
   "valorMultaTorneosAnteriores": zod.number().optional(),
   "valorTraspaso": zod.number().optional()
 })
@@ -924,6 +926,7 @@ export const UpdateAjustesResponse = zod.object({
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),
+  "valorCarnet": zod.number(),
   "valorMultaTorneosAnteriores": zod.number(),
   "valorTraspaso": zod.number(),
   "updatedAt": zod.string()

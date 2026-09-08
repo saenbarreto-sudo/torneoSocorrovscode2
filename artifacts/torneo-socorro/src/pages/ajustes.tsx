@@ -21,6 +21,7 @@ const ajustesSchema = z.object({
   valorAmarilla: valorPesos('El valor de la amarilla debe ser un número entero'),
   valorRoja: valorPesos('El valor de la roja debe ser un número entero'),
   valorFofi: valorPesos('El valor del FOFI debe ser un número entero'),
+  valorCarnet: valorPesos('El valor del carné debe ser un número entero'),
   valorMultaTorneosAnteriores: valorPesos('El valor debe ser un número entero'),
   valorTraspaso: valorPesos('El valor del traspaso debe ser un número entero'),
 });
@@ -40,6 +41,7 @@ const CAMPOS: Array<{ name: keyof AjustesFormValues; label: string; ayuda?: stri
   },
   { name: 'valorArbitraje', label: 'Arbitraje' },
   { name: 'valorFofi', label: 'FOFI' },
+  { name: 'valorCarnet', label: 'Carné' },
   { name: 'valorTraspaso', label: 'Traspaso de jugador' },
   { name: 'valorMultaTorneosAnteriores', label: 'Multa por deudas de torneos anteriores' },
 ];
@@ -57,6 +59,7 @@ export default function Ajustes() {
       valorAmarilla: 0,
       valorRoja: 0,
       valorFofi: 0,
+      valorCarnet: 0,
       valorMultaTorneosAnteriores: 0,
       valorTraspaso: 0,
     },
@@ -71,6 +74,7 @@ export default function Ajustes() {
         valorAmarilla: ajustes.valorAmarilla,
         valorRoja: ajustes.valorRoja,
         valorFofi: ajustes.valorFofi,
+        valorCarnet: ajustes.valorCarnet,
         valorMultaTorneosAnteriores: ajustes.valorMultaTorneosAnteriores,
         valorTraspaso: ajustes.valorTraspaso,
       });

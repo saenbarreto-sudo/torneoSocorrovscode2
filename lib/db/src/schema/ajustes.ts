@@ -16,6 +16,7 @@ export const ajustesTable = pgTable("ajustes", {
   valorAmarilla: integer("valor_amarilla").notNull().default(0),
   valorRoja: integer("valor_roja").notNull().default(0),
   valorFofi: integer("valor_fofi").notNull().default(0),
+  valorCarnet: integer("valor_carnet").notNull().default(0),
   // Multa por deudas que un jugador o equipo arrastra de temporadas
   // anteriores (no se aplica sola: la usa quien registra el pago).
   valorMultaTorneosAnteriores: integer("valor_multa_torneos_anteriores").notNull().default(0),

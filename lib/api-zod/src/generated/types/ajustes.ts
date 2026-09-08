@@ -12,6 +12,7 @@ export interface Ajustes {
   valorAmarilla: number;
   valorRoja: number;
   valorFofi: number;
+  valorCarnet: number;
   valorMultaTorneosAnteriores: number;
   valorTraspaso: number;
   updatedAt: string;
