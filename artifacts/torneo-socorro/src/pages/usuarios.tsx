@@ -248,9 +248,16 @@ export default function Usuarios() {
                             <SelectTrigger><SelectValue placeholder="Selecciona un equipo" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {equipos?.map((eq) => (
-                              <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>
-                            ))}
+                            {/* Equipos activos, más el ya asignado aunque esté inactivo
+                                (para no perder la asignación de un delegado existente
+                                al editarlo). */}
+                            {equipos
+                              ?.filter((eq) => eq.activo || eq.id.toString() === field.value)
+                              .map((eq) => (
+                                <SelectItem key={eq.id} value={eq.id.toString()}>
+                                  {eq.nombre}{!eq.activo && ' (inactivo)'}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

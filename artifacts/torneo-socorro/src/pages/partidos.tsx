@@ -268,7 +268,9 @@ export default function Partidos() {
                               {equipos
                                 ?.filter((eq) => eq.activo || eq.id === field.value)
                                 .map((eq) => (
-                                  <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>
+                                  <SelectItem key={eq.id} value={eq.id.toString()}>
+                                    {eq.nombre}{!eq.activo && ' (inactivo)'}
+                                  </SelectItem>
                                 ))}
                             </SelectContent>
                           </Select>
@@ -285,7 +287,9 @@ export default function Partidos() {
                               {equipos
                                 ?.filter((eq) => eq.activo || eq.id === field.value)
                                 .map((eq) => (
-                                  <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>
+                                  <SelectItem key={eq.id} value={eq.id.toString()}>
+                                    {eq.nombre}{!eq.activo && ' (inactivo)'}
+                                  </SelectItem>
                                 ))}
                             </SelectContent>
                           </Select>

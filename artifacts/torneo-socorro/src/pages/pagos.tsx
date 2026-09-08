@@ -35,7 +35,14 @@ const pagoSchema = z.object({
   equipoId: z.coerce.number().min(1, 'Seleccione un equipo'),
   concepto: z.string().min(1, 'Seleccione un concepto'),
   monto: z.coerce.number().min(1, 'El monto debe ser mayor a 0'),
-  semana: z.coerce.number().optional(),
+  // Unión con '' en vez de un simple ".optional()": así, si se deja vacío
+  // no se convierte silenciosamente en 0, y si se escribe algo que no es un
+  // número entero (letras, decimales) se rechaza con un mensaje, en vez de
+  // guardarse como NaN sin que se note.
+  semana: z.union([
+    z.literal(''),
+    z.coerce.number({ invalid_type_error: 'La semana debe ser un número entero' }).int('La semana debe ser un número entero').positive('La semana debe ser un número entero'),
+  ]).optional(),
   mes: z.string().optional(),
   fecha: z.string().optional(),
 });
@@ -81,7 +88,10 @@ export default function Pagos() {
     }
   });
 
-  const onSubmit = (data: PagoFormValues) => {
+  const onSubmit = (values: PagoFormValues) => {
+    // El input manda "" cuando queda vacío; la API no acepta eso, solo un
+    // número o que el campo no venga.
+    const data = { ...values, semana: values.semana === '' ? undefined : values.semana };
     createMutation.mutate({ data }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetPagosQueryKey() });
@@ -167,7 +177,10 @@ export default function Pagos() {
                         <Select onValueChange={field.onChange} value={field.value ? field.value.toString() : ""}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Seleccione equipo" /></SelectTrigger></FormControl>
                           <SelectContent>
-                            {equipos?.map(eq => <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>)}
+                            {/* Solo equipos activos: este diálogo únicamente crea recibos
+                                nuevos (no hay edición), así que no hace falta preservar
+                                un equipo inactivo ya elegido como sí pasa en Partidos. */}
+                            {equipos?.filter((eq) => eq.activo).map(eq => <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <FormMessage />

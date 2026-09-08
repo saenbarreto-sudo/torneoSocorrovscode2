@@ -23,7 +23,10 @@ const equipoSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   delegado: z.string().optional(),
   delegado2: z.string().optional(),
-  telefono: z.string().min(1, 'El teléfono es obligatorio'),
+  telefono: z
+    .string()
+    .min(1, 'El teléfono es obligatorio')
+    .regex(/^[\d\s()+-]+$/, 'El teléfono solo puede tener números y los símbolos + - ( )'),
   color: z.string().optional(),
   activo: z.boolean().default(true),
   puntosBonificacion: z.coerce.number().min(0).max(1).optional(),

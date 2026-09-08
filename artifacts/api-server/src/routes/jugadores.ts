@@ -101,8 +101,16 @@ async function cedulaRepetida(cedula: string, excluirId?: number): Promise<boole
 }
 
 /** Valida cédula obligatoria y edad mínima. Devuelve el mensaje de error o null. */
+/**
+ * El esquema de zod generado del openapi.yaml solo revisa que los campos
+ * tengan el tipo correcto (string, number...), no su formato — por eso las
+ * reglas de negocio (cédula sin letras, carné positivo...) van aparte acá.
+ * Esta es la única validación real: la del frontend es solo para avisar
+ * antes de enviar, pero cualquiera que le pegue directo a la API se
+ * saltaría eso, así que esto es lo que de verdad protege los datos.
+ */
 function validarJugador(
-  data: { cedula?: string; fechaNacimiento?: string; nombre?: string },
+  data: { cedula?: string; fechaNacimiento?: string; nombre?: string; nCarnet?: number; carnetValor?: number | null },
   esCreacion: boolean,
 ): string | null {
   if (esCreacion || data.cedula !== undefined) {
@@ -110,11 +118,20 @@ function validarJugador(
       return "La cédula es obligatoria";
     }
   }
+  if (data.cedula !== undefined && data.cedula.trim() && !/^\d+$/.test(data.cedula.trim())) {
+    return "La cédula debe contener solo números, sin puntos ni espacios";
+  }
   if (data.fechaNacimiento) {
     const edad = edadEnElAno(data.fechaNacimiento);
     if (edad < EDAD_MINIMA) {
       return `El jugador cumple ${edad} años este año. El reglamento exige mínimo ${EDAD_MINIMA} (Art. 10.1).`;
     }
+  }
+  if (data.nCarnet !== undefined && (!Number.isInteger(data.nCarnet) || data.nCarnet <= 0)) {
+    return "El número de carné debe ser un número entero mayor a 0";
+  }
+  if (data.carnetValor != null && (!Number.isInteger(data.carnetValor) || data.carnetValor < 0)) {
+    return "El valor del carné debe ser un número entero, sin decimales ni negativos";
   }
   return null;
 }

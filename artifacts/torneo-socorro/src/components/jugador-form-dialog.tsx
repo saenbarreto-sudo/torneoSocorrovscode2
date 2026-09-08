@@ -35,18 +35,34 @@ const EDAD_MINIMA = 40;
 // hasta 8mb; se deja margen para el overhead del data URL).
 const FOTO_MAX_BYTES = 5 * 1024 * 1024;
 
+// z.coerce.number() por sí solo no sirve para un campo numérico opcional: si
+// se deja vacío, el input manda "" y Number("") da 0 (no "sin dato"); si se
+// escriben letras, Number("abc") da NaN, que sigue siendo de tipo "number"
+// para JS, así que pasaría la validación sin avisar nada. Esta unión evita
+// las dos trampas: "" se acepta tal cual (campo vacío, válido), y cualquier
+// otra cosa tiene que ser de verdad un número entero o se rechaza.
+function campoNumericoOpcional(mensaje: string) {
+  return z.union([
+    z.literal(''),
+    z.coerce.number({ invalid_type_error: mensaje }).int(mensaje).nonnegative(mensaje),
+  ]);
+}
+
 const jugadorSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
-  cedula: z.string().min(1, 'La cédula es obligatoria'),
+  cedula: z
+    .string()
+    .min(1, 'La cédula es obligatoria')
+    .regex(/^\d+$/, 'La cédula debe contener solo números, sin puntos ni espacios'),
   fechaNacimiento: z.string().optional(),
   equipoId: z.coerce.number().min(1, 'Seleccione un equipo'),
-  nCarnet: z.coerce.number().optional(),
+  nCarnet: campoNumericoOpcional('El número de carné debe ser un número entero').optional(),
   foto: z.string().optional(),
   fechaFoto: z.string().optional(),
   // --- Carnetización ---
   carnetPagado: z.boolean().optional(),
   carnetFechaPago: z.string().optional(),
-  carnetValor: z.union([z.coerce.number(), z.literal('')]).optional(),
+  carnetValor: campoNumericoOpcional('El valor debe ser un número entero').optional(),
   carnetFechaEntrega: z.string().optional(),
   carnetQuienRecibio: z.string().optional(),
 }).refine(
@@ -140,11 +156,14 @@ export function JugadorFormDialog({ open, onOpenChange, jugador, defaultEquipoId
   }
 
   const onSubmit = (values: JugadorFormValues) => {
-    // Los campos numéricos vacíos viajan como "" desde los inputs; el API
-    // espera null (o que no vengan), así que se normalizan aquí.
+    // Los campos numéricos vacíos viajan como "" desde los inputs. carnetValor
+    // acepta null en la API (así se guarda "sin dato"); nCarnet no acepta
+    // null, así que ahí toca omitirlo (undefined) en vez de mandar null.
     const numeroONull = (v: number | '' | undefined) => (v === '' || v === undefined ? null : Number(v));
+    const numeroOUndefined = (v: number | '' | undefined) => (v === '' || v === undefined ? undefined : Number(v));
     const data = {
       ...values,
+      nCarnet: numeroOUndefined(values.nCarnet),
       carnetPagado: values.carnetPagado ?? false,
       carnetFechaPago: values.carnetFechaPago || null,
       carnetValor: numeroONull(values.carnetValor),
@@ -265,7 +284,9 @@ export function JugadorFormDialog({ open, onOpenChange, jugador, defaultEquipoId
                         {equipos
                           ?.filter((eq) => eq.activo || eq.id === field.value)
                           .map((eq) => (
-                            <SelectItem key={eq.id} value={eq.id.toString()}>{eq.nombre}</SelectItem>
+                            <SelectItem key={eq.id} value={eq.id.toString()}>
+                              {eq.nombre}{!eq.activo && ' (inactivo)'}
+                            </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>

@@ -23,11 +23,16 @@ const router: IRouter = Router();
  *   había en el Excel: "Los amigos" vs "Los Amigos").
  * - El teléfono es obligatorio: es el contacto del delegado.
  */
+const TELEFONO_VALIDO = /^[\d\s()+-]+$/;
+
 function validarEquipo(data: { nombre?: string; telefono?: string }, esCreacion: boolean): string | null {
   if (esCreacion || data.telefono !== undefined) {
     if (!data.telefono || !data.telefono.trim()) {
       return "El teléfono es obligatorio";
     }
+  }
+  if (data.telefono !== undefined && data.telefono.trim() && !TELEFONO_VALIDO.test(data.telefono.trim())) {
+    return "El teléfono solo puede tener números y los símbolos + - ( )";
   }
   return null;
 }
