@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useGetJugador, useGetJugadorHistorial } from '@workspace/api-client-react';
+import { useGetJugador, useGetJugadorHistorial, useGetTarjetas } from '@workspace/api-client-react';
 import { useAuth, canWrite } from '@/lib/auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Edit2, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Edit2, Printer, User } from 'lucide-react';
 import { JugadorFormDialog } from '@/components/jugador-form-dialog';
+import { ExtractoJugador } from '@/components/extracto-jugador';
+import { ImprimirPortal } from '@/components/imprimir-portal';
+
+const TIPOS_TARJETA = ['amarilla', 'roja'] as const;
+const TIPO_LABEL: Record<string, string> = { amarilla: 'Amarillas', roja: 'Rojas' };
 
 /** Edad que cumple el jugador dentro del año del torneo (Art. 10.1). */
 function edadEnElAno(fechaNacimiento: string): number {
@@ -52,7 +59,27 @@ export default function FichaJugador() {
 
   const { data: jugador, isLoading } = useGetJugador(jugadorId);
   const { data: historial } = useGetJugadorHistorial(jugadorId);
+  const { data: tarjetas } = useGetTarjetas({ jugadorId });
   const [editOpen, setEditOpen] = useState(false);
+
+  // ── Extracto imprimible de tarjetas ──────────────────────────────────────
+  const [extractoOpen, setExtractoOpen] = useState(false);
+  const [tiposExtracto, setTiposExtracto] = useState<Set<'amarilla' | 'roja'>>(new Set(TIPOS_TARJETA));
+
+  const alternarTipoExtracto = (t: 'amarilla' | 'roja') => {
+    setTiposExtracto((previo) => {
+      const copia = new Set(previo);
+      if (copia.has(t)) copia.delete(t);
+      else copia.add(t);
+      return copia;
+    });
+  };
+
+  const tiposOrdenados = useMemo(() => TIPOS_TARJETA.filter((t) => tiposExtracto.has(t)), [tiposExtracto]);
+  const tarjetasFiltradas = useMemo(
+    () => (tarjetas ?? []).filter((t) => tiposExtracto.has(t.tipo)),
+    [tarjetas, tiposExtracto],
+  );
 
   if (isLoading) {
     return <div className="py-12 text-center text-muted-foreground">Cargando...</div>;
@@ -99,11 +126,16 @@ export default function FichaJugador() {
             <p className="text-muted-foreground mt-1">Perfil, carnetización e historial</p>
           </div>
         </div>
-        {puedeEditar && (
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            <Edit2 className="h-4 w-4 mr-2" /> Editar
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setExtractoOpen(true)}>
+            <Printer className="h-4 w-4 mr-2" /> Extracto
           </Button>
-        )}
+          {puedeEditar && (
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Edit2 className="h-4 w-4 mr-2" /> Editar
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -256,6 +288,37 @@ export default function FichaJugador() {
       </Card>
 
       <JugadorFormDialog open={editOpen} onOpenChange={setEditOpen} jugador={jugador} />
+
+      {/* ── Extracto imprimible de tarjetas ── */}
+      <Dialog open={extractoOpen} onOpenChange={setExtractoOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Extracto de {jugador.nombre}</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-b pb-4">
+            {TIPOS_TARJETA.map((t) => (
+              <label key={t} className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={tiposExtracto.has(t)} onCheckedChange={() => alternarTipoExtracto(t)} />
+                {TIPO_LABEL[t]}
+              </label>
+            ))}
+          </div>
+
+          <ExtractoJugador jugador={jugador} tarjetas={tarjetasFiltradas} tipos={tiposOrdenados} />
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtractoOpen(false)}>Cerrar</Button>
+            <Button onClick={() => window.print()} disabled={tiposOrdenados.length === 0}>
+              <Printer className="h-4 w-4 mr-2" /> Imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ImprimirPortal activo={extractoOpen}>
+        <ExtractoJugador jugador={jugador} tarjetas={tarjetasFiltradas} tipos={tiposOrdenados} />
+      </ImprimirPortal>
     </div>
   );
 }

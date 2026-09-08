@@ -28,7 +28,7 @@ import { formatMoney } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 import { ReciboPago } from '@/components/recibo-pago';
-import { ReciboParaImprimir } from '@/components/recibo-para-imprimir';
+import { ImprimirPortal } from '@/components/imprimir-portal';
 import { CONCEPTOS } from '@/lib/conceptos-pago';
 
 const pagoSchema = z.object({
@@ -326,14 +326,17 @@ export default function Pagos() {
       </Dialog>
 
       {/* Copia oculta en pantalla, visible solo al imprimir: ver
-          components/recibo-para-imprimir.tsx y el comentario junto a
-          ".recibo-para-imprimir" en index.css. */}
-      <ReciboParaImprimir
-        pago={pagoRecibo}
-        equipo={equipos?.find((e) => e.id === pagoRecibo?.equipoId)}
-        recibidoPor={user?.nombre}
-        saldoInscripcion={saldoDelRecibo}
-      />
+          components/imprimir-portal.tsx. */}
+      <ImprimirPortal activo={pagoRecibo != null}>
+        {pagoRecibo && (
+          <ReciboPago
+            pago={pagoRecibo}
+            equipo={equipos?.find((e) => e.id === pagoRecibo.equipoId)}
+            recibidoPor={user?.nombre}
+            saldoInscripcion={saldoDelRecibo}
+          />
+        )}
+      </ImprimirPortal>
     </div>
   );
 }

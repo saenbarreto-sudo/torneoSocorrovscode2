@@ -189,22 +189,22 @@
   }
 }
 
-/* Recibo de pago (components/recibo-pago.tsx): imprime solo el recibo,
-   sin nada de la página detrás.
+/* Imprimir solo un elemento (recibo de pago, extracto de equipo, extracto de
+   jugador...), sin nada de la página detrás. Usa components/imprimir-portal.tsx.
 
-   El recibo se renderiza dos veces: una visible dentro del diálogo (para
-   verlo en pantalla) y otra oculta en pantalla pero directo bajo <body>,
-   fuera del diálogo (components/recibo-para-imprimir.tsx). Es la segunda
-   la que se imprime. Intentar imprimir la de adentro del diálogo se probó
-   primero y no funcionó bien: el diálogo de Radix se centra con
-   "transform" y limita su alto con "overflow-y-auto", y neutralizar todo
-   eso con CSS produjo un PDF con el recibo recortado (probado de verdad
-   con Page.printToPDF, no solo con la vista previa de "Ctrl+P" del
-   navegador, que se veía bien pero no coincidía con el PDF real). Con el
-   recibo afuera, como hijo directo de <body>, alcanza con ocultar todo lo
-   demás a ese mismo nivel — sin pelear con el layout del diálogo. */
+   Lo que se imprime se renderiza dos veces: una visible dentro del diálogo
+   (para verlo en pantalla) y otra oculta en pantalla pero directo bajo
+   <body>, fuera del diálogo. Es la segunda la que se imprime. Intentar
+   imprimir la de adentro del diálogo se probó primero (con el recibo de
+   pago) y no funcionó bien: el diálogo de Radix se centra con "transform" y
+   limita su alto con "overflow-y-auto", y neutralizar todo eso con CSS
+   produjo un PDF recortado (probado de verdad con Page.printToPDF, no solo
+   con la vista previa de "Ctrl+P" del navegador, que se veía bien pero no
+   coincidía con el PDF real). Puesto afuera, como hijo directo de <body>,
+   alcanza con ocultar todo lo demás a ese mismo nivel — sin pelear con el
+   layout del diálogo. */
 @media print {
-  body > *:not(.recibo-para-imprimir) {
+  body > *:not(.imprimir-solo) {
     display: none !important;
   }
 }

@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { useGetPagosResumenEquipos } from '@workspace/api-client-react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useGetPagosResumenEquipos, getGetPagosQueryOptions, useGetEquipos, type Equipo, type Pago } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/utils';
 import { CONCEPTOS, CONCEPTO_LABEL, type Concepto } from '@/lib/conceptos-pago';
-import { FileText, ArrowLeft } from 'lucide-react';
+import { FileText, ArrowLeft, Printer } from 'lucide-react';
 import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
 import { useAuth, canAccessRoute } from '@/lib/auth';
+import { ExtractoEquipo } from '@/components/extracto-equipo';
+import { ImprimirPortal } from '@/components/imprimir-portal';
 
 export default function PagosResumen() {
   const { role } = useAuth();
@@ -16,6 +21,11 @@ export default function PagosResumen() {
   const esInscripcion = concepto === 'Inscripcion';
 
   const { data: resumen, isLoading } = useGetPagosResumenEquipos({ concepto });
+  const { data: equipos } = useGetEquipos();
+  // Aparte del selector de arriba (que solo trae UN concepto a la vez): el
+  // saldo de inscripción que se muestra dentro del extracto imprimible
+  // necesita el de "Inscripcion" siempre, sin importar cuál esté elegido.
+  const { data: resumenInscripcionTodos } = useGetPagosResumenEquipos({ concepto: 'Inscripcion' });
 
   // El backend devuelve la proporción pagada como fracción (0 a 1);
   // aquí se convierte a porcentaje para mostrarla y para el ancho de la barra.
@@ -37,6 +47,46 @@ export default function PagosResumen() {
   );
 
   const equiposAlDia = filas.filter((eq) => eq.saldo <= 0).length;
+
+  // ── Extracto imprimible por equipo ──────────────────────────────────────
+  const [equipoExtracto, setEquipoExtracto] = useState<Equipo | null>(null);
+  const [conceptosExtracto, setConceptosExtracto] = useState<Set<Concepto>>(new Set(CONCEPTOS));
+
+  // useGetPagos({ query: { enabled } }) no compila: el tipo generado exige
+  // "queryKey" en ese objeto aunque en tiempo de ejecución sí es opcional
+  // (lo completa por dentro). Se arma la misma llamada a mano con
+  // useQuery + el "queryOptions" ya armado, para poder agregarle "enabled"
+  // sin pelear con ese tipo.
+  const { data: pagosDelEquipo } = useQuery<Pago[]>({
+    ...getGetPagosQueryOptions(equipoExtracto ? { equipoId: equipoExtracto.id } : undefined),
+    enabled: equipoExtracto != null,
+  });
+
+  const abrirExtracto = (equipo: Equipo) => {
+    setConceptosExtracto(new Set(CONCEPTOS));
+    setEquipoExtracto(equipo);
+  };
+
+  const alternarConceptoExtracto = (c: Concepto) => {
+    setConceptosExtracto((previo) => {
+      const copia = new Set(previo);
+      if (copia.has(c)) copia.delete(c);
+      else copia.add(c);
+      return copia;
+    });
+  };
+
+  const conceptosOrdenados = useMemo(() => CONCEPTOS.filter((c) => conceptosExtracto.has(c)), [conceptosExtracto]);
+  const pagosFiltrados = useMemo(
+    () => (pagosDelEquipo ?? []).filter((p) => conceptosExtracto.has(p.concepto as Concepto)),
+    [pagosDelEquipo, conceptosExtracto],
+  );
+  const saldoInscripcionExtracto = useMemo(() => {
+    if (!equipoExtracto || !conceptosExtracto.has('Inscripcion')) return undefined;
+    const fila = resumenInscripcionTodos?.find((r) => r.equipoId === equipoExtracto.id);
+    if (!fila) return undefined;
+    return { deudaTotal: fila.deudaTotal, pagado: fila.pagado, saldo: fila.saldo };
+  }, [equipoExtracto, conceptosExtracto, resumenInscripcionTodos]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -99,11 +149,12 @@ export default function PagosResumen() {
                     Pagado por {CONCEPTO_LABEL[concepto]}
                   </TableHead>
                 )}
+                <TableHead className="text-sidebar-foreground w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={esInscripcion ? 5 : 2} className="text-center py-10">Cargando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={esInscripcion ? 6 : 3} className="text-center py-10">Cargando...</TableCell></TableRow>
               ) : filas.map((eq) => {
                 const alDia = eq.saldo <= 0;
                 return (
@@ -148,12 +199,28 @@ export default function PagosResumen() {
                         {formatMoney(eq.pagado)}
                       </TableCell>
                     )}
+                    <TableCell>
+                      {(() => {
+                        const equipoCompleto = equipos?.find((e) => e.id === eq.equipoId);
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Extracto imprimible"
+                            disabled={!equipoCompleto}
+                            onClick={() => equipoCompleto && abrirExtracto(equipoCompleto)}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        );
+                      })()}
+                    </TableCell>
                   </TableRow>
                 );
               })}
               {!isLoading && filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={esInscripcion ? 5 : 2} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={esInscripcion ? 6 : 3} className="text-center py-10 text-muted-foreground">
                     Registra equipos para llevar su estado de cuenta.
                   </TableCell>
                 </TableRow>
@@ -173,6 +240,7 @@ export default function PagosResumen() {
                   ) : (
                     <TableCell className="text-right font-mono">{formatMoney(totales.pagado)}</TableCell>
                   )}
+                  <TableCell />
                 </TableRow>
               </tfoot>
             )}
@@ -185,6 +253,51 @@ export default function PagosResumen() {
           ? 'El valor de inscripción de cada equipo se configura en la pestaña Equipos.'
           : `"${CONCEPTO_LABEL[concepto]}" no tiene un monto fijo por equipo, así que aquí solo se muestra lo pagado, no un saldo pendiente.`}
       </p>
+
+      {/* ── Extracto imprimible por equipo ── */}
+      <Dialog open={equipoExtracto != null} onOpenChange={(v) => !v && setEquipoExtracto(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Extracto de {equipoExtracto?.nombre}</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-b pb-4">
+            {CONCEPTOS.map((c) => (
+              <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={conceptosExtracto.has(c)} onCheckedChange={() => alternarConceptoExtracto(c)} />
+                {CONCEPTO_LABEL[c]}
+              </label>
+            ))}
+          </div>
+
+          {equipoExtracto && (
+            <ExtractoEquipo
+              equipo={equipoExtracto}
+              pagos={pagosFiltrados}
+              conceptos={conceptosOrdenados}
+              saldoInscripcion={saldoInscripcionExtracto}
+            />
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEquipoExtracto(null)}>Cerrar</Button>
+            <Button onClick={() => window.print()} disabled={conceptosOrdenados.length === 0}>
+              <Printer className="h-4 w-4 mr-2" /> Imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ImprimirPortal activo={equipoExtracto != null}>
+        {equipoExtracto && (
+          <ExtractoEquipo
+            equipo={equipoExtracto}
+            pagos={pagosFiltrados}
+            conceptos={conceptosOrdenados}
+            saldoInscripcion={saldoInscripcionExtracto}
+          />
+        )}
+      </ImprimirPortal>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { CONCEPTO_LABEL } from '@/lib/conceptos-pago';
 /**
  * Recibo de caja para una transacción de pago: el diseño en sí. Se usa
  * tanto para la vista previa en pantalla (dentro del diálogo) como para la
- * copia que se imprime de verdad (ver components/recibo-para-imprimir.tsx).
+ * copia que se imprime de verdad (ver components/imprimir-portal.tsx).
  * Los colores van escritos directo en HSL, no con los tokens de tema
  * (bg-primary, etc.): el recibo siempre se ve igual —fondo blanco, morado y
  * rojo del torneo— sin importar si la app está en modo oscuro.
