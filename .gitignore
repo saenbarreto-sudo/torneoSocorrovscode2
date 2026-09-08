@@ -60,3 +60,7 @@ backups/
 
 # Salida de /graphify: se regenera corriendo el comando de nuevo.
 graphify-out/
+
+# Copia temporal de fotos originales para import-fotos.ts. Se borra al
+# terminar; nunca debe llegar al repositorio (son ~1.7 GB).
+lib/db/src/data/fotos-staging/

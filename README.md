@@ -140,8 +140,32 @@ Los tres archivos JSON de `lib/db/src/data/` están depurados del Excel
 | Pago del carné, valor, entrega y quién lo recibió | `BD_Carnet 2021` |
 
 Las columnas de la categoría 50 se ignoran a propósito: esa categoría no aplica
-al torneo. La **foto del jugador** no está en el Excel; se sube una por una
-desde la ficha.
+al torneo.
+
+### Cargar las fotos en lote
+
+La **foto del jugador** no está en el Excel, pero se puede cargar en bloque si
+tienes un archivo por jugador nombrado con su número de carné (`123.jpg`,
+`124.jpg`...), sin importar de dónde vengan (una carpeta de Google Drive, un
+disco, etc.). Los contenedores de Docker no pueden ver unidades de red ni de
+Google Drive del host, así que el proceso tiene dos pasos:
+
+```bash
+# 1. Copia (en el host, con Node.js normal, no dentro de Docker) los archivos
+#    ya renombrados por carné a esta carpeta del proyecto:
+#    lib/db/src/data/fotos-staging/<n-carnet>.jpg
+
+# 2. Dentro del contenedor: redimensiona, comprime a JPEG y las guarda
+docker compose exec api pnpm --filter @workspace/db run import-fotos
+```
+
+`import-fotos` redimensiona cada foto a un tamaño de carné (máx. 480px de
+lado) antes de guardarla, para que la base de datos no crezca a varios GB ni
+la ficha del jugador tarde en cargar. No pisa la foto de un jugador que ya
+tenga una (por ejemplo, si alguien la subió a mano desde la aplicación), y se
+puede correr las veces que haga falta. Borra la carpeta `fotos-staging/`
+cuando termines: son archivos temporales, pesan varios GB y están excluidos
+del repositorio a propósito.
 
 ---
 
@@ -304,6 +328,7 @@ Si ambos terminan sin errores, el proyecto está sano.
 | Crear/actualizar tablas | `docker compose exec api pnpm --filter @workspace/db run push` |
 | Cargar datos reales (borra todo) | `docker compose exec api pnpm --filter @workspace/db run reset` |
 | Completar fichas desde el Excel | `docker compose exec api pnpm --filter @workspace/db run import-carnetizacion` |
+| Cargar fotos desde `fotos-staging/` | `docker compose exec api pnpm --filter @workspace/db run import-fotos` |
 | Reiniciar tras cambiar el backend | `docker compose restart api` |
 | Regenerar la API | ver paso 9 |
 

@@ -17,3 +17,6 @@ attached_assets
 pnpm-debug.log*
 # Copias de seguridad de la base: no tienen por qué entrar a la imagen.
 backups/
+
+# Copia temporal de fotos: no debe entrar a la imagen de Docker.
+lib/db/src/data/fotos-staging/
