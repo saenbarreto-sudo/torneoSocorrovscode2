@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetPagos, useCreatePago, useDeletePago, getGetPagosQueryKey, useGetEquipos } from '@workspace/api-client-react';
+import { useGetPagos, useCreatePago, useDeletePago, getGetPagosQueryKey, useGetEquipos, type Pago } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Receipt, FileText } from 'lucide-react';
+import { Plus, Trash2, Receipt, FileText, Printer } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
@@ -18,6 +18,8 @@ import { extractErrorMessage } from '@/lib/api-errors';
 import { formatMoney } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
+import { ReciboPago } from '@/components/recibo-pago';
+import { ReciboParaImprimir } from '@/components/recibo-para-imprimir';
 
 const CONCEPTOS = ['Inscripcion', 'Multas', 'Carnet', 'Rojas', 'Amarillas', 'FOFI'];
 
@@ -33,7 +35,7 @@ const pagoSchema = z.object({
 type PagoFormValues = z.infer<typeof pagoSchema>;
 
 export default function Pagos() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const readOnly = !canWrite(role, 'pagos');
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -49,6 +51,7 @@ export default function Pagos() {
   const deleteMutation = useDeletePago();
   
   const [open, setOpen] = useState(false);
+  const [pagoRecibo, setPagoRecibo] = useState<Pago | null>(null);
 
   const form = useForm<PagoFormValues>({
     resolver: zodResolver(pagoSchema),
@@ -248,6 +251,9 @@ export default function Pagos() {
                     {formatMoney(pago.monto)}
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => setPagoRecibo(pago)} title="Ver recibo">
+                      <Printer className="h-4 w-4" />
+                    </Button>
                     {!readOnly && (
                       <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(pago.id)}>
                         <Trash2 className="h-4 w-4" />
@@ -263,6 +269,36 @@ export default function Pagos() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={pagoRecibo != null} onOpenChange={(v) => !v && setPagoRecibo(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Recibo de pago</DialogTitle>
+          </DialogHeader>
+          {pagoRecibo && (
+            <ReciboPago
+              pago={pagoRecibo}
+              equipo={equipos?.find((e) => e.id === pagoRecibo.equipoId)}
+              recibidoPor={user?.nombre}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPagoRecibo(null)}>Cerrar</Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-2" /> Imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Copia oculta en pantalla, visible solo al imprimir: ver
+          components/recibo-para-imprimir.tsx y el comentario junto a
+          ".recibo-para-imprimir" en index.css. */}
+      <ReciboParaImprimir
+        pago={pagoRecibo}
+        equipo={equipos?.find((e) => e.id === pagoRecibo?.equipoId)}
+        recibidoPor={user?.nombre}
+      />
     </div>
   );
 }

@@ -5,6 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** "2026-03-14" → "14/03/2026". Corta la hora si el valor la trae. */
+export function formatFecha(fecha: string | null | undefined): string {
+  if (!fecha) return "—";
+  const [y, m, d] = fecha.split("T")[0].split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export function formatMoney(amount: number | null | undefined) {
   if (amount == null) return "$0";
   return new Intl.NumberFormat('es-CO', { 
