@@ -80,7 +80,14 @@ async function main() {
     const jugadoresBD = await tx
       .select({ id: jugadoresTable.id, cedula: jugadoresTable.cedula, equipoId: jugadoresTable.equipoId })
       .from(jugadoresTable);
-    const porCedula = new Map(jugadoresBD.map((j) => [soloDigitos(j.cedula), j]));
+    // La cédula puede venir vacía en la base. A un jugador así no hay cómo
+    // emparejarlo con el Excel, y meterlo al índice con clave vacía haría que
+    // una fila de cédula ilegible coincidiera contra el jugador equivocado.
+    const porCedula = new Map(
+      jugadoresBD
+        .map((j) => [soloDigitos(j.cedula ?? ""), j] as const)
+        .filter(([clave]) => clave !== ""),
+    );
 
     const equipos = await tx.select({ id: equiposTable.id, nombre: equiposTable.nombre }).from(equiposTable);
     const equipoPorNombre = new Map(equipos.map((e) => [normalizar(e.nombre), e.id]));

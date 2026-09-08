@@ -4,9 +4,9 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "node scripts/check-pnpm.mjs",
-    "build": "pnpm run typecheck && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"!@workspace/mockup-sandbox\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
     "db:push": "pnpm --filter @workspace/db run push",
     "db:seed": "pnpm --filter @workspace/db run seed",
     "dev": "node scripts/dev-local.mjs",
@@ -23,9 +23,6 @@
   },
   "packageManager": "pnpm@10.30.2",
   "private": true,
-  "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
-  },
   "devDependencies": {
     "prettier": "^3.9.6",
     "typescript": "~5.9.3"
