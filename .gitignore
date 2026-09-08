@@ -57,3 +57,6 @@ Thumbs.db
 # Copias de seguridad de la base (pnpm db:backup). Contienen datos
 # personales de los jugadores: nunca se suben al repositorio.
 backups/
+
+# Salida de /graphify: se regenera corriendo el comando de nuevo.
+graphify-out/
