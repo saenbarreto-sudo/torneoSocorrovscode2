@@ -38,8 +38,8 @@ export interface Planilla {
 export interface SavePlanillaInput {
   arbitro?: string;
   mesa?: string;
-  valorAmarilla?: number;
-  valorRoja?: number;
+  // Ya no se manda valorAmarilla/valorRoja: el backend le asigna a cada
+  // tarjeta nueva el valor configurado en Ajustes, automáticamente.
   jugadores: {
     jugadorId: number;
     jugo: boolean;

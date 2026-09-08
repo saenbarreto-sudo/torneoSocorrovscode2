@@ -7,6 +7,7 @@ import {
   jugadoresTable,
   golesTable,
   tarjetasTable,
+  ajustesTable,
 } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { GetPlanillaResponse, SavePlanillaBody, GetPlanillaParams } from "@workspace/api-zod";
@@ -134,6 +135,16 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
     ).map((j) => j.id),
   );
 
+  // El valor de cada tarjeta nueva sale de /ajustes, no de lo que mande el
+  // cliente: así, si un jugador recibe una amarilla en el partido, queda
+  // con el valor correcto de inmediato, sin que nadie tenga que escribirlo
+  // a mano. Si todavía no existe la fila de ajustes (torneo recién
+  // instalado), el valor por defecto es 0 — se corrige apenas se configure
+  // en la pestaña Ajustes.
+  const [ajustes] = await db.select().from(ajustesTable).where(eq(ajustesTable.id, 1));
+  const valorAmarilla = ajustes?.valorAmarilla ?? 0;
+  const valorRoja = ajustes?.valorRoja ?? 0;
+
   const filas = parsed.data.jugadores.filter((j) => idsValidos.has(j.jugadorId));
   const equipoDeJugador = new Map(
     (
@@ -188,7 +199,7 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
           tipo: "amarilla",
           semana: partido.semana,
           fecha: partido.fecha ?? null,
-          valor: parsed.data.valorAmarilla ?? 0,
+          valor: valorAmarilla,
           pagada: false,
         });
       }
@@ -199,7 +210,7 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
           tipo: "roja",
           semana: partido.semana,
           fecha: partido.fecha ?? null,
-          valor: parsed.data.valorRoja ?? null,
+          valor: valorRoja,
           fechasSancion: j.fechasSancion ?? 0,
           pagada: false,
         });

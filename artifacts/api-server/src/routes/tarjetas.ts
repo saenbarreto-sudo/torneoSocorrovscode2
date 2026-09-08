@@ -23,6 +23,7 @@ function mapTarjeta(row: Record<string, unknown>) {
     id: row.id,
     jugadorId: row.jugador_id ?? row.jugadorId,
     jugadorNombre: row.jugador_nombre ?? row.jugadorNombre,
+    nCarnet: row.n_carnet ?? row.nCarnet ?? null,
     equipoNombre: row.equipo_nombre ?? row.equipoNombre,
     tipo: row.tipo,
     semana: row.semana,
@@ -56,7 +57,7 @@ router.get("/tarjetas", async (req, res): Promise<void> => {
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 
   const rows = await db.execute(sql`
-    SELECT t.*, j.nombre as jugador_nombre, e.nombre as equipo_nombre
+    SELECT t.*, j.nombre as jugador_nombre, j.n_carnet as n_carnet, e.nombre as equipo_nombre
     FROM tarjetas t
     JOIN jugadores j ON j.id = t.jugador_id
     JOIN equipos e ON e.id = j.equipo_id
@@ -99,13 +100,14 @@ router.post("/tarjetas", requireAuth, writeAccess.tarjetas, async (req, res): Pr
   }
   const [inserted] = await db.insert(tarjetasTable).values(normalized.data).returning();
   const [jugador] = await db
-    .select({ nombre: jugadoresTable.nombre, equipoNombre: equiposTable.nombre })
+    .select({ nombre: jugadoresTable.nombre, nCarnet: jugadoresTable.nCarnet, equipoNombre: equiposTable.nombre })
     .from(jugadoresTable)
     .innerJoin(equiposTable, eq(jugadoresTable.equipoId, equiposTable.id))
     .where(eq(jugadoresTable.id, inserted.jugadorId));
   res.status(201).json(CreateTarjetaResponse.parse({
     ...inserted,
     jugadorNombre: jugador?.nombre ?? "",
+    nCarnet: jugador?.nCarnet ?? null,
     equipoNombre: jugador?.equipoNombre ?? "",
     createdAt: inserted.createdAt.toISOString(),
   }));
@@ -142,13 +144,14 @@ router.patch("/tarjetas/:id", requireAuth, writeAccess.tarjetas, async (req, res
     return;
   }
   const [jugador] = await db
-    .select({ nombre: jugadoresTable.nombre, equipoNombre: equiposTable.nombre })
+    .select({ nombre: jugadoresTable.nombre, nCarnet: jugadoresTable.nCarnet, equipoNombre: equiposTable.nombre })
     .from(jugadoresTable)
     .innerJoin(equiposTable, eq(jugadoresTable.equipoId, equiposTable.id))
     .where(eq(jugadoresTable.id, updated.jugadorId));
   res.json(UpdateTarjetaResponse.parse({
     ...updated,
     jugadorNombre: jugador?.nombre ?? "",
+    nCarnet: jugador?.nCarnet ?? null,
     equipoNombre: jugador?.equipoNombre ?? "",
     createdAt: updated.createdAt.toISOString(),
   }));
@@ -178,6 +181,7 @@ router.get("/amonestados", async (_req, res): Promise<void> => {
     SELECT
       j.id as jugador_id,
       j.nombre as jugador_nombre,
+      j.n_carnet as n_carnet,
       e.nombre as equipo_nombre,
       COUNT(CASE WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 END)::int as amarillas,
       COUNT(CASE WHEN t.tipo = 'roja' THEN 1 END)::int as rojas,
@@ -192,6 +196,7 @@ router.get("/amonestados", async (_req, res): Promise<void> => {
   const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
     jugadorId: r.jugador_id,
     jugadorNombre: r.jugador_nombre,
+    nCarnet: r.n_carnet == null ? null : Number(r.n_carnet),
     equipoNombre: r.equipo_nombre,
     amarillas: Number(r.amarillas ?? 0),
     rojas: Number(r.rojas ?? 0),

@@ -283,6 +283,8 @@ export interface Tarjeta {
   id: number;
   jugadorId: number;
   jugadorNombre: string;
+  /** @nullable */
+  nCarnet?: number | null;
   equipoNombre: string;
   tipo: TarjetaTipo;
   semana: number;
@@ -342,6 +344,8 @@ export interface TarjetaUpdate {
 export interface AmonestadoResumen {
   jugadorId: number;
   jugadorNombre: string;
+  /** @nullable */
+  nCarnet?: number | null;
   equipoNombre: string;
   amarillas: number;
   rojas: number;
@@ -415,6 +419,26 @@ export interface SemanaFechaInput {
   fechaDesde?: string;
   fechaHasta?: string;
   esFestivo?: boolean;
+}
+
+export interface Ajustes {
+  id: number;
+  valorArbitraje: number;
+  valorAmarilla: number;
+  valorRoja: number;
+  valorFofi: number;
+  valorMultaTorneosAnteriores: number;
+  valorTraspaso: number;
+  updatedAt: string;
+}
+
+export interface AjustesUpdate {
+  valorArbitraje?: number;
+  valorAmarilla?: number;
+  valorRoja?: number;
+  valorFofi?: number;
+  valorMultaTorneosAnteriores?: number;
+  valorTraspaso?: number;
 }
 
 export type GetJugadoresParams = {

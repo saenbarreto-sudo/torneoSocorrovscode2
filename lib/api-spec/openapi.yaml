@@ -711,6 +711,37 @@ paths:
         "401":
           description: Not authenticated
 
+  # ── AJUSTES ──────────────────────────────────────────────────────────────
+  /ajustes:
+    get:
+      operationId: getAjustes
+      tags: [ajustes]
+      summary: Get the tournament-wide money settings (referee fee, card fines, FOFI, transfer fee...)
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ajustes"
+    patch:
+      operationId: updateAjustes
+      tags: [ajustes]
+      summary: Update the tournament-wide money settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AjustesUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ajustes"
+
   # ── USUARIOS ───────────────────────────────────────────────────────────────
   /usuarios:
     get:
@@ -1423,6 +1454,10 @@ components:
           type: number
         jugadorNombre:
           type: string
+        # Número de carné del jugador, para identificarlo rápido en la tabla
+        # de amonestados sin tener que buscarlo por nombre.
+        nCarnet:
+          type: ["number", "null"]
         equipoNombre:
           type: string
         tipo:
@@ -1499,6 +1534,8 @@ components:
           type: number
         jugadorNombre:
           type: string
+        nCarnet:
+          type: ["number", "null"]
         equipoNombre:
           type: string
         amarillas:
@@ -1659,6 +1696,56 @@ components:
         user:
           $ref: "#/components/schemas/SessionUser"
 
+    # ── AJUSTES ──────────────────────────────────────────────────────────────
+    Ajustes:
+      type: object
+      required:
+        [
+          id,
+          valorArbitraje,
+          valorAmarilla,
+          valorRoja,
+          valorFofi,
+          valorMultaTorneosAnteriores,
+          valorTraspaso,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: number
+        valorArbitraje:
+          type: number
+        # El valor que se le asigna automáticamente a cada tarjeta amarilla
+        # nueva que se registra desde la planilla de un partido.
+        valorAmarilla:
+          type: number
+        valorRoja:
+          type: number
+        valorFofi:
+          type: number
+        valorMultaTorneosAnteriores:
+          type: number
+        valorTraspaso:
+          type: number
+        updatedAt:
+          type: string
+
+    AjustesUpdate:
+      type: object
+      properties:
+        valorArbitraje:
+          type: number
+        valorAmarilla:
+          type: number
+        valorRoja:
+          type: number
+        valorFofi:
+          type: number
+        valorMultaTorneosAnteriores:
+          type: number
+        valorTraspaso:
+          type: number
+
     # ── USUARIOS ─────────────────────────────────────────────────────────────
     Usuario:
       type: object
@@ -1817,10 +1904,9 @@ components:
           type: string
         mesa:
           type: string
-        valorAmarilla:
-          type: number
-        valorRoja:
-          type: number
+        # Ya no se manda valorAmarilla/valorRoja desde acá: el valor de cada
+        # tarjeta nueva se asigna solo, tomándolo de /ajustes en el momento
+        # de guardar la planilla (ver routes/planilla.ts).
         jugadores:
           type: array
           items:

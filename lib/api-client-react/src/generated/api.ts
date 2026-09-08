@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Ajustes,
+  AjustesUpdate,
   AmonestadoResumen,
   DashboardResumen,
   Equipo,
@@ -2557,5 +2559,153 @@ export const useCreateSemanaFecha = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateSemanaFechaMutationOptions(options));
+    }
+
+export const getGetAjustesUrl = () => {
+
+
+
+
+  return `/api/ajustes`
+}
+
+/**
+ * @summary Get the tournament-wide money settings (referee fee, card fines, FOFI, transfer fee...)
+ */
+export const getAjustes = async ( options?: Parameters<typeof customFetch>[1]): Promise<Ajustes> => {
+
+  return customFetch<Ajustes>(getGetAjustesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAjustesQueryKey = () => {
+    return [
+    `/api/ajustes`
+    ] as const;
+    }
+
+
+export const getGetAjustesQueryOptions = <TData = Awaited<ReturnType<typeof getAjustes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAjustes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAjustesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAjustes>>> = ({ signal }) => getAjustes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAjustes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAjustesQueryResult = NonNullable<Awaited<ReturnType<typeof getAjustes>>>
+export type GetAjustesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the tournament-wide money settings (referee fee, card fines, FOFI, transfer fee...)
+ */
+
+export function useGetAjustes<TData = Awaited<ReturnType<typeof getAjustes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAjustes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAjustesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAjustesUrl = () => {
+
+
+
+
+  return `/api/ajustes`
+}
+
+/**
+ * @summary Update the tournament-wide money settings (admin only)
+ */
+export const updateAjustes = async (ajustesUpdate: AjustesUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Ajustes> => {
+
+  return customFetch<Ajustes>(getUpdateAjustesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(ajustesUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAjustesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAjustes>>, TError,{data: BodyType<AjustesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAjustes>>, TError,{data: BodyType<AjustesUpdate>}, TContext> => {
+
+const mutationKey = ['updateAjustes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAjustes>>, {data: BodyType<AjustesUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAjustes(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAjustesMutationResult = NonNullable<Awaited<ReturnType<typeof updateAjustes>>>
+    export type UpdateAjustesMutationBody = BodyType<AjustesUpdate>
+    export type UpdateAjustesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the tournament-wide money settings (admin only)
+ */
+export const useUpdateAjustes = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAjustes>>, TError,{data: BodyType<AjustesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAjustes>>,
+        TError,
+        {data: BodyType<AjustesUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAjustesMutationOptions(options));
     }
 

@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './ajustes';
+export * from './ajustesUpdate';
 export * from './amonestadoResumen';
 export * from './dashboardResumen';
 export * from './egreso';

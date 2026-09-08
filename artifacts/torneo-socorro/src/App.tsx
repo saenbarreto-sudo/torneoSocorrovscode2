@@ -25,6 +25,7 @@ import Egresos from '@/pages/egresos';
 import Programacion from '@/pages/programacion';
 import GenerarCalendario from '@/pages/generar-calendario';
 import Usuarios from '@/pages/usuarios';
+import Ajustes from '@/pages/ajustes';
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
         <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
         <Route path="/usuarios">{() => <Protected path="/usuarios" component={Usuarios} />}</Route>
+        <Route path="/ajustes">{() => <Protected path="/ajustes" component={Ajustes} />}</Route>
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

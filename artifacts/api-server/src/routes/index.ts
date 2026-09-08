@@ -14,6 +14,7 @@ import posicionesRouter from "./posiciones";
 import goleadoresRouter from "./goleadores";
 import programacionRouter from "./programacion";
 import dashboardRouter from "./dashboard";
+import ajustesRouter from "./ajustes";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(egresosRouter);
 router.use(posicionesRouter);
 router.use(goleadoresRouter);
 router.use(programacionRouter);
+router.use(ajustesRouter);
 
 export default router;

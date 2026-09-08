@@ -371,6 +371,7 @@ export default function Amonestados() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Carné</TableHead>
                 <TableHead>Jugador</TableHead>
                 <TableHead>Equipo</TableHead>
                 <TableHead className="text-center">Tipo</TableHead>
@@ -384,10 +385,13 @@ export default function Amonestados() {
             <TableBody>
               {isLoadingTarjetas ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-6">Cargando...</TableCell>
+                  <TableCell colSpan={9} className="text-center py-6">Cargando...</TableCell>
                 </TableRow>
               ) : todas.map((t) => (
                 <TableRow key={t.id}>
+                  <TableCell className="font-mono text-muted-foreground">
+                    {t.nCarnet ? `#${String(t.nCarnet).padStart(4, '0')}` : '-'}
+                  </TableCell>
                   <TableCell className="font-bold">{t.jugadorNombre}</TableCell>
                   <TableCell><Badge variant="outline">{t.equipoNombre}</Badge></TableCell>
                   <TableCell className="text-center">
@@ -467,6 +471,7 @@ export default function Amonestados() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Carné</TableHead>
                 <TableHead>Jugador</TableHead>
                 <TableHead>Equipo</TableHead>
                 <TableHead className="text-center">Amarillas</TableHead>
@@ -476,9 +481,12 @@ export default function Amonestados() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-6">Cargando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-6">Cargando...</TableCell></TableRow>
               ) : amonestados?.map((am) => (
                 <TableRow key={am.jugadorId}>
+                  <TableCell className="font-mono text-muted-foreground">
+                    {am.nCarnet ? `#${String(am.nCarnet).padStart(4, '0')}` : '-'}
+                  </TableCell>
                   <TableCell className="font-bold">{am.jugadorNombre}</TableCell>
                   <TableCell><Badge variant="outline">{am.equipoNombre}</Badge></TableCell>
                   <TableCell className="text-center">
@@ -503,7 +511,7 @@ export default function Amonestados() {
                 </TableRow>
               ))}
               {!isLoading && amonestados?.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">No hay jugadores amonestados</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No hay jugadores amonestados</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

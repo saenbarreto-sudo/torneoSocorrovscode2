@@ -10,7 +10,5 @@ import type { SavePlanillaInputJugadoresItem } from './savePlanillaInputJugadore
 export interface SavePlanillaInput {
   arbitro?: string;
   mesa?: string;
-  valorAmarilla?: number;
-  valorRoja?: number;
   jugadores: SavePlanillaInputJugadoresItem[];
 }

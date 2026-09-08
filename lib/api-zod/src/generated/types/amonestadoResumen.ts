@@ -9,6 +9,8 @@
 export interface AmonestadoResumen {
   jugadorId: number;
   jugadorNombre: string;
+  /** @nullable */
+  nCarnet?: number | null;
   equipoNombre: string;
   amarillas: number;
   rojas: number;

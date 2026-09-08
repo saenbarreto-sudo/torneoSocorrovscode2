@@ -11,6 +11,8 @@ export interface Tarjeta {
   id: number;
   jugadorId: number;
   jugadorNombre: string;
+  /** @nullable */
+  nCarnet?: number | null;
   equipoNombre: string;
   tipo: TarjetaTipo;
   semana: number;

@@ -15,6 +15,7 @@ export const writeAccess = {
   tarjetas: requireRole("admin", "mesa"),
   pagos: requireRole("admin", "tesorero"),
   programacion: requireRole("admin", "mesa"),
+  ajustes: requireRole("admin"),
 } as const;
 
 export { requireAuth };

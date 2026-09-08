@@ -9,3 +9,4 @@ export * from "./pagos";
 export * from "./egresos";
 export * from "./programacion";
 export * from "./usuarios";
+export * from "./ajustes";

@@ -26,6 +26,7 @@ import {
   Menu,
   UserCog,
   Wallet,
+  Settings,
 } from "lucide-react"
 
 const navItems = [
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/pagos/resumen", label: "Estado de Cuenta", icon: CreditCard },
   { href: "/egresos", label: "Egresos", icon: Wallet },
   { href: "/usuarios", label: "Usuarios", icon: UserCog },
+  { href: "/ajustes", label: "Ajustes", icon: Settings },
 ]
 
 function NavLinks({

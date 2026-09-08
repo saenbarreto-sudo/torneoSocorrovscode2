@@ -591,6 +591,7 @@ export const GetTarjetasResponseItem = zod.object({
   "id": zod.number(),
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
+  "nCarnet": zod.number().nullish(),
   "equipoNombre": zod.string(),
   "tipo": zod.enum(['amarilla', 'roja']),
   "semana": zod.number(),
@@ -628,6 +629,7 @@ export const CreateTarjetaResponse = zod.object({
   "id": zod.number(),
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
+  "nCarnet": zod.number().nullish(),
   "equipoNombre": zod.string(),
   "tipo": zod.enum(['amarilla', 'roja']),
   "semana": zod.number(),
@@ -666,6 +668,7 @@ export const UpdateTarjetaResponse = zod.object({
   "id": zod.number(),
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
+  "nCarnet": zod.number().nullish(),
   "equipoNombre": zod.string(),
   "tipo": zod.enum(['amarilla', 'roja']),
   "semana": zod.number(),
@@ -695,6 +698,7 @@ export const DeleteTarjetaResponse = zod.void()
 export const GetAmonestadosResponseItem = zod.object({
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
+  "nCarnet": zod.number().nullish(),
   "equipoNombre": zod.string(),
   "amarillas": zod.number(),
   "rojas": zod.number(),
@@ -888,6 +892,45 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Get the tournament-wide money settings (referee fee, card fines, FOFI, transfer fee...)
+ */
+export const GetAjustesResponse = zod.object({
+  "id": zod.number(),
+  "valorArbitraje": zod.number(),
+  "valorAmarilla": zod.number(),
+  "valorRoja": zod.number(),
+  "valorFofi": zod.number(),
+  "valorMultaTorneosAnteriores": zod.number(),
+  "valorTraspaso": zod.number(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Update the tournament-wide money settings (admin only)
+ */
+export const UpdateAjustesBody = zod.object({
+  "valorArbitraje": zod.number().optional(),
+  "valorAmarilla": zod.number().optional(),
+  "valorRoja": zod.number().optional(),
+  "valorFofi": zod.number().optional(),
+  "valorMultaTorneosAnteriores": zod.number().optional(),
+  "valorTraspaso": zod.number().optional()
+})
+
+export const UpdateAjustesResponse = zod.object({
+  "id": zod.number(),
+  "valorArbitraje": zod.number(),
+  "valorAmarilla": zod.number(),
+  "valorRoja": zod.number(),
+  "valorFofi": zod.number(),
+  "valorMultaTorneosAnteriores": zod.number(),
+  "valorTraspaso": zod.number(),
+  "updatedAt": zod.string()
+})
+
+
+/**
  * @summary List user accounts (admin only)
  */
 export const GetUsuariosResponseItem = zod.object({
@@ -1058,8 +1101,6 @@ export const savePlanillaBodyJugadoresItemFechasSancionMax = 20;
 export const SavePlanillaBody = zod.object({
   "arbitro": zod.string().optional(),
   "mesa": zod.string().optional(),
-  "valorAmarilla": zod.number().optional(),
-  "valorRoja": zod.number().optional(),
   "jugadores": zod.array(zod.object({
   "jugadorId": zod.number(),
   "jugo": zod.boolean(),
