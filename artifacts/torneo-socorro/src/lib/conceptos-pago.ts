@@ -4,7 +4,7 @@
  * etiquetas: la usan el formulario de pagos, el recibo impreso y el
  * selector del estado de cuenta.
  */
-export const CONCEPTOS = ['Inscripcion', 'Multas', 'Carnet', 'Rojas', 'Amarillas', 'FOFI'] as const;
+export const CONCEPTOS = ['Inscripcion', 'Multas', 'Carnet', 'Rojas', 'Amarillas', 'FOFI', 'Traspaso'] as const;
 
 export type Concepto = (typeof CONCEPTOS)[number];
 
@@ -15,4 +15,5 @@ export const CONCEPTO_LABEL: Record<string, string> = {
   Rojas: 'Tarjeta roja',
   Amarillas: 'Tarjeta amarilla',
   FOFI: 'FOFI',
+  Traspaso: 'Traspaso',
 };

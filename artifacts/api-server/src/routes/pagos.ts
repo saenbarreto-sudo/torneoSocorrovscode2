@@ -27,6 +27,7 @@ const PREFIJOS_CONCEPTO: Record<string, string> = {
   Carnet: "C",
   Multas: "M",
   FOFI: "F",
+  Traspaso: "T",
 };
 
 function prefijoParaConcepto(concepto: string): string {
