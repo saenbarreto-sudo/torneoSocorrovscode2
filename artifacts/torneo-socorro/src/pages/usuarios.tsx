@@ -28,7 +28,7 @@ interface Usuario {
   createdAt: string;
 }
 
-const ROLES_ASIGNABLES: Exclude<Role, 'publico'>[] = ['admin', 'tesorero', 'mesa', 'delegado', 'carnets'];
+const ROLES_ASIGNABLES: Exclude<Role, 'publico'>[] = ['admin', 'delegado'];
 
 const usuariosQueryKey = ['usuarios'];
 
@@ -46,7 +46,7 @@ const usuarioSchema = z.object({
     .min(3, 'Mínimo 3 caracteres')
     .regex(/^[a-z0-9._-]+$/i, 'Solo letras, números, punto, guion y guion bajo'),
   password: z.string().optional(),
-  rol: z.enum(['admin', 'tesorero', 'mesa', 'delegado', 'carnets']),
+  rol: z.enum(['admin', 'delegado']),
   equipoId: z.string().optional(),
   activo: z.boolean().default(true),
 });

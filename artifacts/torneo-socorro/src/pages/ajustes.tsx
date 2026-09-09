@@ -4,8 +4,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Settings } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -17,7 +18,20 @@ const valorPesos = (mensaje: string) =>
   z.coerce.number({ invalid_type_error: mensaje }).int(mensaje).nonnegative(mensaje);
 
 const ajustesSchema = z.object({
-  valorArbitraje: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajePrimeraVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeSegundaVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeSemifinal: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeMuerteSubita: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeFinalLiguilla: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeSemifinalLiguilla: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorTernaSemifinalLiguilla: valorPesos('El valor de la terna debe ser un número entero'),
+  ternaSemifinalLiguilla: z.boolean(),
+  valorArbitrajeSemifinalTorneo: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorTernaSemifinalTorneo: valorPesos('El valor de la terna debe ser un número entero'),
+  ternaSemifinalTorneo: z.boolean(),
+  valorArbitrajeFinalTorneo: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorTernaFinalTorneo: valorPesos('El valor de la terna debe ser un número entero'),
+  ternaFinalTorneo: z.boolean(),
   valorAmarilla: valorPesos('El valor de la amarilla debe ser un número entero'),
   valorRoja: valorPesos('El valor de la roja debe ser un número entero'),
   valorFofi: valorPesos('El valor del FOFI debe ser un número entero'),
@@ -28,7 +42,10 @@ const ajustesSchema = z.object({
 
 type AjustesFormValues = z.infer<typeof ajustesSchema>;
 
-const CAMPOS: Array<{ name: keyof AjustesFormValues; label: string; ayuda?: string }> = [
+/** Los nombres de campo que son un valor en pesos (todos menos las casillas "Terna"). */
+type CampoNumero = Exclude<keyof AjustesFormValues, 'ternaSemifinalLiguilla' | 'ternaSemifinalTorneo' | 'ternaFinalTorneo'>;
+
+const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string }> = [
   {
     name: 'valorAmarilla',
     label: 'Tarjeta amarilla',
@@ -39,12 +56,110 @@ const CAMPOS: Array<{ name: keyof AjustesFormValues; label: string; ayuda?: stri
     label: 'Tarjeta roja',
     ayuda: 'Se asigna solo, igual que la amarilla.',
   },
-  { name: 'valorArbitraje', label: 'Arbitraje' },
   { name: 'valorFofi', label: 'FOFI' },
   { name: 'valorCarnet', label: 'Carné' },
   { name: 'valorTraspaso', label: 'Traspaso de jugador' },
   { name: 'valorMultaTorneosAnteriores', label: 'Multa por deudas de torneos anteriores' },
 ];
+
+/** Fases que siempre se pagan con 1 árbitro: un solo valor cada una. */
+const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
+  { name: 'valorArbitrajePrimeraVuelta', label: 'Primera vuelta' },
+  { name: 'valorArbitrajeSegundaVuelta', label: 'Segunda vuelta' },
+  { name: 'valorArbitrajeSemifinal', label: 'Semifinal' },
+  { name: 'valorArbitrajeMuerteSubita', label: 'Muerte súbita' },
+  { name: 'valorArbitrajeFinalLiguilla', label: 'Final liguilla' },
+];
+
+/**
+ * Fases que se deciden más cerca de la fecha: se puede pagar con 1 árbitro o
+ * con terna (3 árbitros), por eso cada una trae los dos valores y una
+ * casilla que dice cuál de los dos aplica.
+ */
+const FASES_CON_TERNA: Array<{ label: string; arbitro: CampoNumero; terna: CampoNumero; casilla: keyof AjustesFormValues }> = [
+  {
+    label: 'Semifinal liguilla',
+    arbitro: 'valorArbitrajeSemifinalLiguilla',
+    terna: 'valorTernaSemifinalLiguilla',
+    casilla: 'ternaSemifinalLiguilla',
+  },
+  {
+    label: 'Semifinal del torneo',
+    arbitro: 'valorArbitrajeSemifinalTorneo',
+    terna: 'valorTernaSemifinalTorneo',
+    casilla: 'ternaSemifinalTorneo',
+  },
+  {
+    label: 'Final del torneo',
+    arbitro: 'valorArbitrajeFinalTorneo',
+    terna: 'valorTernaFinalTorneo',
+    casilla: 'ternaFinalTorneo',
+  },
+];
+
+function CampoPeso({
+  control,
+  name,
+  label,
+  ayuda,
+}: {
+  control: Control<AjustesFormValues>;
+  name: CampoNumero;
+  label: string;
+  ayuda?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <Input type="number" className="pl-7" {...field} />
+            </div>
+          </FormControl>
+          {ayuda && <p className="text-xs text-muted-foreground">{ayuda}</p>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function BloqueFaseConTerna({
+  control,
+  fase,
+}: {
+  control: Control<AjustesFormValues>;
+  fase: (typeof FASES_CON_TERNA)[number];
+}) {
+  return (
+    <div className="rounded-lg border p-4 space-y-3">
+      <p className="font-semibold text-sm">{fase.label}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <CampoPeso control={control} name={fase.arbitro} label="1 árbitro" />
+        <CampoPeso control={control} name={fase.terna} label="Terna" />
+      </div>
+      <FormField
+        control={control}
+        name={fase.casilla}
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center gap-2 space-y-0">
+            <FormControl>
+              <Checkbox checked={field.value as boolean} onCheckedChange={field.onChange} />
+            </FormControl>
+            <FormLabel className="mt-0! font-normal cursor-pointer text-sm">
+              Se paga como terna (si no se marca, se paga con 1 árbitro)
+            </FormLabel>
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+}
 
 export default function Ajustes() {
   const { toast } = useToast();
@@ -55,7 +170,20 @@ export default function Ajustes() {
   const form = useForm<AjustesFormValues>({
     resolver: zodResolver(ajustesSchema),
     defaultValues: {
-      valorArbitraje: 0,
+      valorArbitrajePrimeraVuelta: 0,
+      valorArbitrajeSegundaVuelta: 0,
+      valorArbitrajeSemifinal: 0,
+      valorArbitrajeMuerteSubita: 0,
+      valorArbitrajeFinalLiguilla: 0,
+      valorArbitrajeSemifinalLiguilla: 0,
+      valorTernaSemifinalLiguilla: 0,
+      ternaSemifinalLiguilla: false,
+      valorArbitrajeSemifinalTorneo: 0,
+      valorTernaSemifinalTorneo: 0,
+      ternaSemifinalTorneo: false,
+      valorArbitrajeFinalTorneo: 0,
+      valorTernaFinalTorneo: 0,
+      ternaFinalTorneo: false,
       valorAmarilla: 0,
       valorRoja: 0,
       valorFofi: 0,
@@ -70,7 +198,20 @@ export default function Ajustes() {
   useEffect(() => {
     if (ajustes) {
       form.reset({
-        valorArbitraje: ajustes.valorArbitraje,
+        valorArbitrajePrimeraVuelta: ajustes.valorArbitrajePrimeraVuelta,
+        valorArbitrajeSegundaVuelta: ajustes.valorArbitrajeSegundaVuelta,
+        valorArbitrajeSemifinal: ajustes.valorArbitrajeSemifinal,
+        valorArbitrajeMuerteSubita: ajustes.valorArbitrajeMuerteSubita,
+        valorArbitrajeFinalLiguilla: ajustes.valorArbitrajeFinalLiguilla,
+        valorArbitrajeSemifinalLiguilla: ajustes.valorArbitrajeSemifinalLiguilla,
+        valorTernaSemifinalLiguilla: ajustes.valorTernaSemifinalLiguilla,
+        ternaSemifinalLiguilla: ajustes.ternaSemifinalLiguilla,
+        valorArbitrajeSemifinalTorneo: ajustes.valorArbitrajeSemifinalTorneo,
+        valorTernaSemifinalTorneo: ajustes.valorTernaSemifinalTorneo,
+        ternaSemifinalTorneo: ajustes.ternaSemifinalTorneo,
+        valorArbitrajeFinalTorneo: ajustes.valorArbitrajeFinalTorneo,
+        valorTernaFinalTorneo: ajustes.valorTernaFinalTorneo,
+        ternaFinalTorneo: ajustes.ternaFinalTorneo,
         valorAmarilla: ajustes.valorAmarilla,
         valorRoja: ajustes.valorRoja,
         valorFofi: ajustes.valorFofi,
@@ -98,7 +239,7 @@ export default function Ajustes() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-2xl">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl">
       <div className="flex items-center gap-3">
         <div className="p-3 bg-primary/10 text-primary rounded-lg">
           <Settings className="h-6 w-6" />
@@ -109,43 +250,62 @@ export default function Ajustes() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          {isLoading ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-6">
             <p className="text-center py-10 text-muted-foreground">Cargando...</p>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                {CAMPOS.map(({ name, label, ayuda }) => (
-                  <FormField
-                    key={name}
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{label}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                            <Input type="number" className="pl-7" {...field} />
-                          </div>
-                        </FormControl>
-                        {ayuda && <p className="text-xs text-muted-foreground">{ayuda}</p>}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-                <div className="pt-2">
-                  <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? 'Guardando...' : 'Guardar ajustes'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              <Card>
+                <CardContent className="p-6 space-y-5">
+                  <h2 className="font-bold text-lg">Valores generales</h2>
+                  {CAMPOS_GENERALES.map(({ name, label, ayuda }) => (
+                    <CampoPeso key={name} control={form.control} name={name} label={label} ayuda={ayuda} />
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6 space-y-5">
+                  <div>
+                    <h2 className="font-bold text-lg">Arbitrajes</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      El valor cambia según la fase del torneo. Semifinal liguilla, semifinal del
+                      torneo y la final se pueden pagar con 1 árbitro o con terna — se decide más
+                      cerca de la fecha, marcando la casilla correspondiente.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {CAMPOS_ARBITRAJE_SIMPLE.map(({ name, label }) => (
+                      <CampoPeso key={name} control={form.control} name={name} label={label} />
+                    ))}
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
+                      Fases que pueden ser 1 árbitro o terna
+                    </p>
+                    {FASES_CON_TERNA.map((fase) => (
+                      <BloqueFaseConTerna key={fase.casilla} control={form.control} fase={fase} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Guardando...' : 'Guardar ajustes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      )}
 
       <p className="text-xs text-muted-foreground">
         Cambiar un valor acá no modifica lo que ya está guardado — por ejemplo, las tarjetas ya

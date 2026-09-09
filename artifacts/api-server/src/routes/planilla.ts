@@ -155,6 +155,23 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
     ).map((j) => [j.id, j.equipoId]),
   );
 
+  // Un partido no es válido con menos de 6 jugadores alineados por equipo.
+  // Se valida acá (no solo en el formulario) porque esta es la ruta que de
+  // verdad protege los datos — cualquiera que le pegue directo a la API se
+  // salta la validación del frontend.
+  const MINIMO_JUGADORES = 6;
+  const jugoLocal = filas.filter((j) => j.jugo && equipoDeJugador.get(j.jugadorId) === partido.localId).length;
+  const jugoVisitante = filas.filter((j) => j.jugo && equipoDeJugador.get(j.jugadorId) === partido.visitanteId).length;
+  if (jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES) {
+    const faltantes: string[] = [];
+    if (jugoLocal < MINIMO_JUGADORES) faltantes.push(`al local le faltan ${MINIMO_JUGADORES - jugoLocal}`);
+    if (jugoVisitante < MINIMO_JUGADORES) faltantes.push(`al visitante le faltan ${MINIMO_JUGADORES - jugoVisitante}`);
+    res.status(400).json({
+      error: `Cada equipo necesita al menos ${MINIMO_JUGADORES} jugadores alineados para guardar el partido (${faltantes.join(", ")}).`,
+    });
+    return;
+  }
+
   await db.transaction(async (tx) => {
     // Se borra lo anterior de este partido y se reescribe con lo enviado.
     await tx.delete(planillaTable).where(eq(planillaTable.partidoId, partidoId));

@@ -5,15 +5,12 @@ import { customFetch, setAuthTokenGetter, ApiError } from "@workspace/api-client
  * Roles del sistema. "publico" es el único que no tiene cuenta en la base
  * de datos: cualquiera puede entrar como invitado, solo a consultar.
  */
-export type Role = "admin" | "tesorero" | "mesa" | "delegado" | "carnets" | "publico"
+export type Role = "admin" | "delegado" | "publico"
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Comité Organizador",
-  tesorero: "Tesorero",
-  mesa: "Mesa / Árbitros",
   delegado: "Delegado de equipo",
-  carnets: "Carnetización",
-  publico: "Público",
+  publico: "Invitado",
 }
 
 export interface AuthUser {
@@ -27,10 +24,7 @@ export interface AuthUser {
 /** Rutas visibles/permitidas por rol. "*" = todas. */
 const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
   admin: "*",
-  tesorero: ["/", "/posiciones", "/programacion", "/equipos", "/jugadores", "/pagos", "/pagos/resumen", "/egresos"],
-  mesa: ["/", "/posiciones", "/programacion", "/partidos", "/equipos", "/jugadores", "/goleadores", "/vallas", "/amonestados"],
   delegado: ["/", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados", "/pagos/resumen"],
-  carnets: ["/", "/posiciones", "/programacion", "/equipos", "/jugadores", "/goleadores", "/vallas"],
   publico: ["/", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados"],
 }
 
@@ -48,15 +42,11 @@ export function isReadOnlyRole(role: Role): boolean {
 
 /**
  * Recursos sobre los que cada rol puede crear/editar/eliminar (además de
- * consultar). Comité Organizador puede escribir en todo. Tesorero solo en
- * pagos/multas. Mesa/Árbitros solo en lo relacionado a partidos y tarjetas.
- * Delegado y Público nunca pueden escribir, solo consultar.
+ * consultar). Comité Organizador puede escribir en todo. Delegado e
+ * Invitado nunca pueden escribir, solo consultar.
  */
 const WRITE_PERMISSIONS: Record<Role, string[] | "*"> = {
   admin: "*",
-  tesorero: ["pagos"],
-  mesa: ["partidos", "goles", "tarjetas", "programacion"],
-  carnets: ["jugadores"],
   delegado: [],
   publico: [],
 }

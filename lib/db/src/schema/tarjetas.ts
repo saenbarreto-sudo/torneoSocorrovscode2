@@ -10,7 +10,7 @@ export const tarjetasTable = pgTable("tarjetas", {
   tipo: text("tipo").notNull(), // 'amarilla' | 'roja'
   semana: integer("semana").notNull(),
   fecha: date("fecha", { mode: "string" }),
-  partidoId: integer("partido_id").references(() => partidosTable.id),
+  partidoId: integer("partido_id").references(() => partidosTable.id, { onDelete: "cascade" }),
   valor: integer("valor"),
   pagada: boolean("pagada").notNull().default(false),
   // Texto libre con el detalle de la sanción (se conserva para notas).

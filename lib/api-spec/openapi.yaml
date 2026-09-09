@@ -261,7 +261,7 @@ paths:
     get:
       operationId: getJugadorHistorial
       tags: [jugadores]
-      summary: Per-team career stats for a player (goals, cards, matches played)
+      summary: Per-team, per-season career stats for a player (goals, cards, matches played)
       parameters:
         - name: id
           in: path
@@ -295,6 +295,18 @@ paths:
           required: false
           schema:
             type: number
+        - name: desde
+          in: query
+          required: false
+          description: Fecha mínima (inclusive), para traer los partidos de una Programación por su rango.
+          schema:
+            type: string
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha máxima (inclusive).
+          schema:
+            type: string
       responses:
         "200":
           description: List of matches
@@ -673,6 +685,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SemanaFecha"
+
+  /programacion/{id}:
+    patch:
+      operationId: updateSemanaFecha
+      tags: [programacion]
+      summary: Update a scheduled week
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanaFechaUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanaFecha"
+    delete:
+      operationId: deleteSemanaFecha
+      tags: [programacion]
+      summary: Delete a scheduled week and every match scheduled in it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted, including its matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSemanaFechaResult"
 
   # ── AUTH ───────────────────────────────────────────────────────────────────
   /auth/login:
@@ -1222,12 +1276,16 @@ components:
 
     JugadorHistorialEquipo:
       type: object
-      required: [equipoId, equipoNombre, fechaInicio, fechaFin, partidosJugados, goles, amarillas, rojas]
+      required: [equipoId, equipoNombre, temporada, fechaInicio, fechaFin, partidosJugados, goles, amarillas, rojas]
       properties:
         equipoId:
           type: number
         equipoNombre:
           type: string
+        # Temporada a la que pertenecen estas estadísticas ("2021-2022", ...).
+        # null = torneo actual (ver schema/partidos.ts en el backend).
+        temporada:
+          type: ["string", "null"]
         fechaInicio:
           type: string
         fechaFin:
@@ -1353,23 +1411,16 @@ components:
           minItems: 1
           items:
             $ref: "#/components/schemas/PartidoInput"
-        crearSemanas:
-          type: boolean
-          description: >-
-            Si es true, crea en la programación las semanas que todavía no
-            existan, tomando la fecha del primer partido de cada semana.
 
     PartidosLoteResult:
       type: object
-      required: [creados, omitidos, semanasCreadas]
+      required: [creados, omitidos]
       properties:
         creados:
           type: number
         omitidos:
           type: number
           description: Partidos que ya existían con la misma semana y los mismos equipos.
-        semanasCreadas:
-          type: number
 
     # ── POSICIONES ───────────────────────────────────────────────────────────
     PosicionEquipo:
@@ -1659,6 +1710,28 @@ components:
         esFestivo:
           type: boolean
 
+    SemanaFechaUpdate:
+      type: object
+      properties:
+        semana:
+          type: number
+        nombreSemana:
+          type: string
+        fechaDesde:
+          type: string
+        fechaHasta:
+          type: string
+        esFestivo:
+          type: boolean
+
+    DeleteSemanaFechaResult:
+      type: object
+      required: [partidosEliminados]
+      properties:
+        partidosEliminados:
+          type: number
+          description: Cuántos partidos del torneo actual tenían esta semana y se borraron con ella.
+
     # ── AUTH ─────────────────────────────────────────────────────────────────
     LoginInput:
       type: object
@@ -1702,7 +1775,20 @@ components:
       required:
         [
           id,
-          valorArbitraje,
+          valorArbitrajePrimeraVuelta,
+          valorArbitrajeSegundaVuelta,
+          valorArbitrajeSemifinal,
+          valorArbitrajeMuerteSubita,
+          valorArbitrajeFinalLiguilla,
+          valorArbitrajeSemifinalLiguilla,
+          valorTernaSemifinalLiguilla,
+          ternaSemifinalLiguilla,
+          valorArbitrajeSemifinalTorneo,
+          valorTernaSemifinalTorneo,
+          ternaSemifinalTorneo,
+          valorArbitrajeFinalTorneo,
+          valorTernaFinalTorneo,
+          ternaFinalTorneo,
           valorAmarilla,
           valorRoja,
           valorFofi,
@@ -1714,8 +1800,37 @@ components:
       properties:
         id:
           type: number
-        valorArbitraje:
+        # Fases que siempre se pagan con 1 árbitro.
+        valorArbitrajePrimeraVuelta:
           type: number
+        valorArbitrajeSegundaVuelta:
+          type: number
+        valorArbitrajeSemifinal:
+          type: number
+        valorArbitrajeMuerteSubita:
+          type: number
+        valorArbitrajeFinalLiguilla:
+          type: number
+        # Fases que pueden ser 1 árbitro o terna: los dos valores + la
+        # casilla que dice cuál de los dos se está pagando.
+        valorArbitrajeSemifinalLiguilla:
+          type: number
+        valorTernaSemifinalLiguilla:
+          type: number
+        ternaSemifinalLiguilla:
+          type: boolean
+        valorArbitrajeSemifinalTorneo:
+          type: number
+        valorTernaSemifinalTorneo:
+          type: number
+        ternaSemifinalTorneo:
+          type: boolean
+        valorArbitrajeFinalTorneo:
+          type: number
+        valorTernaFinalTorneo:
+          type: number
+        ternaFinalTorneo:
+          type: boolean
         # El valor que se le asigna automáticamente a cada tarjeta amarilla
         # nueva que se registra desde la planilla de un partido.
         valorAmarilla:
@@ -1736,8 +1851,34 @@ components:
     AjustesUpdate:
       type: object
       properties:
-        valorArbitraje:
+        valorArbitrajePrimeraVuelta:
           type: number
+        valorArbitrajeSegundaVuelta:
+          type: number
+        valorArbitrajeSemifinal:
+          type: number
+        valorArbitrajeMuerteSubita:
+          type: number
+        valorArbitrajeFinalLiguilla:
+          type: number
+        valorArbitrajeSemifinalLiguilla:
+          type: number
+        valorTernaSemifinalLiguilla:
+          type: number
+        ternaSemifinalLiguilla:
+          type: boolean
+        valorArbitrajeSemifinalTorneo:
+          type: number
+        valorTernaSemifinalTorneo:
+          type: number
+        ternaSemifinalTorneo:
+          type: boolean
+        valorArbitrajeFinalTorneo:
+          type: number
+        valorTernaFinalTorneo:
+          type: number
+        ternaFinalTorneo:
+          type: boolean
         valorAmarilla:
           type: number
         valorRoja:

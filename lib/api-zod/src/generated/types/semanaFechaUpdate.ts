@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PartidosLoteResult {
-  creados: number;
-  /** Partidos que ya existían con la misma semana y los mismos equipos. */
-  omitidos: number;
+export interface SemanaFechaUpdate {
+  semana?: number;
+  nombreSemana?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  esFestivo?: boolean;
 }

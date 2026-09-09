@@ -160,6 +160,8 @@ export interface JugadorUpdate {
 export interface JugadorHistorialEquipo {
   equipoId: number;
   equipoNombre: string;
+  /** @nullable */
+  temporada: string | null;
   fechaInicio: string;
   /** @nullable */
   fechaFin: string | null;
@@ -216,15 +218,12 @@ export interface PartidoInput {
 export interface PartidosLoteInput {
   /** @minItems 1 */
   partidos: PartidoInput[];
-  /** Si es true, crea en la programación las semanas que todavía no existan, tomando la fecha del primer partido de cada semana. */
-  crearSemanas?: boolean;
 }
 
 export interface PartidosLoteResult {
   creados: number;
   /** Partidos que ya existían con la misma semana y los mismos equipos. */
   omitidos: number;
-  semanasCreadas: number;
 }
 
 export interface PartidoUpdate {
@@ -421,9 +420,35 @@ export interface SemanaFechaInput {
   esFestivo?: boolean;
 }
 
+export interface SemanaFechaUpdate {
+  semana?: number;
+  nombreSemana?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  esFestivo?: boolean;
+}
+
+export interface DeleteSemanaFechaResult {
+  /** Cuántos partidos del torneo actual tenían esta semana y se borraron con ella. */
+  partidosEliminados: number;
+}
+
 export interface Ajustes {
   id: number;
-  valorArbitraje: number;
+  valorArbitrajePrimeraVuelta: number;
+  valorArbitrajeSegundaVuelta: number;
+  valorArbitrajeSemifinal: number;
+  valorArbitrajeMuerteSubita: number;
+  valorArbitrajeFinalLiguilla: number;
+  valorArbitrajeSemifinalLiguilla: number;
+  valorTernaSemifinalLiguilla: number;
+  ternaSemifinalLiguilla: boolean;
+  valorArbitrajeSemifinalTorneo: number;
+  valorTernaSemifinalTorneo: number;
+  ternaSemifinalTorneo: boolean;
+  valorArbitrajeFinalTorneo: number;
+  valorTernaFinalTorneo: number;
+  ternaFinalTorneo: boolean;
   valorAmarilla: number;
   valorRoja: number;
   valorFofi: number;
@@ -434,7 +459,20 @@ export interface Ajustes {
 }
 
 export interface AjustesUpdate {
-  valorArbitraje?: number;
+  valorArbitrajePrimeraVuelta?: number;
+  valorArbitrajeSegundaVuelta?: number;
+  valorArbitrajeSemifinal?: number;
+  valorArbitrajeMuerteSubita?: number;
+  valorArbitrajeFinalLiguilla?: number;
+  valorArbitrajeSemifinalLiguilla?: number;
+  valorTernaSemifinalLiguilla?: number;
+  ternaSemifinalLiguilla?: boolean;
+  valorArbitrajeSemifinalTorneo?: number;
+  valorTernaSemifinalTorneo?: number;
+  ternaSemifinalTorneo?: boolean;
+  valorArbitrajeFinalTorneo?: number;
+  valorTernaFinalTorneo?: number;
+  ternaFinalTorneo?: boolean;
   valorAmarilla?: number;
   valorRoja?: number;
   valorFofi?: number;
@@ -450,6 +488,14 @@ equipoId?: number;
 export type GetPartidosParams = {
 semana?: number;
 equipoId?: number;
+/**
+ * Fecha mínima (inclusive), para traer los partidos de una Programación por su rango.
+ */
+desde?: string;
+/**
+ * Fecha máxima (inclusive).
+ */
+hasta?: string;
 };
 
 export type GetTarjetasParams = {

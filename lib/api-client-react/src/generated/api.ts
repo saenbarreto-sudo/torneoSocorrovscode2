@@ -24,6 +24,7 @@ import type {
   AjustesUpdate,
   AmonestadoResumen,
   DashboardResumen,
+  DeleteSemanaFechaResult,
   Equipo,
   EquipoInput,
   EquipoUpdate,
@@ -50,6 +51,7 @@ import type {
   PosicionEquipo,
   SemanaFecha,
   SemanaFechaInput,
+  SemanaFechaUpdate,
   Tarjeta,
   TarjetaInput,
   TarjetaUpdate
@@ -988,7 +990,7 @@ export const getGetJugadorHistorialUrl = (id: number,) => {
 }
 
 /**
- * @summary Per-team career stats for a player (goals, cards, matches played)
+ * @summary Per-team, per-season career stats for a player (goals, cards, matches played)
  */
 export const getJugadorHistorial = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<JugadorHistorialEquipo[]> => {
 
@@ -1035,7 +1037,7 @@ export type GetJugadorHistorialQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Per-team career stats for a player (goals, cards, matches played)
+ * @summary Per-team, per-season career stats for a player (goals, cards, matches played)
  */
 
 export function useGetJugadorHistorial<TData = Awaited<ReturnType<typeof getJugadorHistorial>>, TError = ErrorType<unknown>>(
@@ -2559,6 +2561,149 @@ export const useCreateSemanaFecha = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateSemanaFechaMutationOptions(options));
+    }
+
+export const getUpdateSemanaFechaUrl = (id: number,) => {
+
+
+
+
+  return `/api/programacion/${id}`
+}
+
+/**
+ * @summary Update a scheduled week
+ */
+export const updateSemanaFecha = async (id: number,
+    semanaFechaUpdate: SemanaFechaUpdate, options?: Parameters<typeof customFetch>[1]): Promise<SemanaFecha> => {
+
+  return customFetch<SemanaFecha>(getUpdateSemanaFechaUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(semanaFechaUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateSemanaFechaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSemanaFecha>>, TError,{id: number;data: BodyType<SemanaFechaUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSemanaFecha>>, TError,{id: number;data: BodyType<SemanaFechaUpdate>}, TContext> => {
+
+const mutationKey = ['updateSemanaFecha'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSemanaFecha>>, {id: number;data: BodyType<SemanaFechaUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSemanaFecha(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSemanaFechaMutationResult = NonNullable<Awaited<ReturnType<typeof updateSemanaFecha>>>
+    export type UpdateSemanaFechaMutationBody = BodyType<SemanaFechaUpdate>
+    export type UpdateSemanaFechaMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a scheduled week
+ */
+export const useUpdateSemanaFecha = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSemanaFecha>>, TError,{id: number;data: BodyType<SemanaFechaUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSemanaFecha>>,
+        TError,
+        {id: number;data: BodyType<SemanaFechaUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSemanaFechaMutationOptions(options));
+    }
+
+export const getDeleteSemanaFechaUrl = (id: number,) => {
+
+
+
+
+  return `/api/programacion/${id}`
+}
+
+/**
+ * @summary Delete a scheduled week and every match scheduled in it
+ */
+export const deleteSemanaFecha = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<DeleteSemanaFechaResult> => {
+
+  return customFetch<DeleteSemanaFechaResult>(getDeleteSemanaFechaUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSemanaFechaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSemanaFecha>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSemanaFecha>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSemanaFecha'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSemanaFecha>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSemanaFecha(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSemanaFechaMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSemanaFecha>>>
+
+    export type DeleteSemanaFechaMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a scheduled week and every match scheduled in it
+ */
+export const useDeleteSemanaFecha = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSemanaFecha>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSemanaFecha>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSemanaFechaMutationOptions(options));
     }
 
 export const getGetAjustesUrl = () => {

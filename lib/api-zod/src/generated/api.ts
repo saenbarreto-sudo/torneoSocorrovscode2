@@ -330,7 +330,7 @@ export const DeleteJugadorResponse = zod.void()
 
 
 /**
- * @summary Per-team career stats for a player (goals, cards, matches played)
+ * @summary Per-team, per-season career stats for a player (goals, cards, matches played)
  */
 export const GetJugadorHistorialParams = zod.object({
   "id": zod.coerce.number()
@@ -339,6 +339,7 @@ export const GetJugadorHistorialParams = zod.object({
 export const GetJugadorHistorialResponseItem = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
+  "temporada": zod.string().nullable(),
   "fechaInicio": zod.string(),
   "fechaFin": zod.string().nullable(),
   "partidosJugados": zod.number(),
@@ -354,7 +355,9 @@ export const GetJugadorHistorialResponse = zod.array(GetJugadorHistorialResponse
  */
 export const GetPartidosQueryParams = zod.object({
   "semana": zod.coerce.number().optional(),
-  "equipoId": zod.coerce.number().optional()
+  "equipoId": zod.coerce.number().optional(),
+  "desde": zod.coerce.string().optional().describe('Fecha mínima (inclusive), para traer los partidos de una Programación por su rango.'),
+  "hasta": zod.coerce.string().optional().describe('Fecha máxima (inclusive).')
 })
 
 export const GetPartidosResponseItem = zod.object({
@@ -440,14 +443,12 @@ export const CreatePartidosLoteBody = zod.object({
   "mesa": zod.string().optional(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().optional()
-})).min(1),
-  "crearSemanas": zod.boolean().optional().describe('Si es true, crea en la programación las semanas que todavía no existan, tomando la fecha del primer partido de cada semana.')
+})).min(1)
 })
 
 export const CreatePartidosLoteResponse = zod.object({
   "creados": zod.number(),
-  "omitidos": zod.number().describe('Partidos que ya existían con la misma semana y los mismos equipos.'),
-  "semanasCreadas": zod.number()
+  "omitidos": zod.number().describe('Partidos que ya existían con la misma semana y los mismos equipos.')
 })
 
 
@@ -856,6 +857,43 @@ export const CreateSemanaFechaResponse = zod.object({
 
 
 /**
+ * @summary Update a scheduled week
+ */
+export const UpdateSemanaFechaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSemanaFechaBody = zod.object({
+  "semana": zod.number().optional(),
+  "nombreSemana": zod.string().optional(),
+  "fechaDesde": zod.string().optional(),
+  "fechaHasta": zod.string().optional(),
+  "esFestivo": zod.boolean().optional()
+})
+
+export const UpdateSemanaFechaResponse = zod.object({
+  "id": zod.number(),
+  "semana": zod.number(),
+  "nombreSemana": zod.string().nullish(),
+  "fechaDesde": zod.string().nullish(),
+  "fechaHasta": zod.string().nullish(),
+  "esFestivo": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Delete a scheduled week and every match scheduled in it
+ */
+export const DeleteSemanaFechaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteSemanaFechaResponse = zod.object({
+  "partidosEliminados": zod.number().describe('Cuántos partidos del torneo actual tenían esta semana y se borraron con ella.')
+})
+
+
+/**
  * @summary Sign in and obtain a bearer token
  */
 
@@ -896,7 +934,20 @@ export const GetMeResponse = zod.object({
  */
 export const GetAjustesResponse = zod.object({
   "id": zod.number(),
-  "valorArbitraje": zod.number(),
+  "valorArbitrajePrimeraVuelta": zod.number(),
+  "valorArbitrajeSegundaVuelta": zod.number(),
+  "valorArbitrajeSemifinal": zod.number(),
+  "valorArbitrajeMuerteSubita": zod.number(),
+  "valorArbitrajeFinalLiguilla": zod.number(),
+  "valorArbitrajeSemifinalLiguilla": zod.number(),
+  "valorTernaSemifinalLiguilla": zod.number(),
+  "ternaSemifinalLiguilla": zod.boolean(),
+  "valorArbitrajeSemifinalTorneo": zod.number(),
+  "valorTernaSemifinalTorneo": zod.number(),
+  "ternaSemifinalTorneo": zod.boolean(),
+  "valorArbitrajeFinalTorneo": zod.number(),
+  "valorTernaFinalTorneo": zod.number(),
+  "ternaFinalTorneo": zod.boolean(),
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),
@@ -911,7 +962,20 @@ export const GetAjustesResponse = zod.object({
  * @summary Update the tournament-wide money settings (admin only)
  */
 export const UpdateAjustesBody = zod.object({
-  "valorArbitraje": zod.number().optional(),
+  "valorArbitrajePrimeraVuelta": zod.number().optional(),
+  "valorArbitrajeSegundaVuelta": zod.number().optional(),
+  "valorArbitrajeSemifinal": zod.number().optional(),
+  "valorArbitrajeMuerteSubita": zod.number().optional(),
+  "valorArbitrajeFinalLiguilla": zod.number().optional(),
+  "valorArbitrajeSemifinalLiguilla": zod.number().optional(),
+  "valorTernaSemifinalLiguilla": zod.number().optional(),
+  "ternaSemifinalLiguilla": zod.boolean().optional(),
+  "valorArbitrajeSemifinalTorneo": zod.number().optional(),
+  "valorTernaSemifinalTorneo": zod.number().optional(),
+  "ternaSemifinalTorneo": zod.boolean().optional(),
+  "valorArbitrajeFinalTorneo": zod.number().optional(),
+  "valorTernaFinalTorneo": zod.number().optional(),
+  "ternaFinalTorneo": zod.boolean().optional(),
   "valorAmarilla": zod.number().optional(),
   "valorRoja": zod.number().optional(),
   "valorFofi": zod.number().optional(),
@@ -922,7 +986,20 @@ export const UpdateAjustesBody = zod.object({
 
 export const UpdateAjustesResponse = zod.object({
   "id": zod.number(),
-  "valorArbitraje": zod.number(),
+  "valorArbitrajePrimeraVuelta": zod.number(),
+  "valorArbitrajeSegundaVuelta": zod.number(),
+  "valorArbitrajeSemifinal": zod.number(),
+  "valorArbitrajeMuerteSubita": zod.number(),
+  "valorArbitrajeFinalLiguilla": zod.number(),
+  "valorArbitrajeSemifinalLiguilla": zod.number(),
+  "valorTernaSemifinalLiguilla": zod.number(),
+  "ternaSemifinalLiguilla": zod.boolean(),
+  "valorArbitrajeSemifinalTorneo": zod.number(),
+  "valorTernaSemifinalTorneo": zod.number(),
+  "ternaSemifinalTorneo": zod.boolean(),
+  "valorArbitrajeFinalTorneo": zod.number(),
+  "valorTernaFinalTorneo": zod.number(),
+  "ternaFinalTorneo": zod.boolean(),
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),

@@ -19,6 +19,7 @@ type Fila = Pick<PlanillaJugador, 'jugadorId' | 'jugadorNombre' | 'equipoId' | '
 
 const PUNTOS_AMARILLA = 10;
 const PUNTOS_ROJA = 20;
+const MINIMO_JUGADORES = 6;
 
 function NominaEquipo({
   titulo,
@@ -37,11 +38,19 @@ function NominaEquipo({
   suspendidos: Set<number>;
   onChange: (jugadorId: number, cambios: Partial<Fila>) => void;
 }) {
+  const jugaron = filas.filter((f) => f.jugo).length;
+  const faltan = jugaron < MINIMO_JUGADORES;
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="bg-sidebar text-sidebar-foreground px-3 py-2 flex items-center justify-between gap-2">
         <span className="font-bold truncate">{titulo}</span>
         <span className="flex items-center gap-3 text-xs shrink-0">
+          <span
+            className={faltan ? 'font-bold text-destructive' : 'text-sidebar-foreground/70'}
+            title={`Jugadores marcados como "Jugó" (mínimo ${MINIMO_JUGADORES})`}
+          >
+            {jugaron}/{MINIMO_JUGADORES}
+          </span>
           <span title="Puntos de juego limpio (amarilla 10, roja 20)">FP {fairPlay}</span>
           <span className="font-mono font-bold text-lg leading-none">{golesEquipo}</span>
         </span>
@@ -248,7 +257,26 @@ export function PlanillaPartido({
 
   const alineadosSancionados = filas.filter((f) => f.jugo && suspendidos.has(f.jugadorId));
 
+  const jugoLocal = locales.filter((f) => f.jugo).length;
+  const jugoVisitante = visitantes.filter((f) => f.jugo).length;
+  const faltanJugadores = jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES;
+
   const guardar = () => {
+    if (faltanJugadores) {
+      const partes: string[] = [];
+      if (jugoLocal < MINIMO_JUGADORES) {
+        partes.push(`${partido.localNombre} le faltan ${MINIMO_JUGADORES - jugoLocal}`);
+      }
+      if (jugoVisitante < MINIMO_JUGADORES) {
+        partes.push(`${partido.visitanteNombre} le faltan ${MINIMO_JUGADORES - jugoVisitante}`);
+      }
+      toast({
+        title: 'Faltan jugadores para poder guardar',
+        description: `Cada equipo necesita al menos ${MINIMO_JUGADORES} jugadores marcados como "Jugó". A ${partes.join(', y a ')}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     if (alineadosSancionados.length > 0) {
       const nombres = alineadosSancionados.map((f) => f.jugadorNombre).join(', ');
       const seguir = window.confirm(

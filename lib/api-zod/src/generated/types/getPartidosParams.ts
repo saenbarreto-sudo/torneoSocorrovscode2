@@ -9,4 +9,12 @@
 export type GetPartidosParams = {
 semana?: number;
 equipoId?: number;
+/**
+ * Fecha mínima (inclusive), para traer los partidos de una Programación por su rango.
+ */
+desde?: string;
+/**
+ * Fecha máxima (inclusive).
+ */
+hasta?: string;
 };

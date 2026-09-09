@@ -10,6 +10,4 @@ import type { PartidoInput } from './partidoInput';
 export interface PartidosLoteInput {
   /** @minItems 1 */
   partidos: PartidoInput[];
-  /** Si es true, crea en la programación las semanas que todavía no existan, tomando la fecha del primer partido de cada semana. */
-  crearSemanas?: boolean;
 }

@@ -1,6 +1,7 @@
 export * from "./equipos";
 export * from "./jugadores";
 export * from "./jugador-equipo-historial";
+export * from "./jugador-equipo-temporada";
 export * from "./partidos";
 export * from "./tarjetas";
 export * from "./goles";

@@ -7,7 +7,7 @@ import { equiposTable } from "./equipos";
  * Roles de acceso al sistema. "publico" no tiene cuenta de usuario (entra
  * sin credenciales, solo consulta) por eso no aparece en la tabla usuarios.
  */
-export const ROLES_USUARIO = ["admin", "tesorero", "mesa", "delegado", "carnets"] as const;
+export const ROLES_USUARIO = ["admin", "delegado"] as const;
 export type RolUsuario = (typeof ROLES_USUARIO)[number];
 
 export const usuariosTable = pgTable("usuarios", {
@@ -15,7 +15,7 @@ export const usuariosTable = pgTable("usuarios", {
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   nombre: text("nombre").notNull(),
-  rol: text("rol").notNull(), // admin | tesorero | mesa | delegado | carnets
+  rol: text("rol").notNull(), // admin | delegado
   // Solo aplica para el rol "delegado": a qué equipo pertenece.
   equipoId: integer("equipo_id").references(() => equiposTable.id),
   activo: boolean("activo").notNull().default(true),

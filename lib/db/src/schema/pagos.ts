@@ -16,8 +16,10 @@ export const pagosTable = pgTable("pagos", {
   fecha: date("fecha", { mode: "string" }),
   // Si este pago corresponde al pago de una tarjeta amarilla puntual, queda
   // enlazado aquí. Al registrar el pago, esa tarjeta se marca como pagada y
-  // desaparece de la lista de amonestados pendientes.
-  tarjetaId: integer("tarjeta_id").references(() => tarjetasTable.id),
+  // desaparece de la lista de amonestados pendientes. Si la tarjeta se
+  // borra después, el pago no desaparece con ella (es un registro de plata
+  // real) — solo pierde el enlace.
+  tarjetaId: integer("tarjeta_id").references(() => tarjetasTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

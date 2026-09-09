@@ -365,71 +365,138 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
   }
 
   // Si el jugador pasó dos veces por el mismo equipo, nos quedamos con el
-  // stint más reciente de cada uno para no repetir fila (las estadísticas
-  // de abajo ya vienen sumadas por equipo, sin importar cuántos stints).
-  const porEquipo = new Map<number, (typeof stints)[number]>();
+  // stint más reciente de cada uno (para el equipo/fechas del torneo
+  // actual); las estadísticas de abajo se desglosan además por temporada.
+  const stintPorEquipo = new Map<number, (typeof stints)[number]>();
   for (const s of stints) {
-    if (!porEquipo.has(s.equipoId)) porEquipo.set(s.equipoId, s);
+    if (!stintPorEquipo.has(s.equipoId)) stintPorEquipo.set(s.equipoId, s);
   }
 
-  // Partidos jugados, goles y tarjetas, atribuidos al equipo que le
-  // correspondía al jugador en la fecha de cada partido (según su
-  // historial), para que una transferencia no mezcle las estadísticas de
-  // los dos equipos.
-  const partidosPorEquipo = await db.execute<{ equipoId: number; total: number }>(sql`
-    SELECT heq.equipo_id AS "equipoId", COUNT(*)::int AS total
+  // Partidos jugados, goles y tarjetas, atribuidos al equipo Y a la
+  // temporada de ese partido/gol/tarjeta (NULL = torneo actual, ver
+  // schema/partidos.ts). El equipo se resuelve así:
+  //  - Temporada pasada (importada): jugador_equipo_temporada, un mapeo
+  //    directo (jugador, temporada) → equipo sin fechas de por medio. Hace
+  //    falta porque las fechas reales de una temporada y la siguiente a
+  //    veces se traslapan un poco en los Excel de origen (ej. la 2022-2023
+  //    sigue hasta julio 2023 mientras la 2023-2024 ya arrancó en
+  //    febrero), y con un rango de fechas un partido podía quedar
+  //    atribuido al equipo equivocado.
+  //  - Torneo actual (temporada NULL): jugador_equipo_historial por rango
+  //    de fecha, como antes — ahí sí puede haber un traspaso a mitad de
+  //    temporada que solo una fecha exacta puede resolver.
+  const partidosPorEquipoTemporada = await db.execute<{ equipoId: number; equipoNombre: string; temporada: string | null; total: number; fechaMin: string | null; fechaMax: string | null }>(sql`
+    SELECT
+      COALESCE(jet.equipo_id, heq.equipo_id) AS "equipoId",
+      e.nombre AS "equipoNombre",
+      p.temporada,
+      COUNT(*)::int AS total,
+      MIN(p.fecha)::text AS "fechaMin",
+      MAX(p.fecha)::text AS "fechaMax"
     FROM planilla pl
     JOIN partidos p ON p.id = pl.partido_id
-    JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = pl.jugador_id
+    LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = pl.jugador_id AND jet.temporada = p.temporada
+    LEFT JOIN jugador_equipo_historial heq
+      ON heq.jugador_id = pl.jugador_id AND p.temporada IS NULL
      AND heq.fecha_inicio <= COALESCE(p.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, CURRENT_DATE))
+    JOIN equipos e ON e.id = COALESCE(jet.equipo_id, heq.equipo_id)
     WHERE pl.jugador_id = ${jugadorId}
-    GROUP BY heq.equipo_id
+    GROUP BY COALESCE(jet.equipo_id, heq.equipo_id), e.nombre, p.temporada
   `);
 
-  const golesPorEquipo = await db.execute<{ equipoId: number; total: number }>(sql`
-    SELECT heq.equipo_id AS "equipoId", COALESCE(SUM(g.cantidad), 0)::int AS total
+  const golesPorEquipoTemporada = await db.execute<{ equipoId: number; temporada: string | null; total: number }>(sql`
+    SELECT COALESCE(jet.equipo_id, heq.equipo_id) AS "equipoId", g.temporada, COALESCE(SUM(g.cantidad), 0)::int AS total
     FROM goles g
     LEFT JOIN partidos p ON p.id = g.partido_id
-    JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = g.jugador_id
+    LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = g.jugador_id AND jet.temporada = g.temporada
+    LEFT JOIN jugador_equipo_historial heq
+      ON heq.jugador_id = g.jugador_id AND g.temporada IS NULL
      AND heq.fecha_inicio <= COALESCE(p.fecha, g.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, g.fecha, CURRENT_DATE))
-    WHERE g.jugador_id = ${jugadorId} AND g.propio = false
-    GROUP BY heq.equipo_id
+    WHERE g.jugador_id = ${jugadorId} AND g.propio = false AND COALESCE(jet.equipo_id, heq.equipo_id) IS NOT NULL
+    GROUP BY COALESCE(jet.equipo_id, heq.equipo_id), g.temporada
   `);
 
-  const tarjetasPorEquipo = await db.execute<{ equipoId: number; tipo: string; total: number }>(sql`
-    SELECT heq.equipo_id AS "equipoId", t.tipo, COUNT(*)::int AS total
+  const tarjetasPorEquipoTemporada = await db.execute<{ equipoId: number; temporada: string | null; tipo: string; total: number }>(sql`
+    SELECT COALESCE(jet.equipo_id, heq.equipo_id) AS "equipoId", t.temporada, t.tipo, COUNT(*)::int AS total
     FROM tarjetas t
     LEFT JOIN partidos p ON p.id = t.partido_id
-    JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = t.jugador_id
+    LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = t.jugador_id AND jet.temporada = t.temporada
+    LEFT JOIN jugador_equipo_historial heq
+      ON heq.jugador_id = t.jugador_id AND t.temporada IS NULL
      AND heq.fecha_inicio <= COALESCE(p.fecha, t.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, t.fecha, CURRENT_DATE))
-    WHERE t.jugador_id = ${jugadorId}
-    GROUP BY heq.equipo_id, t.tipo
+    WHERE t.jugador_id = ${jugadorId} AND COALESCE(jet.equipo_id, heq.equipo_id) IS NOT NULL
+    GROUP BY COALESCE(jet.equipo_id, heq.equipo_id), t.temporada, t.tipo
   `);
 
-  const partidosMap = new Map(partidosPorEquipo.rows.map((r) => [r.equipoId, r.total]));
-  const golesMap = new Map(golesPorEquipo.rows.map((r) => [r.equipoId, r.total]));
-  const amarillasMap = new Map<number, number>();
-  const rojasMap = new Map<number, number>();
-  for (const r of tarjetasPorEquipo.rows) {
-    (r.tipo === "amarilla" ? amarillasMap : r.tipo === "roja" ? rojasMap : null)?.set(r.equipoId, r.total);
+  const clave = (equipoId: number, temporada: string | null) => `${equipoId}|${temporada ?? ""}`;
+
+  const claves = new Set<string>();
+  const nombrePorClave = new Map<string, string>();
+  const fechasPorClave = new Map<string, { fechaInicio: string; fechaFin: string | null }>();
+  // El stint vigente (sin fecha_fin) siempre aparece con temporada actual
+  // (NULL), aunque todavía no tenga partidos/goles/tarjetas — para que un
+  // jugador recién llegado a un equipo ya se vea ahí con 0/0/0/0.
+  for (const s of stints) {
+    if (s.fechaFin === null) {
+      const k = clave(s.equipoId, null);
+      claves.add(k);
+      nombrePorClave.set(k, s.equipoNombre);
+      fechasPorClave.set(k, { fechaInicio: s.fechaInicio, fechaFin: s.fechaFin });
+    }
   }
 
-  const historial = [...porEquipo.values()].map((s) => ({
-    equipoId: s.equipoId,
-    equipoNombre: s.equipoNombre,
-    fechaInicio: s.fechaInicio,
-    fechaFin: s.fechaFin,
-    partidosJugados: partidosMap.get(s.equipoId) ?? 0,
-    goles: golesMap.get(s.equipoId) ?? 0,
-    amarillas: amarillasMap.get(s.equipoId) ?? 0,
-    rojas: rojasMap.get(s.equipoId) ?? 0,
-  }));
+  const partidosMap = new Map<string, number>();
+  for (const r of partidosPorEquipoTemporada.rows) {
+    const k = clave(r.equipoId, r.temporada);
+    claves.add(k);
+    partidosMap.set(k, r.total);
+    nombrePorClave.set(k, r.equipoNombre);
+    if (r.fechaMin) fechasPorClave.set(k, { fechaInicio: r.fechaMin, fechaFin: r.temporada ? r.fechaMax : null });
+  }
+  const golesMap = new Map<string, number>();
+  for (const r of golesPorEquipoTemporada.rows) {
+    const k = clave(r.equipoId, r.temporada);
+    claves.add(k);
+    golesMap.set(k, r.total);
+  }
+  const amarillasMap = new Map<string, number>();
+  const rojasMap = new Map<string, number>();
+  for (const r of tarjetasPorEquipoTemporada.rows) {
+    const k = clave(r.equipoId, r.temporada);
+    claves.add(k);
+    (r.tipo === "amarilla" ? amarillasMap : r.tipo === "roja" ? rojasMap : null)?.set(k, r.total);
+  }
+
+  const historial = [...claves]
+    .map((k) => {
+      const [equipoIdTexto, temporadaTexto] = k.split("|");
+      const equipoId = Number(equipoIdTexto);
+      const temporada = temporadaTexto === "" ? null : temporadaTexto;
+      const fechas = fechasPorClave.get(k);
+      return {
+        equipoId,
+        equipoNombre: nombrePorClave.get(k) ?? stintPorEquipo.get(equipoId)?.equipoNombre ?? "",
+        temporada,
+        fechaInicio: fechas?.fechaInicio ?? HISTORIAL_SENTINEL_FECHA,
+        fechaFin: fechas?.fechaFin ?? null,
+        partidosJugados: partidosMap.get(k) ?? 0,
+        goles: golesMap.get(k) ?? 0,
+        amarillas: amarillasMap.get(k) ?? 0,
+        rojas: rojasMap.get(k) ?? 0,
+      };
+    })
+    // Más reciente primero: la temporada actual (NULL) va de primera, y
+    // luego las temporadas pasadas de más nueva a más vieja por texto
+    // ("2025-2026" > "2021-2022").
+    .sort((a, b) => {
+      if (a.temporada === b.temporada) return a.equipoNombre.localeCompare(b.equipoNombre);
+      if (a.temporada === null) return -1;
+      if (b.temporada === null) return 1;
+      return b.temporada.localeCompare(a.temporada);
+    });
 
   res.json(GetJugadorHistorialResponse.parse(historial));
 });

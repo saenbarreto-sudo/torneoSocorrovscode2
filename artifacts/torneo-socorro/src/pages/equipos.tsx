@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
@@ -125,6 +126,19 @@ export default function Equipos() {
         },
       });
     }
+  };
+
+  // Prender/apagar activo directo desde la tabla, sin abrir el formulario
+  // completo — la misma mutación de editar, mandando solo ese campo.
+  const handleToggleActivo = (id: number, activo: boolean) => {
+    updateMutation.mutate({ id, data: { activo } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetEquiposQueryKey() });
+      },
+      onError: (err) => {
+        toast({ title: 'No se pudo cambiar el estado', description: extractErrorMessage(err), variant: 'destructive' });
+      },
+    });
   };
 
   return (
@@ -268,10 +282,19 @@ export default function Equipos() {
                   <TableCell>{equipo.delegado || '-'}</TableCell>
                   <TableCell className="text-muted-foreground">{equipo.delegado2 || '-'}</TableCell>
                   <TableCell className="text-center">
-                    {equipo.activo ? (
-                      <Badge variant="success">Activo</Badge>
+                    {readOnly ? (
+                      equipo.activo ? <Badge variant="success">Activo</Badge> : <Badge variant="secondary">Inactivo</Badge>
                     ) : (
-                      <Badge variant="secondary">Inactivo</Badge>
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={equipo.activo}
+                          onCheckedChange={(checked) => handleToggleActivo(equipo.id, checked)}
+                          aria-label={equipo.activo ? 'Desactivar equipo' : 'Activar equipo'}
+                        />
+                        <span className="text-xs text-muted-foreground w-14 text-left">
+                          {equipo.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="font-mono">{equipo.telefono || '-'}</TableCell>

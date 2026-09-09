@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PartidosLoteResult {
-  creados: number;
-  /** Partidos que ya existían con la misma semana y los mismos equipos. */
-  omitidos: number;
+export interface DeleteSemanaFechaResult {
+  /** Cuántos partidos del torneo actual tenían esta semana y se borraron con ella. */
+  partidosEliminados: number;
 }

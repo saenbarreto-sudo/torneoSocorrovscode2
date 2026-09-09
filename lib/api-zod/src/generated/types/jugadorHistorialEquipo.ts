@@ -9,6 +9,8 @@
 export interface JugadorHistorialEquipo {
   equipoId: number;
   equipoNombre: string;
+  /** @nullable */
+  temporada: string | null;
   fechaInicio: string;
   /** @nullable */
   fechaFin: string | null;

@@ -10,11 +10,11 @@ import { requireAuth, requireRole } from "./require-auth";
 export const writeAccess = {
   equipos: requireRole("admin"),
   jugadores: requireRole("admin"),
-  partidos: requireRole("admin", "mesa"),
-  goles: requireRole("admin", "mesa"),
-  tarjetas: requireRole("admin", "mesa"),
-  pagos: requireRole("admin", "tesorero"),
-  programacion: requireRole("admin", "mesa"),
+  partidos: requireRole("admin"),
+  goles: requireRole("admin"),
+  tarjetas: requireRole("admin"),
+  pagos: requireRole("admin"),
+  programacion: requireRole("admin"),
   ajustes: requireRole("admin"),
 } as const;
 

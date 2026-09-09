@@ -32,23 +32,23 @@ export function ExtractoEquipo({
 
   return (
     <div className="bg-white text-[hsl(273_45%_12%)] border border-[hsl(273_20%_85%)] rounded-lg overflow-hidden max-w-2xl mx-auto">
-      {/* Encabezado */}
-      <div className="bg-[hsl(273_51%_32%)] text-white px-6 py-5 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo-torneo-socorro.png"
-            alt="Escudo Torneo Socorro"
-            className="h-14 w-14 object-contain shrink-0"
-          />
-          <div>
-            <div className="font-extrabold text-lg leading-tight tracking-tight">TORNEO SOCORRO</div>
-            <div className="text-xs text-white/80 tracking-wide">SENIOR MASTER PLUS 40</div>
-            <div className="text-xs font-bold mt-1.5 bg-white/15 inline-block px-2 py-0.5 rounded">
-              EXTRACTO DE CUENTA
-            </div>
+      {/* Encabezado: grilla 1fr/auto/1fr para que el nombre quede centrado de
+          verdad (las dos columnas de los costados miden lo mismo entre sí,
+          sin importar cuánto contenido tenga cada una). */}
+      <div className="bg-[hsl(273_51%_32%)] text-white px-6 py-5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <img
+          src="/logo-torneo-socorro.png"
+          alt="Escudo Torneo Socorro"
+          className="h-14 w-14 object-contain shrink-0 justify-self-start"
+        />
+        <div className="text-center">
+          <div className="font-extrabold text-lg leading-tight tracking-tight">TORNEO SOCORRO</div>
+          <div className="text-xs text-white/80 tracking-wide">SENIOR MASTER PLUS 40</div>
+          <div className="text-xs font-bold mt-1.5 bg-white/15 inline-block px-2 py-0.5 rounded">
+            EXTRACTO DE CUENTA
           </div>
         </div>
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 justify-self-end">
           <div className="text-[10px] text-white/70 uppercase tracking-wide">Generado</div>
           <div className="font-mono text-sm">{formatFecha(hoy)}</div>
         </div>

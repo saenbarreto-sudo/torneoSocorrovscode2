@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Edit2, Printer, User } from 'lucide-react';
 import { JugadorFormDialog } from '@/components/jugador-form-dialog';
 import { ExtractoJugador } from '@/components/extracto-jugador';
+import { FichaJugadorImprimible } from '@/components/ficha-jugador-imprimible';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 
 const TIPOS_TARJETA = ['amarilla', 'roja'] as const;
@@ -61,6 +62,9 @@ export default function FichaJugador() {
   const { data: historial } = useGetJugadorHistorial(jugadorId);
   const { data: tarjetas } = useGetTarjetas({ jugadorId });
   const [editOpen, setEditOpen] = useState(false);
+
+  // ── Ficha completa imprimible (foto, datos, carnetización, trayectoria) ──
+  const [fichaImprimirOpen, setFichaImprimirOpen] = useState(false);
 
   // ── Extracto imprimible de tarjetas ──────────────────────────────────────
   const [extractoOpen, setExtractoOpen] = useState(false);
@@ -127,6 +131,9 @@ export default function FichaJugador() {
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setFichaImprimirOpen(true)}>
+            <Printer className="h-4 w-4 mr-2" /> Imprimir ficha
+          </Button>
           <Button variant="outline" onClick={() => setExtractoOpen(true)}>
             <Printer className="h-4 w-4 mr-2" /> Extracto
           </Button>
@@ -243,6 +250,7 @@ export default function FichaJugador() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Equipo</TableHead>
+                  <TableHead>Temporada</TableHead>
                   <TableHead className="text-center">PJ</TableHead>
                   <TableHead className="text-center">Goles</TableHead>
                   <TableHead className="text-center">Amar.</TableHead>
@@ -252,19 +260,17 @@ export default function FichaJugador() {
               <TableBody>
                 {!historial || historial.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                       Sin historial todavía
                     </TableCell>
                   </TableRow>
                 ) : (
                   <>
                     {historial.map((h) => (
-                      <TableRow key={h.equipoId}>
-                        <TableCell className="font-semibold">
-                          {h.equipoNombre}
-                          {h.equipoId === jugador.equipoId && (
-                            <span className="text-muted-foreground font-normal text-xs"> · actual</span>
-                          )}
+                      <TableRow key={`${h.equipoId}-${h.temporada ?? "actual"}`}>
+                        <TableCell className="font-semibold">{h.equipoNombre}</TableCell>
+                        <TableCell>
+                          {h.temporada ?? <span className="text-muted-foreground">Actual</span>}
                         </TableCell>
                         <TableCell className="text-center font-mono tabular-nums">{h.partidosJugados}</TableCell>
                         <TableCell className="text-center font-mono tabular-nums font-bold">{h.goles}</TableCell>
@@ -274,6 +280,7 @@ export default function FichaJugador() {
                     ))}
                     <TableRow className="border-t-2 hover:bg-transparent">
                       <TableCell className="font-bold">Total</TableCell>
+                      <TableCell />
                       <TableCell className="text-center font-mono tabular-nums font-bold">{total.pj}</TableCell>
                       <TableCell className="text-center font-mono tabular-nums font-bold">{total.goles}</TableCell>
                       <TableCell className="text-center font-mono tabular-nums font-bold">{total.amarillas}</TableCell>
@@ -288,6 +295,25 @@ export default function FichaJugador() {
       </Card>
 
       <JugadorFormDialog open={editOpen} onOpenChange={setEditOpen} jugador={jugador} />
+
+      {/* ── Ficha completa imprimible ── */}
+      <Dialog open={fichaImprimirOpen} onOpenChange={setFichaImprimirOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ficha de {jugador.nombre}</DialogTitle>
+          </DialogHeader>
+          <FichaJugadorImprimible jugador={jugador} historial={historial ?? []} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFichaImprimirOpen(false)}>Cerrar</Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-2" /> Imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ImprimirPortal activo={fichaImprimirOpen}>
+        <FichaJugadorImprimible jugador={jugador} historial={historial ?? []} />
+      </ImprimirPortal>
 
       {/* ── Extracto imprimible de tarjetas ── */}
       <Dialog open={extractoOpen} onOpenChange={setExtractoOpen}>

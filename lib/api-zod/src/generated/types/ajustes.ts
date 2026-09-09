@@ -8,7 +8,20 @@
 
 export interface Ajustes {
   id: number;
-  valorArbitraje: number;
+  valorArbitrajePrimeraVuelta: number;
+  valorArbitrajeSegundaVuelta: number;
+  valorArbitrajeSemifinal: number;
+  valorArbitrajeMuerteSubita: number;
+  valorArbitrajeFinalLiguilla: number;
+  valorArbitrajeSemifinalLiguilla: number;
+  valorTernaSemifinalLiguilla: number;
+  ternaSemifinalLiguilla: boolean;
+  valorArbitrajeSemifinalTorneo: number;
+  valorTernaSemifinalTorneo: number;
+  ternaSemifinalTorneo: boolean;
+  valorArbitrajeFinalTorneo: number;
+  valorTernaFinalTorneo: number;
+  ternaFinalTorneo: boolean;
   valorAmarilla: number;
   valorRoja: number;
   valorFofi: number;

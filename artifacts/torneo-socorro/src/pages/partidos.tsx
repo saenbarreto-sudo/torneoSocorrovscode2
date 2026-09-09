@@ -184,7 +184,18 @@ export default function Partidos() {
     setOpenResult(true);
   };
 
-  const partidos = partidosRaw?.sort((a, b) => b.semana - a.semana || (a.fecha || '').localeCompare(b.fecha || '')) || [];
+  // Por fecha real, no por número de semana: con fecha por partido, una
+  // misma semana puede tener partidos sábado y domingo, y el número de
+  // semana no siempre seguía el orden real del calendario (se reinicia
+  // cada año). Sin fecha, al final. Dentro del mismo día, por hora.
+  const partidos = partidosRaw?.sort((a, b) => {
+    if (a.fecha !== b.fecha) {
+      if (!a.fecha) return 1;
+      if (!b.fecha) return -1;
+      return a.fecha.localeCompare(b.fecha);
+    }
+    return (a.hora || '').localeCompare(b.hora || '');
+  }) || [];
 
   // Extraer semanas unicas para el filtro
   const semanasUnicas = Array.from(new Set(partidosRaw?.map((p) => p.semana) || [])).sort((a, b) => b - a);

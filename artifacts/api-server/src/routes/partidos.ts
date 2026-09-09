@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, inArray, sql, type SQL } from "drizzle-orm";
-import { db, partidosTable, equiposTable, programacionTable } from "@workspace/db";
+import { db, partidosTable, equiposTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
 import {
@@ -105,6 +105,12 @@ router.get("/partidos", async (req, res): Promise<void> => {
       sql`(p.local_id = ${query.data.equipoId} OR p.visitante_id = ${query.data.equipoId})`,
     );
   }
+  if (query.data.desde != null) {
+    conditions.push(sql`p.fecha >= ${query.data.desde}`);
+  }
+  if (query.data.hasta != null) {
+    conditions.push(sql`p.fecha <= ${query.data.hasta}`);
+  }
   const whereClause =
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 
@@ -162,7 +168,7 @@ router.post("/partidos/lote", requireAuth, writeAccess.partidos, async (req, res
     return;
   }
 
-  const { partidos, crearSemanas } = parsed.data;
+  const { partidos } = parsed.data;
 
   if (partidos.some((p) => p.localId === p.visitanteId)) {
     res.status(400).json({ error: "Un equipo no puede jugar contra sí mismo" });
@@ -214,33 +220,7 @@ router.post("/partidos/lote", requireAuth, writeAccess.partidos, async (req, res
       await tx.insert(partidosTable).values(aInsertar);
     }
 
-    let semanasCreadas = 0;
-    if (crearSemanas) {
-      const enProgramacion = await tx
-        .select({ semana: programacionTable.semana })
-        .from(programacionTable)
-        .where(inArray(programacionTable.semana, semanas));
-      const yaExisten = new Set(enProgramacion.map((r) => r.semana));
-
-      const nuevas = semanas
-        .filter((s) => !yaExisten.has(s))
-        .map((s) => {
-          const fecha = partidos.find((p) => p.semana === s)?.fecha ?? null;
-          return {
-            semana: s,
-            nombreSemana: `Fecha ${s}`,
-            fechaDesde: fecha,
-            fechaHasta: fecha,
-          };
-        });
-
-      if (nuevas.length > 0) {
-        await tx.insert(programacionTable).values(nuevas);
-        semanasCreadas = nuevas.length;
-      }
-    }
-
-    return { creados: aInsertar.length, omitidos, semanasCreadas };
+    return { creados: aInsertar.length, omitidos };
   });
 
   res.status(201).json(CreatePartidosLoteResponse.parse(resultado));

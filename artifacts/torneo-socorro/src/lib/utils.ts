@@ -12,6 +12,24 @@ export function formatFecha(fecha: string | null | undefined): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * "2026-07-05" → "Sábado 5 de julio". Se parsea como UTC a propósito (con
+ * "T00:00:00Z"): construir el Date directo de "2026-07-05" lo interpreta en
+ * la zona horaria local, y eso puede correr el día para atrás según dónde
+ * esté el navegador.
+ */
+export function formatFechaConDia(fecha: string | null | undefined): string {
+  if (!fecha) return "—";
+  const iso = fecha.split("T")[0];
+  const texto = new Intl.DateTimeFormat("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${iso}T00:00:00Z`));
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export function formatMoney(amount: number | null | undefined) {
   if (amount == null) return "$0";
   return new Intl.NumberFormat('es-CO', { 

@@ -5,6 +5,7 @@ import {
   useGetEquipos,
   useGetPartidos,
   useCreatePartidosLote,
+  useCreateSemanaFecha,
   getGetPartidosQueryKey,
   getGetProgramacionQueryKey,
 } from '@workspace/api-client-react';
@@ -16,17 +17,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowLeft, CalendarPlus, Info } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, Info, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/lib/api-errors';
-import { generarFixture, type EquipoFixture, type JornadaFixture } from '@/lib/fixture';
-
-function formatFechaCorta(fecha: string | null): string {
-  if (!fecha) return '';
-  const [y, m, d] = fecha.split('-');
-  return `${d}/${m}/${y}`;
-}
+import { generarFixture, type EquipoFixture, type JornadaFixture, type PartidoFixture } from '@/lib/fixture';
 
 export default function GenerarCalendario() {
   const [, navigate] = useLocation();
@@ -38,6 +32,9 @@ export default function GenerarCalendario() {
   const { data: equipos } = useGetEquipos();
   const { data: partidosExistentes } = useGetPartidos();
   const crearLote = useCreatePartidosLote();
+  const crearProgramacion = useCreateSemanaFecha();
+
+  const hoyISO = () => new Date().toISOString().slice(0, 10);
 
   // ── Paso 1: equipos que participan ────────────────────────────────────────
   // Se arranca con los equipos activos, que es lo que pidió el torneo: el
@@ -53,10 +50,12 @@ export default function GenerarCalendario() {
   // ── Paso 2: opciones ──────────────────────────────────────────────────────
   const [idaYVuelta, setIdaYVuelta] = useState(true);
   const [semanaInicial, setSemanaInicial] = useState('');
-  const [fechaInicial, setFechaInicial] = useState('');
+  // Arranca en hoy (no vacío): si el usuario no la toca, cada partido igual
+  // sale con una fecha real de entrada en vez de quedar en blanco — antes
+  // dejar este campo vacío dejaba TODOS los partidos sin fecha.
+  const [fechaInicial, setFechaInicial] = useState(hoyISO());
   const [diasEntreJornadas, setDiasEntreJornadas] = useState('7');
   const [hora, setHora] = useState('');
-  const [crearSemanas, setCrearSemanas] = useState(true);
 
   // Por defecto se continúa después de la última semana ya programada, para no
   // pisar partidos que ya existen.
@@ -96,6 +95,12 @@ export default function GenerarCalendario() {
   // Arranca vacío a propósito: el usuario elige qué programa, no al revés.
   const [elegidos, setElegidos] = useState<Set<string>>(new Set());
 
+  // Fecha elegida a mano para un partido puntual, cuando no coincide con la
+  // fecha de toda la jornada (ej. la jornada cae sábado y domingo a la vez).
+  // Solo guarda los que el usuario tocó — el resto sigue usando la fecha por
+  // defecto de su jornada.
+  const [fechasPorClave, setFechasPorClave] = useState<Map<string, string>>(new Map());
+
   const alternarPartido = (clave: string) => {
     setElegidos((previo) => {
       const copia = new Set(previo);
@@ -105,16 +110,14 @@ export default function GenerarCalendario() {
     });
   };
 
-  /** Marca o desmarca de golpe un grupo de jornadas (una, o toda una vuelta). */
-  const marcarJornadas = (grupo: JornadaFixture[], marcar: boolean) => {
+  /** Marca o desmarca de golpe un grupo de partidos (todos, o solo los que pasan la búsqueda). */
+  const marcarPartidos = (grupo: PartidoFixture[], marcar: boolean) => {
     setElegidos((previo) => {
       const copia = new Set(previo);
-      for (const j of grupo) {
-        for (const p of j.partidos) {
-          if (estaProgramado(p.local.id, p.visitante.id)) continue;
-          if (marcar) copia.add(p.clave);
-          else copia.delete(p.clave);
-        }
+      for (const p of grupo) {
+        if (estaProgramado(p.local.id, p.visitante.id)) continue;
+        if (marcar) copia.add(p.clave);
+        else copia.delete(p.clave);
       }
       return copia;
     });
@@ -125,6 +128,40 @@ export default function GenerarCalendario() {
     for (const j of jornadas) for (const p of j.partidos) mapa.set(p.clave, p);
     return mapa;
   }, [jornadas]);
+
+  // ── Lista plana, sin agrupar por jornada: el orden en que las genera
+  // generarFixture ya es cronológico (la fecha de cada jornada solo avanza),
+  // así que alcanza con aplanarlo tal cual.
+  const partidosPlanos: PartidoFixture[] = useMemo(
+    () => jornadas.flatMap((j) => j.partidos),
+    [jornadas],
+  );
+
+  const [busqueda, setBusqueda] = useState('');
+  const partidosFiltrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    if (!texto) return partidosPlanos;
+    return partidosPlanos.filter(
+      (p) => p.local.nombre.toLowerCase().includes(texto) || p.visitante.nombre.toLowerCase().includes(texto),
+    );
+  }, [partidosPlanos, busqueda]);
+
+  // Fecha para aplicar de una sola vez a los partidos que pasan la búsqueda
+  // actual — el flujo real es "busco un equipo puntual, les pongo la misma
+  // fecha a todos los que aparecieron", en vez de llenar uno por uno.
+  const [fechaParaVisibles, setFechaParaVisibles] = useState(hoyISO());
+  const aplicarFechaAVisibles = () => {
+    if (!fechaParaVisibles) return;
+    setFechasPorClave((previo) => {
+      const copia = new Map(previo);
+      for (const p of partidosFiltrados) copia.set(p.clave, fechaParaVisibles);
+      return copia;
+    });
+  };
+
+  // Nombre de la Programación que se crea al guardar este lote (opcional:
+  // si se deja vacío, se arma uno automático con el rango de fechas).
+  const [nombreProgramacion, setNombreProgramacion] = useState('');
 
   // Si cambian los equipos o las opciones, el calendario se rehace y las claves
   // viejas dejan de existir: solo cuentan las que siguen estando.
@@ -140,31 +177,70 @@ export default function GenerarCalendario() {
     const aCrear = clavesVigentes
       .map((c) => partidosPorClave.get(c)!)
       .sort((a, b) => a.semana - b.semana)
-      .map((p) => ({
-        semana: p.semana,
-        localId: p.local.id,
-        visitanteId: p.visitante.id,
-        ...(p.fecha ? { fecha: p.fecha } : {}),
-        ...(hora ? { hora } : {}),
-        fase: p.vuelta === 1 ? 'Primera vuelta' : 'Segunda vuelta',
-      }));
+      .map((p) => {
+        // La fecha que el usuario haya elegido a mano para ESTE partido
+        // manda sobre la fecha por defecto de toda la jornada — así una
+        // misma semana puede quedar con partidos sábado y otros domingo.
+        const fecha = fechasPorClave.get(p.clave) ?? p.fecha;
+        return {
+          semana: p.semana,
+          localId: p.local.id,
+          visitanteId: p.visitante.id,
+          ...(fecha ? { fecha } : {}),
+          ...(hora ? { hora } : {}),
+          fase: p.vuelta === 1 ? 'Primera vuelta' : 'Segunda vuelta',
+        };
+      });
 
     if (aCrear.length === 0) return;
 
     try {
-      const resultado = await crearLote.mutateAsync({ data: { partidos: aCrear, crearSemanas } });
+      const resultado = await crearLote.mutateAsync({ data: { partidos: aCrear } });
       await queryClient.invalidateQueries({ queryKey: getGetPartidosQueryKey() });
-      await queryClient.invalidateQueries({ queryKey: getGetProgramacionQueryKey() });
+
+      // Una sola Programación por cada guardado, cubriendo el rango de
+      // fechas de lo que se acaba de guardar — sin importar cuántos
+      // números de semana distintos tenga. Si nada de lo guardado tiene
+      // fecha, no tiene sentido un rango: se omite.
+      const fechas = aCrear.map((p) => p.fecha).filter((f): f is string => !!f).sort();
+      let programacionCreada = false;
+      if (fechas.length > 0) {
+        const fechaDesde = fechas[0];
+        const fechaHasta = fechas[fechas.length - 1];
+        const semanas = aCrear.map((p) => p.semana);
+        const semanaMin = Math.min(...semanas);
+        const nombre =
+          nombreProgramacion.trim() ||
+          (fechaDesde === fechaHasta ? `Semana ${semanaMin}` : `Semana ${semanaMin} y siguientes`);
+        try {
+          await crearProgramacion.mutateAsync({
+            data: { semana: semanaMin, nombreSemana: nombre, fechaDesde, fechaHasta },
+          });
+          await queryClient.invalidateQueries({ queryKey: getGetProgramacionQueryKey() });
+          programacionCreada = true;
+        } catch (errorProgramacion) {
+          // Los partidos ya se guardaron; que falle la Programación (poco
+          // probable) no debería hacer parecer que se perdió todo el lote.
+          toast({
+            title: 'Los partidos se guardaron, pero no se pudo crear la Programación',
+            description: extractErrorMessage(errorProgramacion),
+            variant: 'destructive',
+          });
+        }
+      }
+
       setElegidos(new Set());
+      setFechasPorClave(new Map());
+      setNombreProgramacion('');
 
       const detalles = [
         `${resultado.creados} ${resultado.creados === 1 ? 'partido programado' : 'partidos programados'}`,
-        resultado.semanasCreadas > 0 ? `${resultado.semanasCreadas} semanas creadas en el cronograma` : null,
         resultado.omitidos > 0 ? `${resultado.omitidos} ya existían y se omitieron` : null,
+        programacionCreada ? 'Programación creada' : null,
       ].filter(Boolean);
 
       toast({ title: 'Calendario guardado', description: detalles.join(' · ') });
-      navigate('/partidos');
+      navigate('/programacion');
     } catch (error) {
       toast({
         title: 'No se pudo guardar el calendario',
@@ -184,13 +260,6 @@ export default function GenerarCalendario() {
       </div>
     );
   }
-
-  const vueltas: Array<{ numero: 1 | 2; titulo: string; jornadas: JornadaFixture[] }> = [
-    { numero: 1, titulo: 'Primera vuelta', jornadas: jornadas.filter((j) => j.vuelta === 1) },
-    ...(idaYVuelta
-      ? [{ numero: 2 as const, titulo: 'Segunda vuelta', jornadas: jornadas.filter((j) => j.vuelta === 2) }]
-      : []),
-  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-28">
@@ -311,12 +380,6 @@ export default function GenerarCalendario() {
               <Label>Hora (opcional)</Label>
               <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
             </div>
-            <div className="flex items-end lg:col-span-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer pb-2">
-                <Checkbox checked={crearSemanas} onCheckedChange={(v) => setCrearSemanas(v === true)} />
-                Crear también las semanas en el cronograma
-              </label>
-            </div>
           </div>
 
           {jornadas.length > 0 && (
@@ -345,12 +408,12 @@ export default function GenerarCalendario() {
             <div>
               <h2 className="text-sm font-bold">3. Elige los partidos que vas a programar</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Abre una jornada para ver sus partidos. Nada se guarda hasta que confirmes.
+                Busca por equipo (local o visitante) para encontrar un cruce puntual. Nada se guarda hasta que confirmes.
               </p>
             </div>
             {jornadas.length > 0 && (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => marcarJornadas(jornadas, true)}>
+                <Button variant="outline" size="sm" onClick={() => marcarPartidos(partidosPlanos, true)}>
                   Marcar todo
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setElegidos(new Set())}>
@@ -365,110 +428,103 @@ export default function GenerarCalendario() {
               Marca al menos dos equipos para armar el calendario.
             </div>
           ) : (
-            <div className="divide-y">
-              {vueltas.map((vuelta) => {
-                const disponibles = vuelta.jornadas.flatMap((j) =>
-                  j.partidos.filter((p) => !estaProgramado(p.local.id, p.visitante.id)),
-                );
-                const marcadosVuelta = disponibles.filter((p) => elegidos.has(p.clave)).length;
+            <>
+              <div className="px-6 py-3 border-b flex items-center gap-3 flex-wrap">
+                <div className="relative flex-1 min-w-55">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Buscar por equipo local o visitante..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                  />
+                </div>
+                {busqueda.trim() && (
+                  <>
+                    <span className="text-xs text-muted-foreground">
+                      {partidosFiltrados.length} de {partidosPlanos.length} partidos
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => marcarPartidos(partidosFiltrados, true)}>
+                      Marcar estos
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => marcarPartidos(partidosFiltrados, false)}>
+                      Desmarcar estos
+                    </Button>
+                  </>
+                )}
+              </div>
 
-                return (
-                  <div key={vuelta.numero}>
-                    <div className="px-6 py-3 bg-muted/40 flex items-center justify-between gap-4 flex-wrap">
-                      <div className="font-bold text-sm">
-                        {vuelta.titulo}
-                        <span className="font-normal text-muted-foreground">
-                          {' · '}
-                          {marcadosVuelta} de {disponibles.length} marcados
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => marcarJornadas(vuelta.jornadas, true)}>
-                          Marcar la vuelta
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => marcarJornadas(vuelta.jornadas, false)}>
-                          Desmarcar
-                        </Button>
-                      </div>
-                    </div>
+              {busqueda.trim() && partidosFiltrados.length > 0 && (
+                <div className="px-6 py-2 border-b bg-muted/30 flex items-center gap-2 flex-wrap text-xs">
+                  <span className="text-muted-foreground">Ponerle esta fecha a los {partidosFiltrados.length} de arriba:</span>
+                  <Input
+                    type="date"
+                    className="h-8 w-37.5 text-xs"
+                    value={fechaParaVisibles}
+                    onChange={(e) => setFechaParaVisibles(e.target.value)}
+                  />
+                  <Button variant="outline" size="sm" className="h-8" onClick={aplicarFechaAVisibles}>
+                    Aplicar a los visibles
+                  </Button>
+                </div>
+              )}
 
-                    <Accordion type="multiple">
-                      {vuelta.jornadas.map((j) => {
-                        const disponiblesJornada = j.partidos.filter(
-                          (p) => !estaProgramado(p.local.id, p.visitante.id),
-                        );
-                        const marcados = disponiblesJornada.filter((p) => elegidos.has(p.clave)).length;
-
-                        return (
-                          <AccordionItem key={`v${j.vuelta}-j${j.jornada}`} value={`v${j.vuelta}-j${j.jornada}`}>
-                            <AccordionTrigger className="px-6 hover:no-underline">
-                              <div className="flex items-center gap-3 flex-wrap text-left">
-                                <span className="font-bold">Jornada {j.jornada}</span>
-                                <span className="text-xs text-muted-foreground font-mono">
-                                  semana {j.semana}
-                                  {j.fecha && ` · ${formatFechaCorta(j.fecha)}`}
-                                </span>
-                                {marcados > 0 && (
-                                  <Badge variant="success">
-                                    {marcados} marcado{marcados === 1 ? '' : 's'}
-                                  </Badge>
-                                )}
-                                {disponiblesJornada.length === 0 && (
-                                  <Badge variant="secondary">ya programada</Badge>
-                                )}
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4">
-                              <div className="flex gap-2 mb-3">
-                                <Button variant="outline" size="sm" onClick={() => marcarJornadas([j], true)}>
-                                  Marcar la jornada
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => marcarJornadas([j], false)}>
-                                  Desmarcar
-                                </Button>
-                              </div>
-
-                              {j.descansa && (
-                                <p className="text-xs text-muted-foreground mb-3">
-                                  Descansa: <span className="font-semibold">{j.descansa.nombre}</span>
-                                </p>
-                              )}
-
-                              <div className="space-y-1">
-                                {j.partidos.map((p) => {
-                                  const programado = estaProgramado(p.local.id, p.visitante.id);
-                                  return (
-                                    <label
-                                      key={p.clave}
-                                      className={`flex items-center gap-3 py-1.5 text-sm rounded-md ${
-                                        programado ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'
-                                      }`}
-                                    >
-                                      <Checkbox
-                                        className="ml-1"
-                                        disabled={programado}
-                                        checked={elegidos.has(p.clave)}
-                                        onCheckedChange={() => alternarPartido(p.clave)}
-                                      />
-                                      <span className="flex-1">
-                                        <span className="font-semibold">{p.local.nombre}</span>
-                                        <span className="text-muted-foreground"> vs </span>
-                                        <span className="font-semibold">{p.visitante.nombre}</span>
-                                      </span>
-                                      {programado && <Badge variant="secondary">ya programado</Badge>}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      })}
-                    </Accordion>
+              <div className="divide-y max-h-150 overflow-y-auto">
+                {partidosFiltrados.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    Ningún partido coincide con "{busqueda}".
                   </div>
-                );
-              })}
-            </div>
+                ) : (
+                  partidosFiltrados.map((p) => {
+                    const programado = estaProgramado(p.local.id, p.visitante.id);
+                    return (
+                      <label
+                        key={p.clave}
+                        className={`flex items-center gap-3 px-6 py-2 text-sm ${
+                          programado ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'
+                        }`}
+                      >
+                        <Checkbox
+                          disabled={programado}
+                          checked={elegidos.has(p.clave)}
+                          onCheckedChange={() => alternarPartido(p.clave)}
+                        />
+                        <span className="text-xs text-muted-foreground font-mono w-28 shrink-0">
+                          Sem {p.semana} · V{p.vuelta}
+                        </span>
+                        <span className="flex-1">
+                          <span className="font-semibold">{p.local.nombre}</span>
+                          <span className="text-muted-foreground"> vs </span>
+                          <span className="font-semibold">{p.visitante.nombre}</span>
+                        </span>
+                        {!programado && (
+                          // stopPropagation: la fila entera es un <label> que activa el
+                          // checkbox al hacer clic — sin esto, cambiar la fecha también
+                          // marcaría/desmarcaría el partido por accidente.
+                          <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                            <Input
+                              type="date"
+                              className="h-8 w-37.5 text-xs"
+                              value={fechasPorClave.get(p.clave) ?? p.fecha ?? ''}
+                              onChange={(e) => {
+                                const valor = e.target.value;
+                                setFechasPorClave((previo) => {
+                                  const copia = new Map(previo);
+                                  if (valor) copia.set(p.clave, valor);
+                                  else copia.delete(p.clave);
+                                  return copia;
+                                });
+                              }}
+                            />
+                          </span>
+                        )}
+                        {programado && <Badge variant="secondary">ya programado</Badge>}
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -483,10 +539,18 @@ export default function GenerarCalendario() {
               {clavesVigentes.length === 1 ? '' : 's'} seleccionado
               {clavesVigentes.length === 1 ? '' : 's'}
             </div>
-            <Button onClick={guardar} disabled={crearLote.isPending}>
-              <CalendarPlus className="h-4 w-4 mr-2" />
-              {crearLote.isPending ? 'Guardando...' : `Programar ${clavesVigentes.length}`}
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Input
+                className="h-9 w-56"
+                placeholder="Nombre de esta programación (opcional)"
+                value={nombreProgramacion}
+                onChange={(e) => setNombreProgramacion(e.target.value)}
+              />
+              <Button onClick={guardar} disabled={crearLote.isPending}>
+                <CalendarPlus className="h-4 w-4 mr-2" />
+                {crearLote.isPending ? 'Guardando...' : `Programar ${clavesVigentes.length}`}
+              </Button>
+            </div>
           </div>
         </div>
       )}

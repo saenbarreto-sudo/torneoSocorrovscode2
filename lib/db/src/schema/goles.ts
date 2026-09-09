@@ -7,7 +7,7 @@ import { partidosTable } from "./partidos";
 export const golesTable = pgTable("goles", {
   id: serial("id").primaryKey(),
   jugadorId: integer("jugador_id").notNull().references(() => jugadoresTable.id),
-  partidoId: integer("partido_id").references(() => partidosTable.id),
+  partidoId: integer("partido_id").references(() => partidosTable.id, { onDelete: "cascade" }),
   semana: integer("semana").notNull(),
   fecha: date("fecha", { mode: "string" }),
   cantidad: integer("cantidad").notNull().default(1),
