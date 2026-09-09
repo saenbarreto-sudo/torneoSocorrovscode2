@@ -24,6 +24,7 @@ import PagosResumen from '@/pages/pagos-resumen';
 import Egresos from '@/pages/egresos';
 import Programacion from '@/pages/programacion';
 import GenerarCalendario from '@/pages/generar-calendario';
+import ArmarFase from '@/pages/armar-fase';
 import Usuarios from '@/pages/usuarios';
 import Ajustes from '@/pages/ajustes';
 
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/egresos">{() => <Protected path="/egresos" component={Egresos} />}</Route>
         <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
         <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
+        <Route path="/posiciones/armar-fase">{() => <Protected path="/programacion" component={ArmarFase} />}</Route>
         <Route path="/usuarios">{() => <Protected path="/usuarios" component={Usuarios} />}</Route>
         <Route path="/ajustes">{() => <Protected path="/ajustes" component={Ajustes} />}</Route>
         <Route component={NotFound} />

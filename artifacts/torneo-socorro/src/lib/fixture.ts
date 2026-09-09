@@ -57,7 +57,7 @@ export interface OpcionesFixture {
 }
 
 /** Suma días a una fecha yyyy-mm-dd sin que la zona horaria corra el día. */
-function sumarDias(fechaISO: string, dias: number): string {
+export function sumarDias(fechaISO: string, dias: number): string {
   const [y, m, d] = fechaISO.split("-").map(Number);
   const base = Date.UTC(y, m - 1, d);
   const resultado = new Date(base + dias * 24 * 60 * 60 * 1000);

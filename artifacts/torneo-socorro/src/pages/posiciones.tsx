@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { useGetPosiciones, useGetFases } from '@workspace/api-client-react';
+import { useAuth, canWrite } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trophy } from 'lucide-react';
 
 /**
  * Valor especial para la pestaña "Tabla general": no manda `fase` al
@@ -13,6 +17,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const TABLA_GENERAL = '__general__';
 
 export default function Posiciones() {
+  const [, navigate] = useLocation();
+  const { role } = useAuth();
+  const puedeProgramar = canWrite(role, 'partidos');
   const [fase, setFase] = useState<string>(TABLA_GENERAL);
   const esTablaGeneral = fase === TABLA_GENERAL;
   const { data: fases } = useGetFases();
@@ -22,9 +29,17 @@ export default function Posiciones() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Posiciones</h1>
-        <p className="text-muted-foreground mt-1">Clasificación general del torneo</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Posiciones</h1>
+          <p className="text-muted-foreground mt-1">Clasificación general del torneo</p>
+        </div>
+        {puedeProgramar && (
+          <Button variant="outline" onClick={() => navigate('/posiciones/armar-fase')}>
+            <Trophy className="h-4 w-4 mr-2" />
+            Armar fase
+          </Button>
+        )}
       </div>
 
       {fases && fases.length > 0 && (
