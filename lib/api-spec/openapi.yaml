@@ -1777,10 +1777,12 @@ components:
           id,
           valorArbitrajePrimeraVuelta,
           valorArbitrajeSegundaVuelta,
-          valorArbitrajeFinalLiguilla,
           valorArbitrajeMuerteSubita,
           valorTernaMuerteSubita,
           ternaMuerteSubita,
+          valorArbitrajeFinalLiguilla,
+          valorTernaFinalLiguilla,
+          ternaFinalLiguilla,
           valorArbitrajeSemifinalLiguilla,
           valorTernaSemifinalLiguilla,
           ternaSemifinalLiguilla,
@@ -1806,8 +1808,6 @@ components:
           type: number
         valorArbitrajeSegundaVuelta:
           type: number
-        valorArbitrajeFinalLiguilla:
-          type: number
         # Fases que pueden ser 1 árbitro o terna: los dos valores + la
         # casilla que dice cuál de los dos se está pagando.
         valorArbitrajeMuerteSubita:
@@ -1815,6 +1815,12 @@ components:
         valorTernaMuerteSubita:
           type: number
         ternaMuerteSubita:
+          type: boolean
+        valorArbitrajeFinalLiguilla:
+          type: number
+        valorTernaFinalLiguilla:
+          type: number
+        ternaFinalLiguilla:
           type: boolean
         valorArbitrajeSemifinalLiguilla:
           type: number
@@ -1858,13 +1864,17 @@ components:
           type: number
         valorArbitrajeSegundaVuelta:
           type: number
-        valorArbitrajeFinalLiguilla:
-          type: number
         valorArbitrajeMuerteSubita:
           type: number
         valorTernaMuerteSubita:
           type: number
         ternaMuerteSubita:
+          type: boolean
+        valorArbitrajeFinalLiguilla:
+          type: number
+        valorTernaFinalLiguilla:
+          type: number
+        ternaFinalLiguilla:
           type: boolean
         valorArbitrajeSemifinalLiguilla:
           type: number

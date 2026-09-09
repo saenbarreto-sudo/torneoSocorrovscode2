@@ -21,6 +21,8 @@ const ajustesSchema = z.object({
   valorArbitrajePrimeraVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorArbitrajeSegundaVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorArbitrajeFinalLiguilla: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorTernaFinalLiguilla: valorPesos('El valor de la terna debe ser un número entero'),
+  ternaFinalLiguilla: z.boolean(),
   valorArbitrajeMuerteSubita: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorTernaMuerteSubita: valorPesos('El valor de la terna debe ser un número entero'),
   ternaMuerteSubita: z.boolean(),
@@ -46,7 +48,7 @@ type AjustesFormValues = z.infer<typeof ajustesSchema>;
 /** Los nombres de campo que son un valor en pesos (todos menos las casillas "Terna"). */
 type CampoNumero = Exclude<
   keyof AjustesFormValues,
-  'ternaMuerteSubita' | 'ternaSemifinalLiguilla' | 'ternaSemifinalTorneo' | 'ternaFinalTorneo'
+  'ternaFinalLiguilla' | 'ternaMuerteSubita' | 'ternaSemifinalLiguilla' | 'ternaSemifinalTorneo' | 'ternaFinalTorneo'
 >;
 
 const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string }> = [
@@ -60,7 +62,6 @@ const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string
     label: 'Tarjeta roja',
     ayuda: 'Se asigna solo, igual que la amarilla.',
   },
-  { name: 'valorFofi', label: 'FOFI' },
   { name: 'valorCarnet', label: 'Carné' },
   { name: 'valorTraspaso', label: 'Traspaso de jugador' },
   { name: 'valorMultaTorneosAnteriores', label: 'Multa por deudas de torneos anteriores' },
@@ -70,7 +71,7 @@ const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string
 const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
   { name: 'valorArbitrajePrimeraVuelta', label: 'Primera vuelta' },
   { name: 'valorArbitrajeSegundaVuelta', label: 'Segunda vuelta' },
-  { name: 'valorArbitrajeFinalLiguilla', label: 'Final liguilla' },
+  { name: 'valorFofi', label: 'FOFI' },
 ];
 
 /**
@@ -79,6 +80,12 @@ const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
  * casilla que dice cuál de los dos aplica.
  */
 const FASES_CON_TERNA: Array<{ label: string; arbitro: CampoNumero; terna: CampoNumero; casilla: keyof AjustesFormValues }> = [
+  {
+    label: 'Final liguilla',
+    arbitro: 'valorArbitrajeFinalLiguilla',
+    terna: 'valorTernaFinalLiguilla',
+    casilla: 'ternaFinalLiguilla',
+  },
   {
     label: 'Muerte súbita',
     arbitro: 'valorArbitrajeMuerteSubita',
@@ -180,7 +187,10 @@ export default function Ajustes() {
     defaultValues: {
       valorArbitrajePrimeraVuelta: 0,
       valorArbitrajeSegundaVuelta: 0,
+      valorFofi: 0,
       valorArbitrajeFinalLiguilla: 0,
+      valorTernaFinalLiguilla: 0,
+      ternaFinalLiguilla: false,
       valorArbitrajeMuerteSubita: 0,
       valorTernaMuerteSubita: 0,
       ternaMuerteSubita: false,
@@ -195,7 +205,6 @@ export default function Ajustes() {
       ternaFinalTorneo: false,
       valorAmarilla: 0,
       valorRoja: 0,
-      valorFofi: 0,
       valorCarnet: 0,
       valorMultaTorneosAnteriores: 0,
       valorTraspaso: 0,
@@ -209,7 +218,10 @@ export default function Ajustes() {
       form.reset({
         valorArbitrajePrimeraVuelta: ajustes.valorArbitrajePrimeraVuelta,
         valorArbitrajeSegundaVuelta: ajustes.valorArbitrajeSegundaVuelta,
+        valorFofi: ajustes.valorFofi,
         valorArbitrajeFinalLiguilla: ajustes.valorArbitrajeFinalLiguilla,
+        valorTernaFinalLiguilla: ajustes.valorTernaFinalLiguilla,
+        ternaFinalLiguilla: ajustes.ternaFinalLiguilla,
         valorArbitrajeMuerteSubita: ajustes.valorArbitrajeMuerteSubita,
         valorTernaMuerteSubita: ajustes.valorTernaMuerteSubita,
         ternaMuerteSubita: ajustes.ternaMuerteSubita,
@@ -224,7 +236,6 @@ export default function Ajustes() {
         ternaFinalTorneo: ajustes.ternaFinalTorneo,
         valorAmarilla: ajustes.valorAmarilla,
         valorRoja: ajustes.valorRoja,
-        valorFofi: ajustes.valorFofi,
         valorCarnet: ajustes.valorCarnet,
         valorMultaTorneosAnteriores: ajustes.valorMultaTorneosAnteriores,
         valorTraspaso: ajustes.valorTraspaso,
@@ -284,9 +295,10 @@ export default function Ajustes() {
                   <div>
                     <h2 className="font-bold text-lg">Arbitrajes</h2>
                     <p className="text-xs text-muted-foreground mt-1">
-                      El valor cambia según la fase del torneo. Muerte súbita, semifinal liguilla,
-                      semifinal del torneo y la final se pueden pagar con 1 árbitro o con terna —
-                      se decide más cerca de la fecha, marcando la casilla correspondiente.
+                      El valor cambia según la fase del torneo. Final liguilla, muerte súbita,
+                      semifinal liguilla, semifinal del torneo y la final se pueden pagar con 1
+                      árbitro o con terna — se decide más cerca de la fecha, marcando la casilla
+                      correspondiente.
                     </p>
                   </div>
 

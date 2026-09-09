@@ -12,22 +12,24 @@ import { z } from "zod/v4";
  *
  * El arbitraje se paga distinto según la fase del torneo (Art. reglamento):
  * la mayoría de las fases siempre llevan 1 árbitro, pero muerte súbita,
- * semifinal liguilla, semifinal del torneo y la final del torneo pueden
- * pagarse con 1 árbitro O con terna (3 árbitros) — se decide más cerca de
- * la fecha, por eso esas cuatro traen los dos valores y una casilla para
- * marcar cuál aplica.
+ * final liguilla, semifinal liguilla, semifinal del torneo y la final del
+ * torneo pueden pagarse con 1 árbitro O con terna (3 árbitros) — se decide
+ * más cerca de la fecha, por eso esas cinco traen los dos valores y una
+ * casilla para marcar cuál aplica.
  */
 export const ajustesTable = pgTable("ajustes", {
   id: serial("id").primaryKey(),
   // Fases que siempre se pagan con 1 árbitro.
   valorArbitrajePrimeraVuelta: integer("valor_arbitraje_primera_vuelta").notNull().default(0),
   valorArbitrajeSegundaVuelta: integer("valor_arbitraje_segunda_vuelta").notNull().default(0),
-  valorArbitrajeFinalLiguilla: integer("valor_arbitraje_final_liguilla").notNull().default(0),
   // Fases que pueden ser 1 árbitro o terna: los dos valores + la casilla
   // que dice cuál de los dos se está pagando.
   valorArbitrajeMuerteSubita: integer("valor_arbitraje_muerte_subita").notNull().default(0),
   valorTernaMuerteSubita: integer("valor_terna_muerte_subita").notNull().default(0),
   ternaMuerteSubita: boolean("terna_muerte_subita").notNull().default(false),
+  valorArbitrajeFinalLiguilla: integer("valor_arbitraje_final_liguilla").notNull().default(0),
+  valorTernaFinalLiguilla: integer("valor_terna_final_liguilla").notNull().default(0),
+  ternaFinalLiguilla: boolean("terna_final_liguilla").notNull().default(false),
   valorArbitrajeSemifinalLiguilla: integer("valor_arbitraje_semifinal_liguilla").notNull().default(0),
   valorTernaSemifinalLiguilla: integer("valor_terna_semifinal_liguilla").notNull().default(0),
   ternaSemifinalLiguilla: boolean("terna_semifinal_liguilla").notNull().default(false),
