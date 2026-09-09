@@ -163,8 +163,12 @@ router.get("/jugadores", async (req, res): Promise<void> => {
       activo: jugadoresTable.activo,
       // Partidos jugados según la planilla: es lo que determina si el
       // jugador está activo en el torneo (al menos 1 partido disputado).
+      // Se une con partidos y se filtra por temporada IS NULL (torneo
+      // actual) para que un historial importado no lo marque como activo.
       partidosJugados: sql<number>`(
-        SELECT COUNT(*)::int FROM planilla pl WHERE pl.jugador_id = ${jugadoresTable.id}
+        SELECT COUNT(*)::int FROM planilla pl
+        JOIN partidos p ON p.id = pl.partido_id
+        WHERE pl.jugador_id = ${jugadoresTable.id} AND p.temporada IS NULL
       )`,
       createdAt: jugadoresTable.createdAt,
     })

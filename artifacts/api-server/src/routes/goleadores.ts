@@ -6,6 +6,9 @@ import { sql } from "drizzle-orm";
 const router: IRouter = Router();
 
 router.get("/goleadores", async (_req, res): Promise<void> => {
+  // "temporada IS NULL" = torneo actual (ver schema/partidos.ts). Sin este
+  // filtro, un historial importado de una temporada pasada se sumaría a la
+  // tabla de goleadores del torneo en curso.
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
@@ -15,7 +18,7 @@ router.get("/goleadores", async (_req, res): Promise<void> => {
     FROM jugadores j
     JOIN equipos e ON e.id = j.equipo_id
     JOIN goles g ON g.jugador_id = j.id
-    WHERE g.propio = false
+    WHERE g.propio = false AND g.temporada IS NULL
     GROUP BY j.id, j.nombre, e.nombre
     HAVING SUM(g.cantidad) > 0
     ORDER BY total_goles DESC, j.nombre ASC
@@ -51,6 +54,7 @@ router.get("/vallas", async (_req, res): Promise<void> => {
       ON (p.local_id = e.id OR p.visitante_id = e.id)
       AND p.jugado = true
       AND p.walkover = false
+      AND p.temporada IS NULL
     WHERE e.activo = true
     GROUP BY e.id, e.nombre
     ORDER BY goles_recibidos ASC, partidos_jugados DESC, e.nombre ASC

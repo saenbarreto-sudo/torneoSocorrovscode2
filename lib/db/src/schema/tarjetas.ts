@@ -19,6 +19,9 @@ export const tarjetasTable = pgTable("tarjetas", {
   // automáticamente a medida que el equipo del jugador juega y él no
   // aparece en la planilla.
   fechasSancion: integer("fechas_sancion").notNull().default(0),
+  // Ver el mismo campo en partidos.ts: NULL = torneo actual, un valor tipo
+  // "2025-2026" = tarjeta importada del historial de una temporada pasada.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

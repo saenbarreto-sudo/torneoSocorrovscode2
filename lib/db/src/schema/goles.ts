@@ -1,4 +1,4 @@
-import { pgTable, serial, boolean, timestamp, integer, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, integer, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { jugadoresTable } from "./jugadores";
@@ -12,6 +12,9 @@ export const golesTable = pgTable("goles", {
   fecha: date("fecha", { mode: "string" }),
   cantidad: integer("cantidad").notNull().default(1),
   propio: boolean("propio").notNull().default(false),
+  // Ver el mismo campo en partidos.ts: NULL = torneo actual, un valor tipo
+  // "2025-2026" = gol importado del historial de una temporada pasada.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

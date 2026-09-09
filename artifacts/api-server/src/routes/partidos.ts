@@ -108,12 +108,15 @@ router.get("/partidos", async (req, res): Promise<void> => {
   const whereClause =
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 
+  // "p.temporada IS NULL" = solo el torneo actual (ver schema/partidos.ts).
+  // Un historial importado de una temporada pasada no debe aparecer en el
+  // calendario/lista de partidos en vivo.
   const rows = await db.execute(sql`
     SELECT p.*, l.nombre as local_nombre, v.nombre as visitante_nombre
     FROM partidos p
     JOIN equipos l ON l.id = p.local_id
     JOIN equipos v ON v.id = p.visitante_id
-    WHERE 1=1
+    WHERE p.temporada IS NULL
     ${whereClause}
     ORDER BY p.semana, p.fecha, p.hora
   `);

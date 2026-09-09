@@ -23,6 +23,13 @@ export const partidosTable = pgTable("partidos", {
   // asociada en un partido con walkover=true).
   walkover: boolean("walkover").notNull().default(false),
   walkoverGanadorId: integer("walkover_ganador_id").references(() => equiposTable.id),
+  // NULL = torneo actual (lo que se juega ahora). Un valor como "2025-2026"
+  // marca un partido importado del historial de una temporada pasada, para
+  // que no se mezcle con las tablas en vivo (Posiciones, Goleadores,
+  // Partidos, Amonestados), que solo miran los que tienen NULL acá. La
+  // ficha del jugador sí los muestra todos, sin este filtro — el historial
+  // de carrera abarca todas las temporadas a propósito.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -6,6 +6,9 @@ import { sql } from "drizzle-orm";
 const router: IRouter = Router();
 
 router.get("/posiciones", async (_req, res): Promise<void> => {
+  // "AND p.temporada IS NULL" en los JOIN de abajo: solo el torneo actual
+  // (ver schema/partidos.ts). Sin eso, un historial importado de una
+  // temporada pasada se mezclaría con la tabla de posiciones en curso.
   const rows = await db.execute(sql`
     WITH partidos_jugados AS (
       SELECT
@@ -42,7 +45,7 @@ router.get("/posiciones", async (_req, res): Promise<void> => {
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_visitante ELSE 0 END), 0)::int as gf_visitante,
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_local ELSE 0 END), 0)::int as gc_visitante
       FROM equipos e
-      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id)
+      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND p.temporada IS NULL
       WHERE e.activo = true
       GROUP BY e.id, e.nombre, e.puntos_bonificacion
     ),
@@ -55,7 +58,7 @@ router.get("/posiciones", async (_req, res): Promise<void> => {
       FROM tarjetas t
       JOIN jugadores j ON j.id = t.jugador_id
       JOIN partidos p ON p.id = t.partido_id
-      WHERE p.jugado = true
+      WHERE p.jugado = true AND p.temporada IS NULL
       GROUP BY j.equipo_id
     )
     SELECT

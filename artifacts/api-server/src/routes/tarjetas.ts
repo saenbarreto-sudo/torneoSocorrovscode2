@@ -56,12 +56,13 @@ router.get("/tarjetas", async (req, res): Promise<void> => {
   const whereClause =
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 
+  // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
   const rows = await db.execute(sql`
     SELECT t.*, j.nombre as jugador_nombre, j.n_carnet as n_carnet, e.nombre as equipo_nombre
     FROM tarjetas t
     JOIN jugadores j ON j.id = t.jugador_id
     JOIN equipos e ON e.id = j.equipo_id
-    WHERE 1=1
+    WHERE t.temporada IS NULL
     ${whereClause}
     ORDER BY t.semana DESC, t.created_at DESC
   `);
@@ -177,6 +178,7 @@ router.delete("/tarjetas/:id", requireAuth, writeAccess.tarjetas, async (req, re
 });
 
 router.get("/amonestados", async (_req, res): Promise<void> => {
+  // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
@@ -188,7 +190,7 @@ router.get("/amonestados", async (_req, res): Promise<void> => {
       SUM(CASE WHEN t.tipo = 'roja' THEN 2 WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 ELSE 0 END)::int as sancion_fechas
     FROM jugadores j
     JOIN equipos e ON e.id = j.equipo_id
-    JOIN tarjetas t ON t.jugador_id = j.id
+    JOIN tarjetas t ON t.jugador_id = j.id AND t.temporada IS NULL
     GROUP BY j.id, j.nombre, e.nombre
     HAVING COUNT(CASE WHEN t.tipo = 'roja' OR (t.tipo = 'amarilla' AND t.pagada = false) THEN 1 END) > 0
     ORDER BY rojas DESC, amarillas DESC
@@ -215,6 +217,10 @@ router.get("/amonestados", async (_req, res): Promise<void> => {
  * siguiente y él no está en la planilla, la sanción baja sola de 2 a 1.
  */
 router.get("/sanciones", async (_req, res): Promise<void> => {
+  // "temporada IS NULL" en ambos puntos = solo el torneo actual: la tarjeta
+  // que origina la sanción, y los partidos posteriores que van cumpliendo
+  // las fechas. Sin lo segundo, un partido histórico importado se contaría
+  // como fecha cumplida de una sanción vigente.
   const rows = await db.execute(sql`
     WITH sancionadas AS (
       SELECT
@@ -232,7 +238,7 @@ router.get("/sanciones", async (_req, res): Promise<void> => {
       JOIN jugadores j ON j.id = t.jugador_id
       JOIN equipos   e ON e.id = j.equipo_id
       LEFT JOIN partidos p ON p.id = t.partido_id
-      WHERE t.fechas_sancion > 0
+      WHERE t.fechas_sancion > 0 AND t.temporada IS NULL
     )
     SELECT
       s.*,
@@ -240,6 +246,7 @@ router.get("/sanciones", async (_req, res): Promise<void> => {
         SELECT COUNT(*)::int
         FROM partidos pp
         WHERE pp.jugado = true
+          AND pp.temporada IS NULL
           AND (pp.local_id = s.equipo_id OR pp.visitante_id = s.equipo_id)
           AND (
             pp.semana > s.semana_tarjeta
