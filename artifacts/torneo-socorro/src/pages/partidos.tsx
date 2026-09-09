@@ -1,6 +1,7 @@
 import {
   useGetPartidos,
   useGetEquipos,
+  useGetFases,
   useUpdatePartido,
   useCreatePartido,
   useDeletePartido,
@@ -46,13 +47,30 @@ import { PlanillaPartido } from '@/components/planilla-partido';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
+/**
+ * Fases fijas del torneo (además de las que ya existan por haberse creado
+ * antes desde "Armar fase" — grupos, liguilla, rondas de eliminación...).
+ * El desplegable de este formulario solo deja elegir de la lista, nunca
+ * escribir texto libre: así no se rompe el agrupamiento de Posiciones por
+ * un nombre de fase mal escrito.
+ */
+const FASES_FIJAS = [
+  'Primera vuelta',
+  'Segunda vuelta',
+  'Muerte súbita',
+  'Final liguilla',
+  'Semifinal liguilla',
+  'Semifinal del torneo',
+  'Final del torneo',
+];
+
 const partidoSchema = z.object({
   semana: z.coerce.number().min(1),
   fecha: z.string().optional(),
   hora: z.string().optional(),
   localId: z.coerce.number().min(1),
   visitanteId: z.coerce.number().min(1),
-  fase: z.string().optional(),
+  fase: z.string().min(1, 'Selecciona la fase de este partido'),
   arbitro: z.string().optional(),
 });
 
@@ -70,9 +88,14 @@ export default function Partidos() {
   const [filtroSemana, setFiltroSemana] = useState<string>('all');
 
   const { data: equipos } = useGetEquipos();
+  const { data: fasesExtra } = useGetFases();
   const { data: partidosRaw, isLoading } = useGetPartidos(
     filtroSemana !== 'all' ? { semana: Number(filtroSemana) } : undefined,
   );
+
+  // Lista de fases del desplegable: las fijas + cualquier otra que ya exista
+  // en el torneo (grupos, liguilla, rondas de eliminación...), sin repetir.
+  const opcionesFase = Array.from(new Set([...FASES_FIJAS, ...(fasesExtra ?? [])]));
 
   const createMutation = useCreatePartido();
   const updateMutation = useUpdatePartido();
@@ -245,9 +268,28 @@ export default function Partidos() {
                       <FormField control={form.control} name="semana" render={({ field }) => (
                         <FormItem><FormLabel>Fecha N° / Semana</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                       )} />
-                      <FormField control={form.control} name="fase" render={({ field }) => (
-                        <FormItem><FormLabel>Fase (Opcional)</FormLabel><FormControl><Input placeholder="Ej: Semifinal" {...field} /></FormControl></FormItem>
-                      )} />
+                      <FormField control={form.control} name="fase" render={({ field }) => {
+                        // Si el partido ya tenía una fase que no está en la lista (dato
+                        // viejo, de antes de que esto fuera obligatorio), se agrega igual
+                        // para no perderla de vista al editar.
+                        const opciones = field.value && !opcionesFase.includes(field.value)
+                          ? [field.value, ...opcionesFase]
+                          : opcionesFase;
+                        return (
+                          <FormItem>
+                            <FormLabel>Fase</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Selecciona la fase" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                {opciones.map((f) => (
+                                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField control={form.control} name="fecha" render={({ field }) => (

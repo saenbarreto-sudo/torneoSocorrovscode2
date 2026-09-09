@@ -1373,7 +1373,7 @@ components:
 
     PartidoInput:
       type: object
-      required: [semana, localId, visitanteId]
+      required: [semana, localId, visitanteId, fase]
       properties:
         semana:
           type: number

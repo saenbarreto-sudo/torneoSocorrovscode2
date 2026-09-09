@@ -15,7 +15,7 @@ export interface PartidoInput {
   golesLocal?: number;
   golesVisitante?: number;
   jugado?: boolean;
-  fase?: string;
+  fase: string;
   arbitro?: string;
   mesa?: string;
   walkover?: boolean;
