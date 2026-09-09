@@ -21,6 +21,7 @@ export * from './getJugadoresParams';
 export * from './getPagosParams';
 export * from './getPagosResumenEquiposParams';
 export * from './getPartidosParams';
+export * from './getPosicionesParams';
 export * from './getTarjetasParams';
 export * from './getTarjetasTipo';
 export * from './gol';

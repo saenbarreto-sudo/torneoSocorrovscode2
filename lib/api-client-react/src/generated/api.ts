@@ -32,6 +32,7 @@ import type {
   GetPagosParams,
   GetPagosResumenEquiposParams,
   GetPartidosParams,
+  GetPosicionesParams,
   GetTarjetasParams,
   Goleador,
   HealthStatus,
@@ -1504,20 +1505,27 @@ export const useDeletePartido = <TError = ErrorType<unknown>,
       return useMutation(getDeletePartidoMutationOptions(options));
     }
 
-export const getGetPosicionesUrl = () => {
+export const getGetPosicionesUrl = (params?: GetPosicionesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/posiciones`
+  return stringifiedParams.length > 0 ? `/api/posiciones?${stringifiedParams}` : `/api/posiciones`
 }
 
 /**
  * @summary Get standings table
  */
-export const getPosiciones = async ( options?: Parameters<typeof customFetch>[1]): Promise<PosicionEquipo[]> => {
+export const getPosiciones = async (params?: GetPosicionesParams, options?: Parameters<typeof customFetch>[1]): Promise<PosicionEquipo[]> => {
 
-  return customFetch<PosicionEquipo[]>(getGetPosicionesUrl(),
+  return customFetch<PosicionEquipo[]>(getGetPosicionesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1530,23 +1538,23 @@ export const getPosiciones = async ( options?: Parameters<typeof customFetch>[1]
 
 
 
-export const getGetPosicionesQueryKey = () => {
+export const getGetPosicionesQueryKey = (params?: GetPosicionesParams,) => {
     return [
-    `/api/posiciones`
+    `/api/posiciones`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPosicionesQueryOptions = <TData = Awaited<ReturnType<typeof getPosiciones>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPosiciones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPosicionesQueryOptions = <TData = Awaited<ReturnType<typeof getPosiciones>>, TError = ErrorType<unknown>>(params?: GetPosicionesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPosiciones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPosicionesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetPosicionesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPosiciones>>> = ({ signal }) => getPosiciones({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPosiciones>>> = ({ signal }) => getPosiciones(params, { signal, ...requestOptions });
 
 
 
@@ -1564,11 +1572,89 @@ export type GetPosicionesQueryError = ErrorType<unknown>
  */
 
 export function useGetPosiciones<TData = Awaited<ReturnType<typeof getPosiciones>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPosiciones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetPosicionesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPosiciones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPosicionesQueryOptions(options)
+  const queryOptions = getGetPosicionesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFasesUrl = () => {
+
+
+
+
+  return `/api/fases`
+}
+
+/**
+ * Nombres de fase distintos usados en partidos del torneo actual, sin contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos son la tabla general). Sirve para armar el selector de fases en Posiciones.
+ * @summary List the extra tournament phases in play (beyond the regular season)
+ */
+export const getFases = async ( options?: Parameters<typeof customFetch>[1]): Promise<string[]> => {
+
+  return customFetch<string[]>(getGetFasesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFasesQueryKey = () => {
+    return [
+    `/api/fases`
+    ] as const;
+    }
+
+
+export const getGetFasesQueryOptions = <TData = Awaited<ReturnType<typeof getFases>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFases>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFasesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFases>>> = ({ signal }) => getFases({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFases>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFasesQueryResult = NonNullable<Awaited<ReturnType<typeof getFases>>>
+export type GetFasesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the extra tournament phases in play (beyond the regular season)
+ */
+
+export function useGetFases<TData = Awaited<ReturnType<typeof getFases>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFases>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFasesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

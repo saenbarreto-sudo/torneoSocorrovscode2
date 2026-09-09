@@ -1,11 +1,27 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { GetPosicionesResponse } from "@workspace/api-zod";
+import { GetPosicionesResponse, GetPosicionesQueryParams, GetFasesResponse } from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/posiciones", async (_req, res): Promise<void> => {
+// Fases "de temporada regular": si no se pide una fase puntual, la tabla
+// general junta estas dos más los partidos sin fase asignada (partidos
+// viejos o cargados a mano sin ese campo). Cualquier otro texto en `fase`
+// (Liguilla, Cuartos, Semifinal...) se ve aparte, para no mezclar la fase
+// final con la tabla de la temporada regular.
+const FASES_TEMPORADA_REGULAR = ["Primera vuelta", "Segunda vuelta"];
+
+router.get("/posiciones", async (req, res): Promise<void> => {
+  const query = GetPosicionesQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const filtroFase = query.data.fase
+    ? sql`AND p.fase = ${query.data.fase}`
+    : sql`AND (p.fase IS NULL OR p.fase IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)}))`;
+
   // "AND p.temporada IS NULL" en los JOIN de abajo: solo el torneo actual
   // (ver schema/partidos.ts). Sin eso, un historial importado de una
   // temporada pasada se mezclaría con la tabla de posiciones en curso.
@@ -45,7 +61,7 @@ router.get("/posiciones", async (_req, res): Promise<void> => {
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_visitante ELSE 0 END), 0)::int as gf_visitante,
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_local ELSE 0 END), 0)::int as gc_visitante
       FROM equipos e
-      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND p.temporada IS NULL
+      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND p.temporada IS NULL ${filtroFase}
       WHERE e.activo = true
       GROUP BY e.id, e.nombre, e.puntos_bonificacion
     ),
@@ -58,7 +74,7 @@ router.get("/posiciones", async (_req, res): Promise<void> => {
       FROM tarjetas t
       JOIN jugadores j ON j.id = t.jugador_id
       JOIN partidos p ON p.id = t.partido_id
-      WHERE p.jugado = true AND p.temporada IS NULL
+      WHERE p.jugado = true AND p.temporada IS NULL ${filtroFase}
       GROUP BY j.equipo_id
     )
     SELECT
@@ -97,6 +113,19 @@ router.get("/posiciones", async (_req, res): Promise<void> => {
     gfVisitante: Number(r.gf_visitante), gcVisitante: Number(r.gc_visitante),
   }));
   res.json(GetPosicionesResponse.parse(data));
+});
+
+router.get("/fases", async (_req, res): Promise<void> => {
+  const rows = await db.execute(sql`
+    SELECT DISTINCT fase
+    FROM partidos
+    WHERE temporada IS NULL
+      AND fase IS NOT NULL
+      AND fase NOT IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)})
+    ORDER BY fase ASC
+  `);
+  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => String(r.fase));
+  res.json(GetFasesResponse.parse(data));
 });
 
 export default router;

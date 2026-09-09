@@ -537,6 +537,10 @@ export const DeletePartidoResponse = zod.void()
 /**
  * @summary Get standings table
  */
+export const GetPosicionesQueryParams = zod.object({
+  "fase": zod.coerce.string().optional().describe('Si se omite, trae la tabla general (primera + segunda vuelta, o partidos sin fase asignada). Si se pasa, filtra solo los partidos de esa fase exacta (ej. \"Liguilla\", \"Cuartos\").\n')
+})
+
 export const GetPosicionesResponseItem = zod.object({
   "posicion": zod.number(),
   "equipoId": zod.number(),
@@ -565,6 +569,14 @@ export const GetPosicionesResponseItem = zod.object({
   "gcVisitante": zod.number().optional()
 })
 export const GetPosicionesResponse = zod.array(GetPosicionesResponseItem)
+
+
+/**
+ * Nombres de fase distintos usados en partidos del torneo actual, sin contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos son la tabla general). Sirve para armar el selector de fases en Posiciones.
+ * @summary List the extra tournament phases in play (beyond the regular season)
+ */
+export const GetFasesResponseItem = zod.string()
+export const GetFasesResponse = zod.array(GetFasesResponseItem)
 
 
 /**

@@ -416,6 +416,16 @@ paths:
       operationId: getPosiciones
       tags: [posiciones]
       summary: Get standings table
+      parameters:
+        - name: fase
+          in: query
+          required: false
+          description: >
+            Si se omite, trae la tabla general (primera + segunda vuelta,
+            o partidos sin fase asignada). Si se pasa, filtra solo los
+            partidos de esa fase exacta (ej. "Liguilla", "Cuartos").
+          schema:
+            type: string
       responses:
         "200":
           description: Standings
@@ -425,6 +435,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PosicionEquipo"
+
+  /fases:
+    get:
+      operationId: getFases
+      tags: [posiciones]
+      summary: List the extra tournament phases in play (beyond the regular season)
+      description: >
+        Nombres de fase distintos usados en partidos del torneo actual, sin
+        contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos
+        son la tabla general). Sirve para armar el selector de fases en
+        Posiciones.
+      responses:
+        "200":
+          description: List of phase names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
   # ── GOLEADORES ─────────────────────────────────────────────────────────────
   /goleadores:

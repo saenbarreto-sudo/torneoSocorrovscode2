@@ -1,9 +1,22 @@
-import { useGetPosiciones } from '@workspace/api-client-react';
+import { useState } from 'react';
+import { useGetPosiciones, useGetFases } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+/**
+ * Valor especial para la pestaña "Tabla general": no manda `fase` al
+ * endpoint, así el backend junta Primera vuelta + Segunda vuelta + partidos
+ * sin fase asignada. Cualquier otro valor es el nombre exacto de una fase
+ * (Liguilla, Cuartos...) tal como quedó escrito en los partidos.
+ */
+const TABLA_GENERAL = '__general__';
 
 export default function Posiciones() {
-  const { data: posiciones, isLoading } = useGetPosiciones();
+  const [fase, setFase] = useState<string>(TABLA_GENERAL);
+  const esTablaGeneral = fase === TABLA_GENERAL;
+  const { data: fases } = useGetFases();
+  const { data: posiciones, isLoading } = useGetPosiciones(esTablaGeneral ? undefined : { fase });
   const hayBonificacion = posiciones?.some((p) => (p.puntosBonificacion ?? 0) > 0);
   const colSpan = hayBonificacion ? 12 : 11;
 
@@ -13,6 +26,17 @@ export default function Posiciones() {
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Posiciones</h1>
         <p className="text-muted-foreground mt-1">Clasificación general del torneo</p>
       </div>
+
+      {fases && fases.length > 0 && (
+        <Tabs value={fase} onValueChange={setFase}>
+          <TabsList>
+            <TabsTrigger value={TABLA_GENERAL}>Tabla general</TabsTrigger>
+            {fases.map((f) => (
+              <TabsTrigger key={f} value={f}>{f}</TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -53,7 +77,7 @@ export default function Posiciones() {
               ) : posiciones?.map((pos) => (
                 <TableRow
                   key={pos.equipoId}
-                  className={pos.posicion <= 4 ? "bg-accent/60 border-l-2 border-l-primary" : ""}
+                  className={esTablaGeneral && pos.posicion <= 4 ? "bg-accent/60 border-l-2 border-l-primary" : ""}
                 >
                   <TableCell className="text-center font-mono font-bold text-lg">{pos.posicion}</TableCell>
                   <TableCell className="font-bold text-base whitespace-nowrap">{pos.equipoNombre}</TableCell>
@@ -86,10 +110,12 @@ export default function Posiciones() {
       </Card>
 
       <div className="text-xs text-muted-foreground space-y-2">
-        <p className="flex items-center gap-2">
-          <span className="inline-block w-6 h-3 rounded-sm bg-accent border-l-2 border-l-primary" aria-hidden />
-          Los 4 primeros clasifican a la liguilla.
-        </p>
+        {esTablaGeneral && (
+          <p className="flex items-center gap-2">
+            <span className="inline-block w-6 h-3 rounded-sm bg-accent border-l-2 border-l-primary" aria-hidden />
+            Los 4 primeros clasifican a la liguilla.
+          </p>
+        )}
         <p>
           <span className="font-semibold text-foreground">Orden de desempate:</span> puntos, puntos de
           bonificación, diferencia de goles, juego limpio (menos es mejor), goles a favor y goles en contra.
