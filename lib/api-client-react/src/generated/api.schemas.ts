@@ -437,9 +437,10 @@ export interface Ajustes {
   id: number;
   valorArbitrajePrimeraVuelta: number;
   valorArbitrajeSegundaVuelta: number;
-  valorArbitrajeSemifinal: number;
-  valorArbitrajeMuerteSubita: number;
   valorArbitrajeFinalLiguilla: number;
+  valorArbitrajeMuerteSubita: number;
+  valorTernaMuerteSubita: number;
+  ternaMuerteSubita: boolean;
   valorArbitrajeSemifinalLiguilla: number;
   valorTernaSemifinalLiguilla: number;
   ternaSemifinalLiguilla: boolean;
@@ -461,9 +462,10 @@ export interface Ajustes {
 export interface AjustesUpdate {
   valorArbitrajePrimeraVuelta?: number;
   valorArbitrajeSegundaVuelta?: number;
-  valorArbitrajeSemifinal?: number;
-  valorArbitrajeMuerteSubita?: number;
   valorArbitrajeFinalLiguilla?: number;
+  valorArbitrajeMuerteSubita?: number;
+  valorTernaMuerteSubita?: number;
+  ternaMuerteSubita?: boolean;
   valorArbitrajeSemifinalLiguilla?: number;
   valorTernaSemifinalLiguilla?: number;
   ternaSemifinalLiguilla?: boolean;

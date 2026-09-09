@@ -20,9 +20,10 @@ const valorPesos = (mensaje: string) =>
 const ajustesSchema = z.object({
   valorArbitrajePrimeraVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorArbitrajeSegundaVuelta: valorPesos('El valor del arbitraje debe ser un número entero'),
-  valorArbitrajeSemifinal: valorPesos('El valor del arbitraje debe ser un número entero'),
-  valorArbitrajeMuerteSubita: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorArbitrajeFinalLiguilla: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorArbitrajeMuerteSubita: valorPesos('El valor del arbitraje debe ser un número entero'),
+  valorTernaMuerteSubita: valorPesos('El valor de la terna debe ser un número entero'),
+  ternaMuerteSubita: z.boolean(),
   valorArbitrajeSemifinalLiguilla: valorPesos('El valor del arbitraje debe ser un número entero'),
   valorTernaSemifinalLiguilla: valorPesos('El valor de la terna debe ser un número entero'),
   ternaSemifinalLiguilla: z.boolean(),
@@ -43,7 +44,10 @@ const ajustesSchema = z.object({
 type AjustesFormValues = z.infer<typeof ajustesSchema>;
 
 /** Los nombres de campo que son un valor en pesos (todos menos las casillas "Terna"). */
-type CampoNumero = Exclude<keyof AjustesFormValues, 'ternaSemifinalLiguilla' | 'ternaSemifinalTorneo' | 'ternaFinalTorneo'>;
+type CampoNumero = Exclude<
+  keyof AjustesFormValues,
+  'ternaMuerteSubita' | 'ternaSemifinalLiguilla' | 'ternaSemifinalTorneo' | 'ternaFinalTorneo'
+>;
 
 const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string }> = [
   {
@@ -66,8 +70,6 @@ const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string
 const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
   { name: 'valorArbitrajePrimeraVuelta', label: 'Primera vuelta' },
   { name: 'valorArbitrajeSegundaVuelta', label: 'Segunda vuelta' },
-  { name: 'valorArbitrajeSemifinal', label: 'Semifinal' },
-  { name: 'valorArbitrajeMuerteSubita', label: 'Muerte súbita' },
   { name: 'valorArbitrajeFinalLiguilla', label: 'Final liguilla' },
 ];
 
@@ -77,6 +79,12 @@ const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
  * casilla que dice cuál de los dos aplica.
  */
 const FASES_CON_TERNA: Array<{ label: string; arbitro: CampoNumero; terna: CampoNumero; casilla: keyof AjustesFormValues }> = [
+  {
+    label: 'Muerte súbita',
+    arbitro: 'valorArbitrajeMuerteSubita',
+    terna: 'valorTernaMuerteSubita',
+    casilla: 'ternaMuerteSubita',
+  },
   {
     label: 'Semifinal liguilla',
     arbitro: 'valorArbitrajeSemifinalLiguilla',
@@ -172,9 +180,10 @@ export default function Ajustes() {
     defaultValues: {
       valorArbitrajePrimeraVuelta: 0,
       valorArbitrajeSegundaVuelta: 0,
-      valorArbitrajeSemifinal: 0,
-      valorArbitrajeMuerteSubita: 0,
       valorArbitrajeFinalLiguilla: 0,
+      valorArbitrajeMuerteSubita: 0,
+      valorTernaMuerteSubita: 0,
+      ternaMuerteSubita: false,
       valorArbitrajeSemifinalLiguilla: 0,
       valorTernaSemifinalLiguilla: 0,
       ternaSemifinalLiguilla: false,
@@ -200,9 +209,10 @@ export default function Ajustes() {
       form.reset({
         valorArbitrajePrimeraVuelta: ajustes.valorArbitrajePrimeraVuelta,
         valorArbitrajeSegundaVuelta: ajustes.valorArbitrajeSegundaVuelta,
-        valorArbitrajeSemifinal: ajustes.valorArbitrajeSemifinal,
-        valorArbitrajeMuerteSubita: ajustes.valorArbitrajeMuerteSubita,
         valorArbitrajeFinalLiguilla: ajustes.valorArbitrajeFinalLiguilla,
+        valorArbitrajeMuerteSubita: ajustes.valorArbitrajeMuerteSubita,
+        valorTernaMuerteSubita: ajustes.valorTernaMuerteSubita,
+        ternaMuerteSubita: ajustes.ternaMuerteSubita,
         valorArbitrajeSemifinalLiguilla: ajustes.valorArbitrajeSemifinalLiguilla,
         valorTernaSemifinalLiguilla: ajustes.valorTernaSemifinalLiguilla,
         ternaSemifinalLiguilla: ajustes.ternaSemifinalLiguilla,
@@ -274,9 +284,9 @@ export default function Ajustes() {
                   <div>
                     <h2 className="font-bold text-lg">Arbitrajes</h2>
                     <p className="text-xs text-muted-foreground mt-1">
-                      El valor cambia según la fase del torneo. Semifinal liguilla, semifinal del
-                      torneo y la final se pueden pagar con 1 árbitro o con terna — se decide más
-                      cerca de la fecha, marcando la casilla correspondiente.
+                      El valor cambia según la fase del torneo. Muerte súbita, semifinal liguilla,
+                      semifinal del torneo y la final se pueden pagar con 1 árbitro o con terna —
+                      se decide más cerca de la fecha, marcando la casilla correspondiente.
                     </p>
                   </div>
 

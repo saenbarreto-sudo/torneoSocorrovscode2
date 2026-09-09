@@ -9,9 +9,10 @@
 export interface AjustesUpdate {
   valorArbitrajePrimeraVuelta?: number;
   valorArbitrajeSegundaVuelta?: number;
-  valorArbitrajeSemifinal?: number;
-  valorArbitrajeMuerteSubita?: number;
   valorArbitrajeFinalLiguilla?: number;
+  valorArbitrajeMuerteSubita?: number;
+  valorTernaMuerteSubita?: number;
+  ternaMuerteSubita?: boolean;
   valorArbitrajeSemifinalLiguilla?: number;
   valorTernaSemifinalLiguilla?: number;
   ternaSemifinalLiguilla?: boolean;
