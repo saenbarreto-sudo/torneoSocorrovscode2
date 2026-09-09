@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarDays, CalendarPlus, Edit2, Trash2, Printer } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Edit2, Trash2, Printer, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,9 +158,14 @@ export default function Programacion() {
           </div>
         </div>
         {puedeProgramar && (
-          <Button onClick={() => navigate('/programacion/generar')}>
-            <CalendarPlus className="h-4 w-4 mr-2" /> Generar calendario
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate('/programacion/armar-fase')}>
+              <Trophy className="h-4 w-4 mr-2" /> Armar fase
+            </Button>
+            <Button onClick={() => navigate('/programacion/generar')}>
+              <CalendarPlus className="h-4 w-4 mr-2" /> Generar calendario
+            </Button>
+          </div>
         )}
       </div>
 

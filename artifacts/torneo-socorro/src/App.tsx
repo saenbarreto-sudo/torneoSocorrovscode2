@@ -66,7 +66,7 @@ function Router() {
         <Route path="/egresos">{() => <Protected path="/egresos" component={Egresos} />}</Route>
         <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
         <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
-        <Route path="/posiciones/armar-fase">{() => <Protected path="/programacion" component={ArmarFase} />}</Route>
+        <Route path="/programacion/armar-fase">{() => <Protected path="/programacion" component={ArmarFase} />}</Route>
         <Route path="/usuarios">{() => <Protected path="/usuarios" component={Usuarios} />}</Route>
         <Route path="/ajustes">{() => <Protected path="/ajustes" component={Ajustes} />}</Route>
         <Route component={NotFound} />
