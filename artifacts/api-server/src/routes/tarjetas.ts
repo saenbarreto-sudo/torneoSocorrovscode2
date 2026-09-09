@@ -57,11 +57,25 @@ router.get("/tarjetas", async (req, res): Promise<void> => {
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 
   // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
+  //
+  // El equipo que se muestra es el que le correspondía al jugador el día de
+  // la tarjeta (mismo criterio que /amonestados), no su equipo actual, para
+  // que este listado y el resumen de abajo siempre coincidan.
   const rows = await db.execute(sql`
     SELECT t.*, j.nombre as jugador_nombre, j.n_carnet as n_carnet, e.nombre as equipo_nombre
     FROM tarjetas t
     JOIN jugadores j ON j.id = t.jugador_id
-    JOIN equipos e ON e.id = j.equipo_id
+    LEFT JOIN partidos p ON p.id = t.partido_id
+    LEFT JOIN LATERAL (
+      SELECT heq.equipo_id
+      FROM jugador_equipo_historial heq
+      WHERE heq.jugador_id = t.jugador_id
+        AND heq.fecha_inicio <= COALESCE(p.fecha, t.fecha, CURRENT_DATE)
+        AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, t.fecha, CURRENT_DATE))
+      ORDER BY heq.fecha_inicio DESC
+      LIMIT 1
+    ) heq ON true
+    JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
     WHERE t.temporada IS NULL
     ${whereClause}
     ORDER BY t.semana DESC, t.created_at DESC
