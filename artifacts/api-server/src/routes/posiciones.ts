@@ -29,6 +29,20 @@ router.get("/posiciones", async (req, res): Promise<void> => {
     ? sql`AND p.fase = ${query.data.fase}`
     : sql`AND (p.fase IS NULL OR p.fase IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)}))`;
 
+  // Para la Tabla general interesa ver a TODOS los equipos activos, aunque
+  // alguno no haya jugado nada todavía. Pero al pedir una fase puntual (un
+  // grupo, una liguilla, una ronda de eliminación), solo tiene sentido
+  // mostrar a los equipos que de verdad están en esa fase — si no, cada
+  // grupo saldría con los 9 equipos del torneo en vez de solo los suyos.
+  const filtroEquipoEnFase = query.data.fase
+    ? sql`AND EXISTS (
+        SELECT 1 FROM partidos px
+        WHERE (px.local_id = e.id OR px.visitante_id = e.id)
+          AND px.temporada IS NULL
+          AND px.fase = ${query.data.fase}
+      )`
+    : sql``;
+
   // "AND p.temporada IS NULL" en los JOIN de abajo: solo el torneo actual
   // (ver schema/partidos.ts). Sin eso, un historial importado de una
   // temporada pasada se mezclaría con la tabla de posiciones en curso.
@@ -69,7 +83,7 @@ router.get("/posiciones", async (req, res): Promise<void> => {
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_local ELSE 0 END), 0)::int as gc_visitante
       FROM equipos e
       LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND p.temporada IS NULL ${filtroFase}
-      WHERE e.activo = true
+      WHERE e.activo = true ${filtroEquipoEnFase}
       GROUP BY e.id, e.nombre, e.puntos_bonificacion
     ),
     fairplay AS (

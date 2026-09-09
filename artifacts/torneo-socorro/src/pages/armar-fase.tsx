@@ -60,15 +60,11 @@ export default function ArmarFase() {
   });
   const cargandoTablas = resultadosPosiciones.some((r) => r.isLoading);
 
-  // /posiciones siempre lista a TODOS los equipos activos, aunque no hayan
-  // jugado ni un partido en esa fase puntual (para la Tabla general eso
-  // tiene sentido, ahí sí interesa ver a todo el mundo). Pero al elegir un
-  // grupo como origen, solo interesan los que de verdad jugaron ahí — si no,
-  // se mezclarían con equipos que nunca fueron parte de ese grupo.
-  const tablaVisible = (origen: string, i: number) => {
-    const datos = resultadosPosiciones[i]?.data ?? [];
-    return origen === TABLA_GENERAL ? datos : datos.filter((p) => p.pj > 0);
-  };
+  // /posiciones ya filtra por su cuenta: para la Tabla general trae a todos
+  // los equipos activos (tiene sentido, ahí interesa ver a todo el mundo),
+  // pero al pedir una fase puntual (un grupo, una liguilla...) solo trae a
+  // los equipos que de verdad están en esa fase.
+  const tablaVisible = (_origen: string, i: number) => resultadosPosiciones[i]?.data ?? [];
 
   const alternarOrigen = (origen: string) => {
     setOrigenesSeleccionados((previo) => {
@@ -410,7 +406,7 @@ export default function ArmarFase() {
                     ))}
                     {tablaVisible(origen, i).length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        {origen === TABLA_GENERAL ? 'Sin equipos en esta tabla.' : 'Todavía no hay partidos jugados en esta fase.'}
+                        {origen === TABLA_GENERAL ? 'Sin equipos en esta tabla.' : 'Todavía no hay partidos en esta fase.'}
                       </p>
                     )}
                   </div>
