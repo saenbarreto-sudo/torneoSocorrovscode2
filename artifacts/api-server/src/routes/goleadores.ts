@@ -9,17 +9,38 @@ router.get("/goleadores", async (_req, res): Promise<void> => {
   // "temporada IS NULL" = torneo actual (ver schema/partidos.ts). Sin este
   // filtro, un historial importado de una temporada pasada se sumaría a la
   // tabla de goleadores del torneo en curso.
+  //
+  // El gol se atribuye al equipo que le correspondía al jugador el día que
+  // lo hizo (jugador_equipo_historial por rango de fecha), no a su equipo
+  // actual: si un jugador se transfiere a mitad de torneo, sus goles
+  // anteriores se quedan con el equipo viejo y arranca de cero con el
+  // nuevo (mismo criterio que la ficha individual del jugador).
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
       j.nombre as jugador_nombre,
       e.nombre as equipo_nombre,
       COALESCE(SUM(g.cantidad), 0)::int as total_goles
-    FROM jugadores j
-    JOIN equipos e ON e.id = j.equipo_id
-    JOIN goles g ON g.jugador_id = j.id
+    FROM goles g
+    JOIN jugadores j ON j.id = g.jugador_id
+    -- LATERAL en vez de un LEFT JOIN normal: el día exacto de un traspaso
+    -- el stint que se cierra y el que se abre comparten esa fecha límite
+    -- (fecha_fin del viejo = fecha_inicio del nuevo = hoy), así que un gol
+    -- de ese día calzaría con los dos a la vez y se contaría doble. Con
+    -- LATERAL + ORDER BY ... LIMIT 1 nos quedamos con uno solo (el stint
+    -- que empezó más reciente, o sea el equipo nuevo).
+    LEFT JOIN LATERAL (
+      SELECT heq.equipo_id
+      FROM jugador_equipo_historial heq
+      WHERE heq.jugador_id = g.jugador_id
+        AND heq.fecha_inicio <= COALESCE(g.fecha, CURRENT_DATE)
+        AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(g.fecha, CURRENT_DATE))
+      ORDER BY heq.fecha_inicio DESC
+      LIMIT 1
+    ) heq ON true
+    JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
     WHERE g.propio = false AND g.temporada IS NULL
-    GROUP BY j.id, j.nombre, e.nombre
+    GROUP BY j.id, j.nombre, e.id, e.nombre
     HAVING SUM(g.cantidad) > 0
     ORDER BY total_goles DESC, j.nombre ASC
     LIMIT 10

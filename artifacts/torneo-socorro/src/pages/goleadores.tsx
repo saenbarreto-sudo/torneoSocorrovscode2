@@ -36,7 +36,7 @@ export default function Goleadores() {
                   <TableCell colSpan={4} className="text-center py-10">Cargando...</TableCell>
                 </TableRow>
               ) : goleadores?.map((goleador, idx) => (
-                <TableRow key={goleador.jugadorId} className={idx < 3 ? "bg-amber-50/50 dark:bg-amber-950/20" : ""}>
+                <TableRow key={`${goleador.jugadorId}-${goleador.equipoNombre}`} className={idx < 3 ? "bg-amber-50/50 dark:bg-amber-950/20" : ""}>
                   <TableCell className="text-center font-mono font-bold text-lg">
                     {idx === 0 ? <Medal className="h-6 w-6 mx-auto text-yellow-500" /> : 
                      idx === 1 ? <Medal className="h-6 w-6 mx-auto text-gray-400" /> : 

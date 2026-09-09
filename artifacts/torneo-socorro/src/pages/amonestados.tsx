@@ -483,7 +483,7 @@ export default function Amonestados() {
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-6">Cargando...</TableCell></TableRow>
               ) : amonestados?.map((am) => (
-                <TableRow key={am.jugadorId}>
+                <TableRow key={`${am.jugadorId}-${am.equipoNombre}`}>
                   <TableCell className="font-mono text-muted-foreground">
                     {am.nCarnet ? `#${String(am.nCarnet).padStart(4, '0')}` : '-'}
                   </TableCell>

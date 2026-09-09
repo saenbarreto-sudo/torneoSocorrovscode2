@@ -179,6 +179,12 @@ router.delete("/tarjetas/:id", requireAuth, writeAccess.tarjetas, async (req, re
 
 router.get("/amonestados", async (_req, res): Promise<void> => {
   // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
+  //
+  // La tarjeta se atribuye al equipo que le correspondía al jugador el día
+  // que se la sacó (jugador_equipo_historial por rango de fecha), no a su
+  // equipo actual: si se transfiere a mitad de torneo, sus tarjetas
+  // anteriores se quedan con el equipo viejo (mismo criterio que goleadores
+  // y la ficha individual del jugador).
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
@@ -188,10 +194,27 @@ router.get("/amonestados", async (_req, res): Promise<void> => {
       COUNT(CASE WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 END)::int as amarillas,
       COUNT(CASE WHEN t.tipo = 'roja' THEN 1 END)::int as rojas,
       SUM(CASE WHEN t.tipo = 'roja' THEN 2 WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 ELSE 0 END)::int as sancion_fechas
-    FROM jugadores j
-    JOIN equipos e ON e.id = j.equipo_id
-    JOIN tarjetas t ON t.jugador_id = j.id AND t.temporada IS NULL
-    GROUP BY j.id, j.nombre, e.nombre
+    FROM tarjetas t
+    JOIN jugadores j ON j.id = t.jugador_id
+    LEFT JOIN partidos p ON p.id = t.partido_id
+    -- LATERAL en vez de un LEFT JOIN normal: el día exacto de un traspaso
+    -- el stint que se cierra y el que se abre comparten esa fecha límite
+    -- (fecha_fin del viejo = fecha_inicio del nuevo = hoy), así que una
+    -- tarjeta de ese día calzaría con los dos a la vez y se contaría doble.
+    -- Con LATERAL + ORDER BY ... LIMIT 1 nos quedamos con uno solo (el
+    -- stint que empezó más reciente, o sea el equipo nuevo).
+    LEFT JOIN LATERAL (
+      SELECT heq.equipo_id
+      FROM jugador_equipo_historial heq
+      WHERE heq.jugador_id = t.jugador_id
+        AND heq.fecha_inicio <= COALESCE(p.fecha, t.fecha, CURRENT_DATE)
+        AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, t.fecha, CURRENT_DATE))
+      ORDER BY heq.fecha_inicio DESC
+      LIMIT 1
+    ) heq ON true
+    JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
+    WHERE t.temporada IS NULL
+    GROUP BY j.id, j.nombre, j.n_carnet, e.id, e.nombre
     HAVING COUNT(CASE WHEN t.tipo = 'roja' OR (t.tipo = 'amarilla' AND t.pagada = false) THEN 1 END) > 0
     ORDER BY rojas DESC, amarillas DESC
   `);
