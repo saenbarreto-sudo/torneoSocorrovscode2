@@ -11,3 +11,4 @@ export * from "./egresos";
 export * from "./programacion";
 export * from "./usuarios";
 export * from "./ajustes";
+export * from "./fases";

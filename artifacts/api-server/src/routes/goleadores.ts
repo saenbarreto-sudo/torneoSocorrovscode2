@@ -58,6 +58,13 @@ router.get("/goleadores", async (_req, res): Promise<void> => {
  * Valla menos vencida: goles recibidos por equipo, contando solo partidos
  * jugados. Los goles de un W.O. (6-0 automático) no cuentan aquí, porque
  * el reglamento los excluye de vallas y goleadores (Art. 23).
+ *
+ * Solo cuenta hasta el final de la fase de grupos (temporada regular,
+ * grupos o liguilla) — apenas arranca la eliminación directa, esos goles ya
+ * no suman más para este premio puntual (a diferencia de Goleadores y
+ * Amonestados, que sí siguen sumando toda la eliminatoria). El tipo de cada
+ * fase sale del catálogo "fases"; una fase sin registrar se trata como
+ * eliminación (no cuenta), que es lo más seguro para no inflar el premio.
  */
 router.get("/vallas", async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
@@ -76,6 +83,7 @@ router.get("/vallas", async (_req, res): Promise<void> => {
       AND p.jugado = true
       AND p.walkover = false
       AND p.temporada IS NULL
+      AND (p.fase IS NULL OR COALESCE((SELECT f.tipo FROM fases f WHERE f.nombre = p.fase), 'eliminacion') != 'eliminacion')
     WHERE e.activo = true
     GROUP BY e.id, e.nombre
     ORDER BY goles_recibidos ASC, partidos_jugados DESC, e.nombre ASC

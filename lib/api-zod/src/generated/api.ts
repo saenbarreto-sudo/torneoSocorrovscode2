@@ -572,11 +572,32 @@ export const GetPosicionesResponse = zod.array(GetPosicionesResponseItem)
 
 
 /**
- * Nombres de fase distintos usados en partidos del torneo actual, sin contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos son la tabla general). Sirve para armar el selector de fases en Posiciones.
+ * Fases distintas a "Primera vuelta"/"Segunda vuelta" que ya tienen partidos en el torneo actual (esas dos son la tabla general), con su tipo (para saber si Posiciones la muestra como tabla de puntos o como resultados de llave) y en el orden real en que se crearon. Sirve para armar el selector de fases en Posiciones y en "Armar fase".
  * @summary List the extra tournament phases in play (beyond the regular season)
  */
-export const GetFasesResponseItem = zod.string()
+export const GetFasesResponseItem = zod.object({
+  "nombre": zod.string(),
+  "tipo": zod.string(),
+  "orden": zod.number()
+})
 export const GetFasesResponse = zod.array(GetFasesResponseItem)
+
+
+/**
+ * Registra el tipo de una o varias fases nuevas (temporada_regular, grupos, liguilla o eliminacion). Si una fase ya estaba registrada, se ignora — el primer registro manda, para no cambiarle el tipo por error a una fase que ya tiene partidos.
+ * @summary Register one or more phases at once (used by the "Armar fase" wizard)
+ */
+export const CreateFasesLoteBody = zod.object({
+  "fases": zod.array(zod.object({
+  "nombre": zod.string(),
+  "tipo": zod.string()
+}))
+})
+
+export const CreateFasesLoteResponse = zod.object({
+  "registradas": zod.number(),
+  "omitidas": zod.number()
+})
 
 
 /**

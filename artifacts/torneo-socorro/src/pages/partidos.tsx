@@ -95,7 +95,7 @@ export default function Partidos() {
 
   // Lista de fases del desplegable: las fijas + cualquier otra que ya exista
   // en el torneo (grupos, liguilla, rondas de eliminación...), sin repetir.
-  const opcionesFase = Array.from(new Set([...FASES_FIJAS, ...(fasesExtra ?? [])]));
+  const opcionesFase = Array.from(new Set([...FASES_FIJAS, ...(fasesExtra ?? []).map((f) => f.nombre)]));
 
   const createMutation = useCreatePartido();
   const updateMutation = useUpdatePartido();

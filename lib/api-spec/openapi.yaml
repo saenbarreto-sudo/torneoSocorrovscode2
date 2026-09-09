@@ -442,19 +442,43 @@ paths:
       tags: [posiciones]
       summary: List the extra tournament phases in play (beyond the regular season)
       description: >
-        Nombres de fase distintos usados en partidos del torneo actual, sin
-        contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos
-        son la tabla general). Sirve para armar el selector de fases en
-        Posiciones.
+        Fases distintas a "Primera vuelta"/"Segunda vuelta" que ya tienen
+        partidos en el torneo actual (esas dos son la tabla general), con su
+        tipo (para saber si Posiciones la muestra como tabla de puntos o
+        como resultados de llave) y en el orden real en que se crearon.
+        Sirve para armar el selector de fases en Posiciones y en "Armar
+        fase".
       responses:
         "200":
-          description: List of phase names
+          description: List of phases
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: string
+                  $ref: "#/components/schemas/Fase"
+    post:
+      operationId: createFasesLote
+      tags: [posiciones]
+      summary: Register one or more phases at once (used by the "Armar fase" wizard)
+      description: >
+        Registra el tipo de una o varias fases nuevas (temporada_regular,
+        grupos, liguilla o eliminacion). Si una fase ya estaba registrada,
+        se ignora — el primer registro manda, para no cambiarle el tipo por
+        error a una fase que ya tiene partidos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FasesLoteInput"
+      responses:
+        "201":
+          description: Result of the bulk registration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FasesLoteResult"
 
   # ── GOLEADORES ─────────────────────────────────────────────────────────────
   /goleadores:
@@ -1508,6 +1532,45 @@ components:
         gfVisitante:
           type: number
         gcVisitante:
+          type: number
+
+    Fase:
+      type: object
+      required: [nombre, tipo, orden]
+      properties:
+        nombre:
+          type: string
+        # temporada_regular | grupos | liguilla | eliminacion
+        tipo:
+          type: string
+        orden:
+          type: number
+
+    FaseInput:
+      type: object
+      required: [nombre, tipo]
+      properties:
+        nombre:
+          type: string
+        tipo:
+          type: string
+
+    FasesLoteInput:
+      type: object
+      required: [fases]
+      properties:
+        fases:
+          type: array
+          items:
+            $ref: "#/components/schemas/FaseInput"
+
+    FasesLoteResult:
+      type: object
+      required: [registradas, omitidas]
+      properties:
+        registradas:
+          type: number
+        omitidas:
           type: number
 
     # ── GOLEADORES ───────────────────────────────────────────────────────────

@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import { GetPosicionesResponse, GetPosicionesQueryParams, GetFasesResponse } from "@workspace/api-zod";
+import { db, fasesTable } from "@workspace/db";
+import { requireAuth, writeAccess } from "../lib/permissions";
+import {
+  GetPosicionesResponse,
+  GetPosicionesQueryParams,
+  GetFasesResponse,
+  CreateFasesLoteBody,
+  CreateFasesLoteResponse,
+} from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -116,16 +123,50 @@ router.get("/posiciones", async (req, res): Promise<void> => {
 });
 
 router.get("/fases", async (_req, res): Promise<void> => {
+  // Solo fases con partidos de verdad en el torneo actual (no todo lo que
+  // esté registrado en el catálogo "fases" — ese puede traer fijas como
+  // "Muerte súbita" que todavía nadie usó). El tipo sale del catálogo si ya
+  // se registró; si no (dato viejo, o un texto libre que alguien escribió
+  // antes de que esto existiera), "eliminacion" es el valor por defecto más
+  // seguro para no inflar la valla menos vencida sin querer.
   const rows = await db.execute(sql`
-    SELECT DISTINCT fase
-    FROM partidos
-    WHERE temporada IS NULL
-      AND fase IS NOT NULL
-      AND fase NOT IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)})
-    ORDER BY fase ASC
+    SELECT DISTINCT p.fase as nombre, COALESCE(f.tipo, 'eliminacion') as tipo, COALESCE(f.orden, 999999) as orden
+    FROM partidos p
+    LEFT JOIN fases f ON f.nombre = p.fase
+    WHERE p.temporada IS NULL
+      AND p.fase IS NOT NULL
+      AND p.fase NOT IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)})
+    ORDER BY orden ASC, nombre ASC
   `);
-  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => String(r.fase));
+  const data = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
+    nombre: String(r.nombre),
+    tipo: String(r.tipo),
+    orden: Number(r.orden),
+  }));
   res.json(GetFasesResponse.parse(data));
+});
+
+router.post("/fases", requireAuth, writeAccess.partidos, async (req, res): Promise<void> => {
+  const parsed = CreateFasesLoteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { fases } = parsed.data;
+
+  let registradas = 0;
+  let omitidas = 0;
+  for (const fase of fases) {
+    const resultado = await db
+      .insert(fasesTable)
+      .values({ nombre: fase.nombre, tipo: fase.tipo })
+      .onConflictDoNothing({ target: fasesTable.nombre })
+      .returning({ nombre: fasesTable.nombre });
+    if (resultado.length > 0) registradas++;
+    else omitidas++;
+  }
+
+  res.status(201).json(CreateFasesLoteResponse.parse({ registradas, omitidas }));
 });
 
 export default router;

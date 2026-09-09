@@ -7,6 +7,7 @@ import {
   useGetPartidos,
   useCreatePartidosLote,
   useCreateSemanaFecha,
+  useCreateFasesLote,
   getGetPartidosQueryKey,
   getGetProgramacionQueryKey,
   getGetFasesQueryKey,
@@ -251,6 +252,7 @@ export default function ArmarFase() {
   // ── Guardar ────────────────────────────────────────────────────────────────
   const crearLote = useCreatePartidosLote();
   const crearProgramacion = useCreateSemanaFecha();
+  const crearFasesLote = useCreateFasesLote();
   const [nombreProgramacion, setNombreProgramacion] = useState('');
 
   const guardar = async () => {
@@ -264,6 +266,21 @@ export default function ArmarFase() {
         ...(p.fecha ? { fecha: p.fecha } : {}),
         fase: p.fase,
       }));
+
+    // Registra el tipo de cada fase nueva (temporada_regular no aplica acá,
+    // esas ya vienen sembradas) antes de crear los partidos — así Posiciones
+    // ya sabe desde el primer momento si mostrarla como tabla o como llave,
+    // y si cuenta para la valla menos vencida. Si una fase ya estaba
+    // registrada, el backend simplemente la ignora.
+    const nombresFase = [...new Set(aCrear.map((p) => p.fase))];
+    try {
+      await crearFasesLote.mutateAsync({
+        data: { fases: nombresFase.map((nombre) => ({ nombre, tipo: formato })) },
+      });
+    } catch (error) {
+      toast({ title: 'No se pudo registrar la fase', description: extractErrorMessage(error), variant: 'destructive' });
+      return;
+    }
 
     try {
       const resultado = await crearLote.mutateAsync({ data: { partidos: aCrear } });
@@ -342,9 +359,9 @@ export default function ArmarFase() {
                 Tabla general
               </label>
               {fasesExtra?.map((f) => (
-                <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={origenesSeleccionados.has(f)} onCheckedChange={() => alternarOrigen(f)} />
-                  {f}
+                <label key={f.nombre} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={origenesSeleccionados.has(f.nombre)} onCheckedChange={() => alternarOrigen(f.nombre)} />
+                  {f.nombre}
                 </label>
               ))}
             </div>

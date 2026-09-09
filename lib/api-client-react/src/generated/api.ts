@@ -28,6 +28,9 @@ import type {
   Equipo,
   EquipoInput,
   EquipoUpdate,
+  Fase,
+  FasesLoteInput,
+  FasesLoteResult,
   GetJugadoresParams,
   GetPagosParams,
   GetPagosResumenEquiposParams,
@@ -1598,12 +1601,12 @@ export const getGetFasesUrl = () => {
 }
 
 /**
- * Nombres de fase distintos usados en partidos del torneo actual, sin contar "Primera vuelta"/"Segunda vuelta" ni partidos sin fase (esos son la tabla general). Sirve para armar el selector de fases en Posiciones.
+ * Fases distintas a "Primera vuelta"/"Segunda vuelta" que ya tienen partidos en el torneo actual (esas dos son la tabla general), con su tipo (para saber si Posiciones la muestra como tabla de puntos o como resultados de llave) y en el orden real en que se crearon. Sirve para armar el selector de fases en Posiciones y en "Armar fase".
  * @summary List the extra tournament phases in play (beyond the regular season)
  */
-export const getFases = async ( options?: Parameters<typeof customFetch>[1]): Promise<string[]> => {
+export const getFases = async ( options?: Parameters<typeof customFetch>[1]): Promise<Fase[]> => {
 
-  return customFetch<string[]>(getGetFasesUrl(),
+  return customFetch<Fase[]>(getGetFasesUrl(),
   {
     ...options,
     method: 'GET'
@@ -1666,6 +1669,78 @@ export function useGetFases<TData = Awaited<ReturnType<typeof getFases>>, TError
 
 
 
+
+export const getCreateFasesLoteUrl = () => {
+
+
+
+
+  return `/api/fases`
+}
+
+/**
+ * Registra el tipo de una o varias fases nuevas (temporada_regular, grupos, liguilla o eliminacion). Si una fase ya estaba registrada, se ignora — el primer registro manda, para no cambiarle el tipo por error a una fase que ya tiene partidos.
+ * @summary Register one or more phases at once (used by the "Armar fase" wizard)
+ */
+export const createFasesLote = async (fasesLoteInput: FasesLoteInput, options?: Parameters<typeof customFetch>[1]): Promise<FasesLoteResult> => {
+
+  return customFetch<FasesLoteResult>(getCreateFasesLoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(fasesLoteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFasesLoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFasesLote>>, TError,{data: BodyType<FasesLoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFasesLote>>, TError,{data: BodyType<FasesLoteInput>}, TContext> => {
+
+const mutationKey = ['createFasesLote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFasesLote>>, {data: BodyType<FasesLoteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFasesLote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFasesLoteMutationResult = NonNullable<Awaited<ReturnType<typeof createFasesLote>>>
+    export type CreateFasesLoteMutationBody = BodyType<FasesLoteInput>
+    export type CreateFasesLoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register one or more phases at once (used by the "Armar fase" wizard)
+ */
+export const useCreateFasesLote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFasesLote>>, TError,{data: BodyType<FasesLoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFasesLote>>,
+        TError,
+        {data: BodyType<FasesLoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFasesLoteMutationOptions(options));
+    }
 
 export const getGetGoleadoresUrl = () => {
 

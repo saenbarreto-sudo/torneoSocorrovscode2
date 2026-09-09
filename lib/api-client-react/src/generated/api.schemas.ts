@@ -270,6 +270,26 @@ export interface PosicionEquipo {
   gcVisitante?: number;
 }
 
+export interface Fase {
+  nombre: string;
+  tipo: string;
+  orden: number;
+}
+
+export interface FaseInput {
+  nombre: string;
+  tipo: string;
+}
+
+export interface FasesLoteInput {
+  fases: FaseInput[];
+}
+
+export interface FasesLoteResult {
+  registradas: number;
+  omitidas: number;
+}
+
 export type TarjetaTipo = typeof TarjetaTipo[keyof typeof TarjetaTipo];
 
 
