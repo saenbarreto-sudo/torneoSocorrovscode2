@@ -25,7 +25,8 @@ const egresoSchema = z.object({
   valor: z.coerce.number().min(0, 'El valor debe ser mayor a 0'),
 });
 
-export default function Egresos() {
+/** `embebido`: se muestra como pestaña dentro de Tesorería (ver pages/tesoreria.tsx). */
+export default function Egresos({ embebido = false }: { embebido?: boolean }) {
   const { role } = useAuth();
   const readOnly = !canWrite(role, 'pagos');
   const { toast } = useToast();
@@ -75,15 +76,17 @@ export default function Egresos() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 text-primary rounded-lg">
-            <Wallet className="h-6 w-6" />
+        {!embebido && (
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 text-primary rounded-lg">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Egresos</h1>
+              <p className="text-muted-foreground mt-1">Gastos de la organización del torneo</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Egresos</h1>
-            <p className="text-muted-foreground mt-1">Gastos de la organización del torneo</p>
-          </div>
-        </div>
+        )}
 
         {!readOnly && (
           <Dialog open={open} onOpenChange={setOpen}>

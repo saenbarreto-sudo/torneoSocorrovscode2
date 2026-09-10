@@ -21,10 +21,17 @@ export interface AuthUser {
   equipoId: number | null
 }
 
-/** Rutas visibles/permitidas por rol. "*" = todas. */
+/**
+ * Rutas visibles/permitidas por rol. "*" = todas.
+ *
+ * "/pagos", "/pagos/resumen" y "/egresos" ya no son páginas propias (son
+ * las tres pestañas de "/tesoreria"), pero se mantienen acá porque siguen
+ * siendo el permiso de cada pestaña: el delegado entra a Tesorería y solo
+ * ve el estado de cuenta, no los recibos ni los egresos del torneo.
+ */
 const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
   admin: "*",
-  delegado: ["/", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados", "/pagos/resumen"],
+  delegado: ["/", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados", "/tesoreria", "/pagos/resumen"],
   publico: ["/", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados"],
 }
 

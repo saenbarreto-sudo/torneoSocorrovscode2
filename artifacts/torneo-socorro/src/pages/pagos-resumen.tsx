@@ -15,7 +15,12 @@ import { useAuth, canAccessRoute } from '@/lib/auth';
 import { ExtractoEquipo } from '@/components/extracto-equipo';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 
-export default function PagosResumen() {
+/**
+ * `embebido`: se muestra como pestaña dentro de Tesorería (ver
+ * pages/tesoreria.tsx), así que el título y el botón de volver los maneja
+ * la página madre.
+ */
+export default function PagosResumen({ embebido = false }: { embebido?: boolean }) {
   const { role } = useAuth();
   const [concepto, setConcepto] = useState<Concepto>('Inscripcion');
   const esInscripcion = concepto === 'Inscripcion';
@@ -91,22 +96,24 @@ export default function PagosResumen() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          {canAccessRoute(role, '/pagos') && (
-            <Button variant="outline" size="icon" asChild>
-              <Link href="/pagos" aria-label="Volver a Pagos"><ArrowLeft className="h-4 w-4" /></Link>
-            </Button>
-          )}
-          <div className="p-3 bg-primary/10 text-primary rounded-lg">
-            <FileText className="h-6 w-6" />
+        {!embebido && (
+          <div className="flex items-center gap-3">
+            {canAccessRoute(role, '/pagos') && (
+              <Button variant="outline" size="icon" asChild>
+                <Link href="/pagos" aria-label="Volver a Pagos"><ArrowLeft className="h-4 w-4" /></Link>
+              </Button>
+            )}
+            <div className="p-3 bg-primary/10 text-primary rounded-lg">
+              <FileText className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Estado de cuenta</h1>
+              <p className="text-muted-foreground mt-1">
+                {esInscripcion ? 'Pagos de inscripción por equipo' : `Pagos de "${CONCEPTO_LABEL[concepto]}" por equipo`}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Estado de cuenta</h1>
-            <p className="text-muted-foreground mt-1">
-              {esInscripcion ? 'Pagos de inscripción por equipo' : `Pagos de "${CONCEPTO_LABEL[concepto]}" por equipo`}
-            </p>
-          </div>
-        </div>
+        )}
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <Select value={concepto} onValueChange={(v) => setConcepto(v as Concepto)}>

@@ -49,7 +49,12 @@ const pagoSchema = z.object({
 
 type PagoFormValues = z.infer<typeof pagoSchema>;
 
-export default function Pagos() {
+/**
+ * `embebido` = se está mostrando como una pestaña dentro de Tesorería, no
+ * como página suelta: ahí el título y el ícono los pone la página madre, y
+ * el enlace a Estado de cuenta sobra porque es la pestaña de al lado.
+ */
+export default function Pagos({ embebido = false }: { embebido?: boolean }) {
   const { role, user } = useAuth();
   const readOnly = !canWrite(role, 'pagos');
   const queryClient = useQueryClient();
@@ -124,16 +129,18 @@ export default function Pagos() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-green-100 text-green-700 rounded-lg">
-            <Receipt className="h-6 w-6" />
+        {!embebido && (
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-green-100 text-green-700 rounded-lg">
+              <Receipt className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Recibos de Caja</h1>
+              <p className="text-muted-foreground mt-1">Registro de pagos e ingresos</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Recibos de Caja</h1>
-            <p className="text-muted-foreground mt-1">Registro de pagos e ingresos</p>
-          </div>
-        </div>
-        
+        )}
+
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <Select value={filtroEquipo} onValueChange={setFiltroEquipo}>
             <SelectTrigger className="w-full sm:w-[200px]">
@@ -147,12 +154,14 @@ export default function Pagos() {
             </SelectContent>
           </Select>
           
-          <Button asChild variant="outline" className="mr-2 w-full sm:w-auto">
-            <Link href="/pagos/resumen">
-              <FileText className="h-4 w-4 mr-2" />
-              Estado de Cuenta
-            </Link>
-          </Button>
+          {!embebido && (
+            <Button asChild variant="outline" className="mr-2 w-full sm:w-auto">
+              <Link href="/pagos/resumen">
+                <FileText className="h-4 w-4 mr-2" />
+                Estado de Cuenta
+              </Link>
+            </Button>
+          )}
 
           {!readOnly && (
           <Dialog open={open} onOpenChange={setOpen}>

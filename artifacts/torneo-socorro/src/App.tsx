@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Login from '@/pages/login';
-import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthProvider, canAccessRoute, useAuth } from '@/lib/auth';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -19,9 +19,7 @@ import Partidos from '@/pages/partidos';
 import Goleadores from '@/pages/goleadores';
 import Vallas from '@/pages/vallas';
 import Amonestados from '@/pages/amonestados';
-import Pagos from '@/pages/pagos';
-import PagosResumen from '@/pages/pagos-resumen';
-import Egresos from '@/pages/egresos';
+import Tesoreria from '@/pages/tesoreria';
 import Programacion from '@/pages/programacion';
 import GenerarCalendario from '@/pages/generar-calendario';
 import ArmarFase from '@/pages/armar-fase';
@@ -61,9 +59,13 @@ function Router() {
         <Route path="/goleadores">{() => <Protected path="/goleadores" component={Goleadores} />}</Route>
         <Route path="/vallas">{() => <Protected path="/vallas" component={Vallas} />}</Route>
         <Route path="/amonestados">{() => <Protected path="/amonestados" component={Amonestados} />}</Route>
-        <Route path="/pagos">{() => <Protected path="/pagos" component={Pagos} />}</Route>
-        <Route path="/pagos/resumen">{() => <Protected path="/pagos/resumen" component={PagosResumen} />}</Route>
-        <Route path="/egresos">{() => <Protected path="/egresos" component={Egresos} />}</Route>
+        <Route path="/tesoreria">{() => <Protected path="/tesoreria" component={Tesoreria} />}</Route>
+        {/* Rutas viejas de cuando Recibos, Estado de cuenta y Egresos eran
+            tres páginas sueltas: ahora son pestañas de Tesorería, pero se
+            dejan redirigiendo para no romper un enlace o marcador guardado. */}
+        <Route path="/pagos"><Redirect to="/tesoreria" replace /></Route>
+        <Route path="/pagos/resumen"><Redirect to="/tesoreria" replace /></Route>
+        <Route path="/egresos"><Redirect to="/tesoreria" replace /></Route>
         <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
         <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
         <Route path="/programacion/armar-fase">{() => <Protected path="/programacion" component={ArmarFase} />}</Route>

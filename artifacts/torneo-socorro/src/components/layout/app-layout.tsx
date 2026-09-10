@@ -19,13 +19,12 @@ import {
   Medal,
   Shield,
   Flag,
-  CreditCard,
   CalendarDays,
   ShieldAlert,
   LogOut,
   Menu,
   UserCog,
-  Wallet,
+  Landmark,
   Settings,
 } from "lucide-react"
 
@@ -39,9 +38,7 @@ const navItems = [
   { href: "/goleadores", label: "Goleadores", icon: Medal },
   { href: "/vallas", label: "Valla menos vencida", icon: Shield },
   { href: "/amonestados", label: "Amonestados", icon: Flag },
-  { href: "/pagos", label: "Pagos & Multas", icon: CreditCard },
-  { href: "/pagos/resumen", label: "Estado de Cuenta", icon: CreditCard },
-  { href: "/egresos", label: "Egresos", icon: Wallet },
+  { href: "/tesoreria", label: "Tesorería", icon: Landmark },
   { href: "/usuarios", label: "Usuarios", icon: UserCog },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ]
