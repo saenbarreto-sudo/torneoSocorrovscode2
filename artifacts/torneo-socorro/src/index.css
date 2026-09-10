@@ -208,3 +208,16 @@
     display: none !important;
   }
 }
+
+/* El cuadro de la fase final es ancho (una columna por ronda), así que su
+   hoja va acostada. Se hace con una "named page" de CSS: la regla @page no
+   se puede condicionar por clase, pero sí se puede declarar una página con
+   nombre y mandarle un elemento puntual con "page:". */
+@page horizontal {
+  size: landscape;
+  margin: 8mm;
+}
+
+.hoja-horizontal {
+  page: horizontal;
+}

@@ -14,6 +14,10 @@ export interface PartidoInput {
   visitanteId: number;
   golesLocal?: number;
   golesVisitante?: number;
+  /** @nullable */
+  penalesLocal?: number | null;
+  /** @nullable */
+  penalesVisitante?: number | null;
   jugado?: boolean;
   fase: string;
   arbitro?: string;

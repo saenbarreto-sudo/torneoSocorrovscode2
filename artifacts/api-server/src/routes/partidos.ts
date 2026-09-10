@@ -47,6 +47,8 @@ function mapPartido(row: Record<string, unknown>) {
     visitanteNombre: row.visitante_nombre,
     golesLocal: row.goles_local ?? null,
     golesVisitante: row.goles_visitante ?? null,
+    penalesLocal: row.penales_local ?? null,
+    penalesVisitante: row.penales_visitante ?? null,
     jugado: row.jugado,
     fase: row.fase ?? null,
     walkover: row.walkover ?? false,

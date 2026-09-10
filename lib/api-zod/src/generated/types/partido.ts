@@ -21,6 +21,10 @@ export interface Partido {
   golesLocal?: number | null;
   /** @nullable */
   golesVisitante?: number | null;
+  /** @nullable */
+  penalesLocal?: number | null;
+  /** @nullable */
+  penalesVisitante?: number | null;
   jugado: boolean;
   /** @nullable */
   fase?: string | null;

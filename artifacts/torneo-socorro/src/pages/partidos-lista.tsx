@@ -55,15 +55,16 @@ import { Label } from '@/components/ui/label';
  * escribir texto libre: así no se rompe el agrupamiento de Posiciones por
  * un nombre de fase mal escrito.
  */
-const FASES_FIJAS = [
-  'Primera vuelta',
-  'Segunda vuelta',
+const FASES_ELIMINACION_FIJAS = [
   'Muerte súbita',
   'Final liguilla',
   'Semifinal liguilla',
   'Semifinal del torneo',
   'Final del torneo',
+  '3er puesto',
 ];
+
+const FASES_FIJAS = ['Primera vuelta', 'Segunda vuelta', ...FASES_ELIMINACION_FIJAS];
 
 const partidoSchema = z.object({
   semana: z.coerce.number().min(1),
@@ -78,6 +79,9 @@ const partidoSchema = z.object({
 const resultadoSchema = z.object({
   golesLocal: z.coerce.number().min(0),
   golesVisitante: z.coerce.number().min(0),
+  // Solo se usan si el partido es de eliminación y quedó empatado.
+  penalesLocal: z.coerce.number().min(0).optional(),
+  penalesVisitante: z.coerce.number().min(0).optional(),
 });
 
 /**
@@ -204,17 +208,37 @@ export default function Partidos({
     });
   };
 
+  // Los penales solo tienen sentido en una fase de eliminación: en la liga
+  // un empate simplemente reparte puntos. El tipo de la fase sale del
+  // catálogo que lleva "Armar fase" (ver schema/fases.ts).
+  const esEliminacionActiva =
+    (fasesExtra ?? []).find((f) => f.nombre === activePartido?.fase)?.tipo === 'eliminacion' ||
+    FASES_ELIMINACION_FIJAS.includes(activePartido?.fase ?? '');
+  const golesEmpatados = resForm.watch('golesLocal') === resForm.watch('golesVisitante');
+  const mostrarPenales = !esWalkover && esEliminacionActiva && golesEmpatados;
+
   const onResultSubmit = (data: z.infer<typeof resultadoSchema>) => {
     if (esWalkover && !walkoverGanadorId) {
       toast({ title: 'Selecciona qué equipo ganó el W.O.', variant: 'destructive' });
       return;
     }
+    // Los penales solo se guardan si de verdad hubo definición desde el
+    // punto penal (empate en una fase de eliminación). Si no, van en null
+    // para no dejar un 0-0 de penales colgado en un partido de liga.
+    const huboPenales = !esWalkover && esEliminacionActiva && data.golesLocal === data.golesVisitante;
     updateMutation.mutate(
       {
         id: activePartido.id,
         data: esWalkover
           ? { walkover: true, walkoverGanadorId: Number(walkoverGanadorId), jugado: true }
-          : { ...data, walkover: false, jugado: true },
+          : {
+              golesLocal: data.golesLocal,
+              golesVisitante: data.golesVisitante,
+              penalesLocal: huboPenales ? (data.penalesLocal ?? 0) : null,
+              penalesVisitante: huboPenales ? (data.penalesVisitante ?? 0) : null,
+              walkover: false,
+              jugado: true,
+            },
       },
       {
         onSuccess: () => {
@@ -234,6 +258,8 @@ export default function Partidos({
     resForm.reset({
       golesLocal: partido.golesLocal ?? 0,
       golesVisitante: partido.golesVisitante ?? 0,
+      penalesLocal: partido.penalesLocal ?? 0,
+      penalesVisitante: partido.penalesVisitante ?? 0,
     });
     setEsWalkover(!!partido.walkover);
     setWalkoverGanadorId(partido.walkoverGanadorId ? String(partido.walkoverGanadorId) : '');
@@ -483,6 +509,31 @@ export default function Partidos({
                           )} />
                         </div>
                       )}
+
+                      {/* En eliminación directa un empate no alcanza: hay que
+                          definir desde el punto penal, y ese marcador se
+                          guarda aparte (no cuenta como goles). */}
+                      {mostrarPenales && (
+                        <div className="border-t pt-4 space-y-2">
+                          <p className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            Definición por penales
+                          </p>
+                          <div className="flex justify-center items-center gap-6">
+                            <FormField control={resForm.control} name="penalesLocal" render={({ field }) => (
+                              <FormItem className="w-20">
+                                <FormControl><Input type="number" className="text-center text-xl font-mono h-12" {...field} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <div className="text-lg font-bold text-muted-foreground">-</div>
+                            <FormField control={resForm.control} name="penalesVisitante" render={({ field }) => (
+                              <FormItem className="w-20">
+                                <FormControl><Input type="number" className="text-center text-xl font-mono h-12" {...field} /></FormControl>
+                              </FormItem>
+                            )} />
+                          </div>
+                        </div>
+                      )}
+
                       {!readOnly && (
                         <DialogFooter className="mt-4">
                           <Button type="button" variant="outline" onClick={() => setOpenResult(false)}>Cerrar</Button>

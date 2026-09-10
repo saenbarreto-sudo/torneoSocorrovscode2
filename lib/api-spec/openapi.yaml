@@ -1378,6 +1378,12 @@ components:
           type: ["number", "null"]
         golesVisitante:
           type: ["number", "null"]
+        # Solo se llenan cuando un partido de eliminación termina empatado
+        # y se define desde el punto penal.
+        penalesLocal:
+          type: ["number", "null"]
+        penalesVisitante:
+          type: ["number", "null"]
         jugado:
           type: boolean
         fase:
@@ -1413,6 +1419,13 @@ components:
           type: number
         golesVisitante:
           type: number
+        # Solo se llenan cuando un partido de eliminación termina empatado y
+        # se define desde el punto penal. Aceptan null para poder borrarlos
+        # si se corrige el resultado y deja de estar empatado.
+        penalesLocal:
+          type: ["number", "null"]
+        penalesVisitante:
+          type: ["number", "null"]
         jugado:
           type: boolean
         fase:
@@ -1443,6 +1456,13 @@ components:
           type: number
         golesVisitante:
           type: number
+        # Solo se llenan cuando un partido de eliminación termina empatado y
+        # se define desde el punto penal. Aceptan null para poder borrarlos
+        # si se corrige el resultado y deja de estar empatado.
+        penalesLocal:
+          type: ["number", "null"]
+        penalesVisitante:
+          type: ["number", "null"]
         jugado:
           type: boolean
         fase:

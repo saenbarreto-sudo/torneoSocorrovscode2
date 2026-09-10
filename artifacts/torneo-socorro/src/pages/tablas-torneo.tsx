@@ -2,6 +2,7 @@ import { Trophy } from 'lucide-react';
 import Posiciones from '@/pages/posiciones';
 import Goleadores from '@/pages/goleadores';
 import Vallas from '@/pages/vallas';
+import { CuadroFinalSeccion } from '@/pages/cuadro-final-seccion';
 
 /**
  * Las tres tablas de consulta del torneo en una sola pantalla: posiciones
@@ -28,6 +29,9 @@ export default function TablasTorneo() {
       </div>
 
       <Posiciones embebido />
+
+      {/* Solo aparece cuando el torneo ya llegó a la fase de eliminación. */}
+      <CuadroFinalSeccion />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         <Goleadores embebido />

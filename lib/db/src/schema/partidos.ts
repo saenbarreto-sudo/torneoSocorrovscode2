@@ -12,6 +12,12 @@ export const partidosTable = pgTable("partidos", {
   visitanteId: integer("visitante_id").notNull().references(() => equiposTable.id),
   golesLocal: integer("goles_local"),
   golesVisitante: integer("goles_visitante"),
+  // Definición por penales: solo se llenan cuando un partido de eliminación
+  // directa termina empatado y hay que definirlo desde el punto penal. En
+  // el resto de los partidos quedan en NULL, y no cuentan como goles para
+  // ninguna tabla (goleadores, valla, posiciones) — solo dicen quién pasó.
+  penalesLocal: integer("penales_local"),
+  penalesVisitante: integer("penales_visitante"),
   jugado: boolean("jugado").notNull().default(false),
   fase: text("fase"),
   arbitro: text("arbitro"),
