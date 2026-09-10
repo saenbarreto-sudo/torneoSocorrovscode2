@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarDays, CalendarPlus, Edit2, Trash2, Printer, Trophy } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Edit2, Trash2, Printer, Trophy, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,19 @@ const semanaSchema = z.object({
   esFestivo: z.boolean().default(false),
 });
 
-export default function Programacion() {
+/**
+ * Cronograma del torneo. Es la pestaña "Cronograma" dentro de
+ * pages/partidos.tsx: `embebido` le quita el título propio, y
+ * `onVerPartidos` es el puente a la otra pestaña — al pulsarlo, la lista de
+ * partidos se abre ya filtrada por las fechas de esa jornada.
+ */
+export default function Programacion({
+  embebido = false,
+  onVerPartidos,
+}: {
+  embebido?: boolean;
+  onVerPartidos?: (prog: SemanaFecha) => void;
+}) {
   const { data: programacion, isLoading } = useGetProgramacion();
   const [, navigate] = useLocation();
   const { role } = useAuth();
@@ -175,15 +187,17 @@ export default function Programacion() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 text-primary rounded-lg">
-            <CalendarDays className="h-6 w-6" />
+        {!embebido && (
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 text-primary rounded-lg">
+              <CalendarDays className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Cronograma del Torneo</h1>
+              <p className="text-muted-foreground mt-1">Fechas y semanas programadas</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Cronograma del Torneo</h1>
-            <p className="text-muted-foreground mt-1">Fechas y semanas programadas</p>
-          </div>
-        </div>
+        )}
         {puedeProgramar && (
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate('/programacion/armar-fase')}>
@@ -228,6 +242,17 @@ export default function Programacion() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
+                    {onVerPartidos && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onVerPartidos(prog)}
+                        aria-label="Ver los partidos de esta jornada"
+                        title="Ver sus partidos"
+                      >
+                        <ListChecks className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => setSemanaImprimir(prog)} aria-label="Imprimir semana">
                       <Printer className="h-4 w-4" />
                     </Button>

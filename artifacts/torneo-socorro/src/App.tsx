@@ -18,7 +18,6 @@ import FichaJugador from '@/pages/ficha-jugador';
 import Partidos from '@/pages/partidos';
 import Amonestados from '@/pages/amonestados';
 import Tesoreria from '@/pages/tesoreria';
-import Programacion from '@/pages/programacion';
 import GenerarCalendario from '@/pages/generar-calendario';
 import ArmarFase from '@/pages/armar-fase';
 import Usuarios from '@/pages/usuarios';
@@ -61,6 +60,9 @@ function Router() {
         <Route path="/jugadores/:id">{() => <Protected path="/jugadores" component={FichaJugador} />}</Route>
         <Route path="/partidos">{() => <Protected path="/partidos" component={Partidos} />}</Route>
         <Route path="/amonestados">{() => <Protected path="/amonestados" component={Amonestados} />}</Route>
+        {/* El cronograma ahora es la primera pestaña de "/partidos"; la ruta
+            vieja se deja redirigiendo para no romper enlaces guardados. */}
+        <Route path="/programacion"><Redirect to="/partidos" replace /></Route>
         <Route path="/tesoreria">{() => <Protected path="/tesoreria" component={Tesoreria} />}</Route>
         {/* Rutas viejas de cuando Recibos, Estado de cuenta y Egresos eran
             tres páginas sueltas: ahora son pestañas de Tesorería, pero se
@@ -68,7 +70,6 @@ function Router() {
         <Route path="/pagos"><Redirect to="/tesoreria" replace /></Route>
         <Route path="/pagos/resumen"><Redirect to="/tesoreria" replace /></Route>
         <Route path="/egresos"><Redirect to="/tesoreria" replace /></Route>
-        <Route path="/programacion">{() => <Protected path="/programacion" component={Programacion} />}</Route>
         <Route path="/programacion/generar">{() => <Protected path="/programacion" component={GenerarCalendario} />}</Route>
         <Route path="/programacion/armar-fase">{() => <Protected path="/programacion" component={ArmarFase} />}</Route>
         <Route path="/usuarios">{() => <Protected path="/usuarios" component={Usuarios} />}</Route>

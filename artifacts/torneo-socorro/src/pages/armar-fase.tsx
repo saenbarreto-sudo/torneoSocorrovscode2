@@ -311,7 +311,7 @@ export default function ArmarFase() {
         programacionCreada ? 'Programación creada' : null,
       ].filter(Boolean);
       toast({ title: `Fase "${nombreFaseActual}" guardada`, description: detalles.join(' · ') });
-      navigate('/programacion');
+      navigate('/partidos');
     } catch (error) {
       toast({ title: 'No se pudo guardar la fase', description: extractErrorMessage(error), variant: 'destructive' });
     }
@@ -322,7 +322,7 @@ export default function ArmarFase() {
       <div className="py-12 text-center text-muted-foreground">
         No tienes permiso para programar partidos.
         <div className="mt-4">
-          <Button variant="outline" onClick={() => navigate('/programacion')}>Volver</Button>
+          <Button variant="outline" onClick={() => navigate('/partidos')}>Volver</Button>
         </div>
       </div>
     );
@@ -331,7 +331,7 @@ export default function ArmarFase() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/programacion')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/partidos')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

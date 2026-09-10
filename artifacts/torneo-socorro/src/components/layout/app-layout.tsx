@@ -17,7 +17,6 @@ import {
   Users,
   Swords,
   Flag,
-  CalendarDays,
   ShieldAlert,
   LogOut,
   Menu,
@@ -29,8 +28,7 @@ import {
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tablas", label: "Tablas del torneo", icon: Trophy },
-  { href: "/programacion", label: "Programación", icon: CalendarDays },
-  { href: "/partidos", label: "Partidos & Resultados", icon: Swords },
+  { href: "/partidos", label: "Partidos", icon: Swords },
   { href: "/equipos", label: "Equipos", icon: ShieldAlert },
   { href: "/jugadores", label: "Jugadores", icon: Users },
   { href: "/amonestados", label: "Amonestados", icon: Flag },

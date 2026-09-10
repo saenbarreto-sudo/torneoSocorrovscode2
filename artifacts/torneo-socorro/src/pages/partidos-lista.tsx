@@ -2,6 +2,7 @@ import {
   useGetPartidos,
   useGetEquipos,
   useGetFases,
+  useGetProgramacion,
   useUpdatePartido,
   useCreatePartido,
   useDeletePartido,
@@ -79,19 +80,51 @@ const resultadoSchema = z.object({
   golesVisitante: z.coerce.number().min(0),
 });
 
-export default function Partidos() {
+/**
+ * Lista de partidos con sus resultados. Es la pestaña "Partidos y
+ * resultados" dentro de pages/partidos.tsx; `embebido` le quita el título
+ * propio porque ahí lo pone la página madre.
+ *
+ * El filtro es por JORNADA del cronograma (no por número de semana): una
+ * jornada puede abarcar varios fines de semana, así que se buscan sus
+ * partidos por el rango de fechas que cubre. `jornadaId` viene de afuera
+ * para que, al hacer clic en "ver partidos" desde el cronograma, esta
+ * pestaña abra ya filtrada por esa jornada.
+ */
+export default function Partidos({
+  embebido = false,
+  jornadaId = 'all',
+  onJornadaChange,
+}: {
+  embebido?: boolean;
+  jornadaId?: number | 'all';
+  onJornadaChange?: (id: number | 'all') => void;
+}) {
   const { role } = useAuth();
   const readOnly = !canWrite(role, 'partidos');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [filtroSemana, setFiltroSemana] = useState<string>('all');
+  // Si la página no controla el filtro desde afuera (uso suelto), se maneja acá.
+  const [jornadaLocal, setJornadaLocal] = useState<number | 'all'>('all');
+  const jornadaActiva = onJornadaChange ? jornadaId : jornadaLocal;
+  const cambiarJornada = (id: number | 'all') => {
+    if (onJornadaChange) onJornadaChange(id);
+    else setJornadaLocal(id);
+  };
 
   const { data: equipos } = useGetEquipos();
   const { data: fasesExtra } = useGetFases();
-  const { data: partidosRaw, isLoading } = useGetPartidos(
-    filtroSemana !== 'all' ? { semana: Number(filtroSemana) } : undefined,
-  );
+  const { data: programacion } = useGetProgramacion();
+
+  const jornada = (programacion ?? []).find((p) => p.id === jornadaActiva);
+  const filtroPartidos =
+    jornada?.fechaDesde && jornada?.fechaHasta
+      ? { desde: jornada.fechaDesde, hasta: jornada.fechaHasta }
+      : jornada
+        ? { semana: jornada.semana } // jornada vieja, sin rango de fechas cargado
+        : undefined;
+  const { data: partidosRaw, isLoading } = useGetPartidos(filtroPartidos);
 
   // Lista de fases del desplegable: las fijas + cualquier otra que ya exista
   // en el torneo (grupos, liguilla, rondas de eliminación...), sin repetir.
@@ -220,26 +253,30 @@ export default function Partidos() {
     return (a.hora || '').localeCompare(b.hora || '');
   }) || [];
 
-  // Extraer semanas unicas para el filtro
-  const semanasUnicas = Array.from(new Set(partidosRaw?.map((p) => p.semana) || [])).sort((a, b) => b - a);
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Partidos</h1>
-          <p className="text-muted-foreground mt-1">Programación y resultados</p>
-        </div>
+        {!embebido && (
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Partidos</h1>
+            <p className="text-muted-foreground mt-1">Programación y resultados</p>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <Select value={filtroSemana} onValueChange={setFiltroSemana}>
-            <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder="Todas las fechas" />
+          <Select
+            value={String(jornadaActiva)}
+            onValueChange={(v) => cambiarJornada(v === 'all' ? 'all' : Number(v))}
+          >
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Todas las jornadas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las fechas</SelectItem>
-              {semanasUnicas.map((sem) => (
-                <SelectItem key={sem} value={sem.toString()}>Fecha {sem}</SelectItem>
+              <SelectItem value="all">Todas las jornadas</SelectItem>
+              {(programacion ?? []).map((p) => (
+                <SelectItem key={p.id} value={String(p.id)}>
+                  {p.nombreSemana || `Fecha ${p.semana}`}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
