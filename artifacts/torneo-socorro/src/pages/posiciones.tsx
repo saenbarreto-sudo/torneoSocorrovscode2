@@ -4,6 +4,11 @@ import { useGetPosiciones, useGetFases, getGetPartidosQueryOptions, type Partido
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Trophy, Printer } from 'lucide-react';
+import { ImprimirPortal } from '@/components/imprimir-portal';
+import { TablaImprimible } from '@/components/tabla-imprimible';
+import { useImprimir } from '@/hooks/use-imprimir';
 
 /**
  * Valor especial para la pestaña "Tabla general": no manda `fase` al
@@ -13,7 +18,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
  */
 const TABLA_GENERAL = '__general__';
 
-export default function Posiciones() {
+/** `embebido`: va dentro de Tablas del torneo (ver pages/tablas-torneo.tsx), donde el título va compacto. */
+export default function Posiciones({ embebido = false }: { embebido?: boolean }) {
   const [fase, setFase] = useState<string>(TABLA_GENERAL);
   const esTablaGeneral = fase === TABLA_GENERAL;
   const { data: fases } = useGetFases();
@@ -39,12 +45,31 @@ export default function Posiciones() {
     [todosPartidos, fase],
   );
 
+  const { imprimiendo, imprimir } = useImprimir();
+  const nombreFase = esTablaGeneral ? 'Tabla general' : fase;
+  const botonImprimir = (
+    <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir posiciones">
+      <Printer className="h-4 w-4" />
+    </Button>
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Posiciones</h1>
-        <p className="text-muted-foreground mt-1">Clasificación general del torneo</p>
-      </div>
+      {embebido ? (
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold tracking-tight">Posiciones</h2>
+          <span className="ml-auto">{botonImprimir}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Posiciones</h1>
+            <p className="text-muted-foreground mt-1">Clasificación general del torneo</p>
+          </div>
+          <span className="ml-auto">{botonImprimir}</span>
+        </div>
+      )}
 
       {fases && fases.length > 0 && (
         <Tabs value={fase} onValueChange={setFase}>
@@ -174,6 +199,60 @@ export default function Posiciones() {
           </>
         )}
       </div>
+
+      {/* Una fase de eliminación no tiene tabla de puntos: lo que se imprime
+          ahí son los cruces con su resultado. */}
+      <ImprimirPortal activo={imprimiendo}>
+        {esEliminacion ? (
+          <TablaImprimible
+            titulo="RESULTADOS"
+            subtitulo={nombreFase}
+            columnas={[
+              { encabezado: 'Local', alineacion: 'derecha' },
+              { encabezado: '', alineacion: 'centro' },
+              { encabezado: 'Visitante' },
+            ]}
+            filas={partidosDeFase.map((p) => ({
+              clave: p.id,
+              celdas: [p.localNombre, p.jugado ? `${p.golesLocal} - ${p.golesVisitante}` : 'vs', p.visitanteNombre],
+            }))}
+          />
+        ) : (
+          <TablaImprimible
+            titulo="TABLA DE POSICIONES"
+            subtitulo={nombreFase}
+            columnas={[
+              { encabezado: 'Pos', alineacion: 'centro' },
+              { encabezado: 'Equipo' },
+              { encabezado: 'PJ', alineacion: 'centro' },
+              { encabezado: 'PG', alineacion: 'centro' },
+              { encabezado: 'PE', alineacion: 'centro' },
+              { encabezado: 'PP', alineacion: 'centro' },
+              { encabezado: 'GF', alineacion: 'centro' },
+              { encabezado: 'GC', alineacion: 'centro' },
+              { encabezado: 'DF', alineacion: 'centro' },
+              { encabezado: 'Pts', alineacion: 'derecha' },
+            ]}
+            filas={(posiciones ?? []).map((pos) => ({
+              clave: pos.equipoId,
+              destacada: esTablaGeneral && pos.posicion <= 4,
+              celdas: [
+                pos.posicion,
+                pos.equipoNombre,
+                pos.pj,
+                pos.pg,
+                pos.pe,
+                pos.pp,
+                pos.gf,
+                pos.gc,
+                pos.df > 0 ? `+${pos.df}` : pos.df,
+                pos.pts,
+              ],
+            }))}
+            nota={esTablaGeneral ? 'Las filas resaltadas son los equipos que clasifican.' : undefined}
+          />
+        )}
+      </ImprimirPortal>
     </div>
   );
 }

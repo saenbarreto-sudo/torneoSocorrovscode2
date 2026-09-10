@@ -16,8 +16,6 @@ import {
   Trophy,
   Users,
   Swords,
-  Medal,
-  Shield,
   Flag,
   CalendarDays,
   ShieldAlert,
@@ -30,13 +28,11 @@ import {
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/posiciones", label: "Posiciones", icon: Trophy },
+  { href: "/tablas", label: "Tablas del torneo", icon: Trophy },
   { href: "/programacion", label: "Programación", icon: CalendarDays },
   { href: "/partidos", label: "Partidos & Resultados", icon: Swords },
   { href: "/equipos", label: "Equipos", icon: ShieldAlert },
   { href: "/jugadores", label: "Jugadores", icon: Users },
-  { href: "/goleadores", label: "Goleadores", icon: Medal },
-  { href: "/vallas", label: "Valla menos vencida", icon: Shield },
   { href: "/amonestados", label: "Amonestados", icon: Flag },
   { href: "/tesoreria", label: "Tesorería", icon: Landmark },
   { href: "/usuarios", label: "Usuarios", icon: UserCog },

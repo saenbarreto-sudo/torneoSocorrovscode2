@@ -1,23 +1,44 @@
 import { useGetGoleadores } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Medal, Goal } from 'lucide-react';
+import { Medal, Goal, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ImprimirPortal } from '@/components/imprimir-portal';
+import { TablaImprimible } from '@/components/tabla-imprimible';
+import { useImprimir } from '@/hooks/use-imprimir';
 
-export default function Goleadores() {
+/** `embebido`: va dentro de Tablas del torneo (ver pages/tablas-torneo.tsx), donde el título va compacto. */
+export default function Goleadores({ embebido = false }: { embebido?: boolean }) {
   const { data: goleadores, isLoading } = useGetGoleadores();
+  const { imprimiendo, imprimir } = useImprimir();
+
+  const botonImprimir = (
+    <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir goleadores">
+      <Printer className="h-4 w-4" />
+    </Button>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-primary/10 text-primary rounded-lg">
-          <Goal className="h-6 w-6" />
+      {embebido ? (
+        <div className="flex items-center gap-2">
+          <Goal className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold tracking-tight">Goleadores</h2>
+          <span className="ml-auto">{botonImprimir}</span>
         </div>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Goleadores</h1>
-          <p className="text-muted-foreground mt-1">Los máximos artilleros del torneo</p>
+      ) : (
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/10 text-primary rounded-lg">
+            <Goal className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tabla de Goleadores</h1>
+            <p className="text-muted-foreground mt-1">Los máximos artilleros del torneo</p>
+          </div>
+          <span className="ml-auto">{botonImprimir}</span>
         </div>
-      </div>
+      )}
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -61,6 +82,23 @@ export default function Goleadores() {
           </Table>
         </CardContent>
       </Card>
+
+      <ImprimirPortal activo={imprimiendo}>
+        <TablaImprimible
+          titulo="TABLA DE GOLEADORES"
+          columnas={[
+            { encabezado: 'Pos', alineacion: 'centro' },
+            { encabezado: 'Jugador' },
+            { encabezado: 'Equipo' },
+            { encabezado: 'Goles', alineacion: 'derecha' },
+          ]}
+          filas={(goleadores ?? []).map((g, idx) => ({
+            clave: `${g.jugadorId}-${g.equipoNombre}`,
+            destacada: idx < 3,
+            celdas: [idx + 1, g.jugadorNombre, g.equipoNombre, g.totalGoles],
+          }))}
+        />
+      </ImprimirPortal>
     </div>
   );
 }

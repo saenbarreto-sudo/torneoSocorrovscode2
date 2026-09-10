@@ -178,7 +178,7 @@ export default function Dashboard() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between py-4">
             <CardTitle className="text-base">Tabla de posiciones</CardTitle>
-            <Link href="/posiciones" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <Link href="/tablas" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
               Ver completa <ArrowRight className="h-3 w-3" />
             </Link>
           </CardHeader>

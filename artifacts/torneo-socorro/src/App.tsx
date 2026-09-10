@@ -11,13 +11,11 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Loader2 } from 'lucide-react';
 
 import Dashboard from '@/pages/dashboard';
-import Posiciones from '@/pages/posiciones';
+import TablasTorneo from '@/pages/tablas-torneo';
 import Equipos from '@/pages/equipos';
 import Jugadores from '@/pages/jugadores';
 import FichaJugador from '@/pages/ficha-jugador';
 import Partidos from '@/pages/partidos';
-import Goleadores from '@/pages/goleadores';
-import Vallas from '@/pages/vallas';
 import Amonestados from '@/pages/amonestados';
 import Tesoreria from '@/pages/tesoreria';
 import Programacion from '@/pages/programacion';
@@ -51,13 +49,17 @@ function Router() {
     <AppLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/posiciones">{() => <Protected path="/posiciones" component={Posiciones} />}</Route>
+        <Route path="/tablas">{() => <Protected path="/tablas" component={TablasTorneo} />}</Route>
+        {/* Posiciones, Goleadores y Valla eran tres páginas sueltas: ahora
+            se ven juntas en "/tablas", pero se dejan redirigiendo para no
+            romper un enlace o marcador guardado. */}
+        <Route path="/posiciones"><Redirect to="/tablas" replace /></Route>
+        <Route path="/goleadores"><Redirect to="/tablas" replace /></Route>
+        <Route path="/vallas"><Redirect to="/tablas" replace /></Route>
         <Route path="/equipos">{() => <Protected path="/equipos" component={Equipos} />}</Route>
         <Route path="/jugadores">{() => <Protected path="/jugadores" component={Jugadores} />}</Route>
         <Route path="/jugadores/:id">{() => <Protected path="/jugadores" component={FichaJugador} />}</Route>
         <Route path="/partidos">{() => <Protected path="/partidos" component={Partidos} />}</Route>
-        <Route path="/goleadores">{() => <Protected path="/goleadores" component={Goleadores} />}</Route>
-        <Route path="/vallas">{() => <Protected path="/vallas" component={Vallas} />}</Route>
         <Route path="/amonestados">{() => <Protected path="/amonestados" component={Amonestados} />}</Route>
         <Route path="/tesoreria">{() => <Protected path="/tesoreria" component={Tesoreria} />}</Route>
         {/* Rutas viejas de cuando Recibos, Estado de cuenta y Egresos eran

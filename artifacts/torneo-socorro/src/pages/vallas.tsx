@@ -1,24 +1,47 @@
 import { useGetVallas } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Medal } from 'lucide-react';
+import { Shield, Medal, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ImprimirPortal } from '@/components/imprimir-portal';
+import { TablaImprimible } from '@/components/tabla-imprimible';
+import { useImprimir } from '@/hooks/use-imprimir';
 
-export default function Vallas() {
+const NOTA_WO = 'Los goles de partidos ganados por W.O. no se cuentan aquí, según el Art. 23 del reglamento. La valla deja de sumar al terminar la fase de grupos.';
+
+/** `embebido`: va dentro de Tablas del torneo (ver pages/tablas-torneo.tsx), donde el título va compacto. */
+export default function Vallas({ embebido = false }: { embebido?: boolean }) {
   const { data: vallas, isLoading } = useGetVallas();
   const conPartidos = (vallas ?? []).filter((v) => v.partidosJugados > 0);
+  const { imprimiendo, imprimir } = useImprimir();
+
+  const botonImprimir = (
+    <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir valla menos vencida">
+      <Printer className="h-4 w-4" />
+    </Button>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-primary/10 text-primary rounded-lg">
-          <Shield className="h-6 w-6" />
+      {embebido ? (
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold tracking-tight">Valla menos vencida</h2>
+          <span className="ml-auto">{botonImprimir}</span>
         </div>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Valla menos vencida</h1>
-          <p className="text-muted-foreground mt-1">Equipos con menos goles recibidos</p>
+      ) : (
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/10 text-primary rounded-lg">
+            <Shield className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Valla menos vencida</h1>
+            <p className="text-muted-foreground mt-1">Equipos con menos goles recibidos</p>
+          </div>
+          <span className="ml-auto">{botonImprimir}</span>
         </div>
-      </div>
+      )}
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -65,9 +88,26 @@ export default function Vallas() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground">
-        Los goles de partidos ganados por W.O. no se cuentan aquí, según el Art. 23 del reglamento.
-      </p>
+      <p className="text-xs text-muted-foreground">{NOTA_WO}</p>
+
+      <ImprimirPortal activo={imprimiendo}>
+        <TablaImprimible
+          titulo="VALLA MENOS VENCIDA"
+          columnas={[
+            { encabezado: 'Pos', alineacion: 'centro' },
+            { encabezado: 'Equipo' },
+            { encabezado: 'PJ', alineacion: 'centro' },
+            { encabezado: 'Promedio', alineacion: 'centro' },
+            { encabezado: 'Goles recibidos', alineacion: 'derecha' },
+          ]}
+          filas={conPartidos.map((v, idx) => ({
+            clave: v.equipoId,
+            destacada: idx < 3,
+            celdas: [idx + 1, v.equipoNombre, v.partidosJugados, (v.promedio ?? 0).toFixed(2), v.golesRecibidos],
+          }))}
+          nota={NOTA_WO}
+        />
+      </ImprimirPortal>
     </div>
   );
 }
