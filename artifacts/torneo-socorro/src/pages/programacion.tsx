@@ -45,6 +45,7 @@ import { useAuth, canWrite } from '@/lib/auth';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { ProgramacionImprimible } from '@/components/programacion-imprimible';
+import { formatFechaConDia } from '@/lib/utils';
 
 const semanaSchema = z.object({
   semana: z.coerce.number().min(1),
@@ -87,6 +88,32 @@ export default function Programacion() {
     ...getGetPartidosQueryOptions(parametrosPartidosSemana),
     enabled: semanaImprimir != null,
   });
+
+  // Una Programación puede cubrir varias fechas (toda una fase de grupos,
+  // por ejemplo), pero lo que casi siempre se quiere imprimir es un fin de
+  // semana puntual — así que se arranca marcando solo la fecha más próxima,
+  // y el usuario agrega o quita fechas si de verdad quiere imprimir más de
+  // un fin de semana de una vez.
+  const [fechasImprimirInicializadaPara, setFechasImprimirInicializadaPara] = useState<number | null>(null);
+  const [fechasElegidas, setFechasElegidas] = useState<Set<string>>(new Set());
+
+  const fechasDisponibles = [...new Set((partidosDeLaSemana ?? []).map((p) => p.fecha ?? ''))].sort();
+
+  if (semanaImprimir && fechasImprimirInicializadaPara !== semanaImprimir.id && fechasDisponibles.length > 0) {
+    setFechasElegidas(new Set([fechasDisponibles[0]]));
+    setFechasImprimirInicializadaPara(semanaImprimir.id);
+  }
+
+  const partidosParaImprimir = (partidosDeLaSemana ?? []).filter((p) => fechasElegidas.has(p.fecha ?? ''));
+
+  const alternarFecha = (fecha: string) => {
+    setFechasElegidas((previo) => {
+      const copia = new Set(previo);
+      if (copia.has(fecha)) copia.delete(fecha);
+      else copia.add(fecha);
+      return copia;
+    });
+  };
 
   const form = useForm<z.infer<typeof semanaSchema>>({
     resolver: zodResolver(semanaSchema),
@@ -313,8 +340,18 @@ export default function Programacion() {
           <DialogHeader>
             <DialogTitle>Cronograma de la semana</DialogTitle>
           </DialogHeader>
+          {fechasDisponibles.length > 1 && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 border-b pb-3">
+              {fechasDisponibles.map((fecha) => (
+                <label key={fecha || 'sin-fecha'} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={fechasElegidas.has(fecha)} onCheckedChange={() => alternarFecha(fecha)} />
+                  {fecha ? formatFechaConDia(fecha) : 'Sin fecha'}
+                </label>
+              ))}
+            </div>
+          )}
           {semanaImprimir && (
-            <ProgramacionImprimible semana={semanaImprimir} partidos={partidosDeLaSemana ?? []} />
+            <ProgramacionImprimible semana={semanaImprimir} partidos={partidosParaImprimir} />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSemanaImprimir(null)}>Cerrar</Button>
@@ -329,7 +366,7 @@ export default function Programacion() {
           components/imprimir-portal.tsx. */}
       <ImprimirPortal activo={semanaImprimir != null}>
         {semanaImprimir && (
-          <ProgramacionImprimible semana={semanaImprimir} partidos={partidosDeLaSemana ?? []} />
+          <ProgramacionImprimible semana={semanaImprimir} partidos={partidosParaImprimir} />
         )}
       </ImprimirPortal>
     </div>

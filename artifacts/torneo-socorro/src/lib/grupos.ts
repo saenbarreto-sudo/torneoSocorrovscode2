@@ -7,26 +7,16 @@ import type { EquipoSembrado } from './llaves';
  */
 
 /**
- * Orden serpentina (tipo sorteo de mundial): 1°→A, 2°→B, 3°→C..., y al
- * llegar al último grupo se invierte el sentido en vez de volver a A, para
- * que los grupos queden parejos en nivel en vez de que el Grupo A se lleve
- * siempre a los mejores. Devuelve, para cada posición de la lista original
- * (0 = mejor), el índice del grupo que le toca.
+ * Reparto por cabezas de grupo: el 1° va al Grupo A, el 2° al Grupo B, el
+ * 3° al Grupo C... y al llegar al último grupo se vuelve a empezar por A.
+ * Con 2 grupos esto reparte a los impares (1°, 3°, 5°...) en uno y a los
+ * pares (2°, 4°, 6°...) en el otro; con 3 grupos, los 3 primeros quedan de
+ * cabeza de cada grupo (1°→A, 2°→B, 3°→C) y de ahí sigue el mismo ciclo.
+ * Devuelve, para cada posición de la lista original (0 = mejor), el índice
+ * del grupo que le toca.
  */
-export function ordenSerpentina(cantidadGrupos: number, cantidadEquipos: number): number[] {
-  const orden: number[] = [];
-  let idx = 0;
-  let dir = 1;
-  for (let i = 0; i < cantidadEquipos; i++) {
-    orden.push(idx);
-    const siguiente = idx + dir;
-    if (siguiente < 0 || siguiente >= cantidadGrupos) {
-      dir = -dir;
-    } else {
-      idx = siguiente;
-    }
-  }
-  return orden;
+export function ordenPorCabezasDeGrupo(cantidadGrupos: number, cantidadEquipos: number): number[] {
+  return Array.from({ length: cantidadEquipos }, (_, i) => i % cantidadGrupos);
 }
 
 /** Letra de grupo: 0→A, 1→B, ..., 25→Z. */
@@ -36,11 +26,12 @@ export function letraGrupo(indice: number): string {
 
 /**
  * Reparte los equipos (ya ordenados por posición, mejor primero) en N
- * grupos por serpentina. Si no reparte exacto, algunos grupos quedan con un
- * equipo más que otros (ej. 10 equipos en 3 grupos → 4-3-3), nunca falla.
+ * grupos por cabezas de grupo. Si no reparte exacto, algunos grupos quedan
+ * con un equipo más que otros (ej. 10 equipos en 3 grupos → 4-3-3), nunca
+ * falla.
  */
 export function repartirEnGrupos(equipos: EquipoSembrado[], cantidadGrupos: number): EquipoSembrado[][] {
-  const orden = ordenSerpentina(cantidadGrupos, equipos.length);
+  const orden = ordenPorCabezasDeGrupo(cantidadGrupos, equipos.length);
   const grupos: EquipoSembrado[][] = Array.from({ length: cantidadGrupos }, () => []);
   equipos.forEach((equipo, i) => grupos[orden[i]].push(equipo));
   return grupos;
