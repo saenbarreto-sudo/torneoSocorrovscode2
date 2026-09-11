@@ -129,6 +129,15 @@ router.get("/pagos", async (req, res): Promise<void> => {
   if (query.data.concepto) {
     conditions.push(sql`p.concepto = ${query.data.concepto}`);
   }
+  // Un recibo puede no tener fecha (los viejos cargados a mano): al filtrar
+  // por periodo esos quedan fuera, que es lo correcto — no se sabe si caen
+  // dentro del rango.
+  if (query.data.desde) {
+    conditions.push(sql`p.fecha >= ${query.data.desde}`);
+  }
+  if (query.data.hasta) {
+    conditions.push(sql`p.fecha <= ${query.data.hasta}`);
+  }
   const whereClause =
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
 

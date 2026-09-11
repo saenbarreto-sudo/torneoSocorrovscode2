@@ -3,6 +3,7 @@ import {
   useGetPagos,
   useCreatePago,
   useDeletePago,
+  useUpdatePago,
   getGetPagosQueryKey,
   useGetEquipos,
   useGetPagosResumenEquipos,
@@ -16,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Receipt, FileText, Printer } from 'lucide-react';
+import { Plus, Trash2, Receipt, FileText, Printer, Edit2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
@@ -29,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 import { ReciboPago } from '@/components/recibo-pago';
 import { ImprimirPortal } from '@/components/imprimir-portal';
-import { CONCEPTOS } from '@/lib/conceptos-pago';
+import { CONCEPTOS, CONCEPTO_LABEL } from '@/lib/conceptos-pago';
 
 const pagoSchema = z.object({
   equipoId: z.coerce.number().min(1, 'Seleccione un equipo'),
@@ -61,20 +62,34 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
   const { toast } = useToast();
   
   const [filtroEquipo, setFiltroEquipo] = useState<string>('all');
-  
+  const [filtroConcepto, setFiltroConcepto] = useState<string>('all');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+
   const { data: equipos } = useGetEquipos();
-  const { data: pagos, isLoading } = useGetPagos(
-    filtroEquipo !== 'all' ? { equipoId: Number(filtroEquipo) } : undefined
-  );
+  const { data: pagos, isLoading } = useGetPagos({
+    ...(filtroEquipo !== 'all' ? { equipoId: Number(filtroEquipo) } : {}),
+    ...(filtroConcepto !== 'all' ? { concepto: filtroConcepto } : {}),
+    ...(desde ? { desde } : {}),
+    ...(hasta ? { hasta } : {}),
+  });
+
+  const totalFiltrado = (pagos ?? []).reduce((suma, p) => suma + p.monto, 0);
+  const hayFiltro = filtroEquipo !== 'all' || filtroConcepto !== 'all' || !!desde || !!hasta;
   // Para el saldo de inscripción que se muestra en el recibo. Sin params
   // trae el resumen de "Inscripcion" (el default del backend).
   const { data: resumenInscripcion } = useGetPagosResumenEquipos();
 
   const createMutation = useCreatePago();
   const deleteMutation = useDeletePago();
+  const updateMutation = useUpdatePago();
 
   const [open, setOpen] = useState(false);
   const [pagoRecibo, setPagoRecibo] = useState<Pago | null>(null);
+  const [editando, setEditando] = useState<Pago | null>(null);
+  const [editMonto, setEditMonto] = useState('');
+  const [editFecha, setEditFecha] = useState('');
+  const [editConcepto, setEditConcepto] = useState('');
 
   const saldoDelRecibo = useMemo(() => {
     if (!pagoRecibo || pagoRecibo.concepto !== 'Inscripcion') return undefined;
@@ -111,6 +126,38 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
     });
   };
 
+  // ── Corregir un recibo ya registrado ──────────────────────────────────────
+  // Se edita en vez de borrar y volver a crear justamente para no perder el
+  // número de recibo, que es el que quedó impreso y entregado al equipo.
+  const abrirEdicion = (pago: Pago) => {
+    setEditando(pago);
+    setEditMonto(String(pago.monto));
+    setEditFecha(pago.fecha ?? '');
+    setEditConcepto(pago.concepto);
+  };
+
+  const guardarEdicion = () => {
+    if (!editando) return;
+    const monto = Number(editMonto.replace(/[^\d]/g, ''));
+    if (!Number.isFinite(monto) || monto <= 0) {
+      toast({ title: 'El monto debe ser mayor que cero', variant: 'destructive' });
+      return;
+    }
+    updateMutation.mutate(
+      { id: editando.id, data: { monto, concepto: editConcepto, ...(editFecha ? { fecha: editFecha } : {}) } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPagosQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetPagosResumenEquiposQueryKey() });
+          toast({ title: 'Recibo corregido', description: `Quedó en ${formatMoney(monto)}.` });
+          setEditando(null);
+        },
+        onError: (err) =>
+          toast({ title: 'No se pudo corregir', description: extractErrorMessage(err), variant: 'destructive' }),
+      },
+    );
+  };
+
   const handleDelete = (id: number) => {
     if (confirm('¿Está seguro de anular este recibo de pago?')) {
       deleteMutation.mutate({ id }, {
@@ -143,7 +190,7 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <Select value={filtroEquipo} onValueChange={setFiltroEquipo}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-50">
               <SelectValue placeholder="Todos los equipos" />
             </SelectTrigger>
             <SelectContent>
@@ -153,7 +200,43 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
               ))}
             </SelectContent>
           </Select>
-          
+
+          <Select value={filtroConcepto} onValueChange={setFiltroConcepto}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Todos los conceptos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los conceptos</SelectItem>
+              {CONCEPTOS.map((c) => (
+                <SelectItem key={c} value={c}>{CONCEPTO_LABEL[c] ?? c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="date"
+            className="w-full sm:w-40"
+            aria-label="Desde"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+          />
+          <Input
+            type="date"
+            className="w-full sm:w-40"
+            aria-label="Hasta"
+            value={hasta}
+            onChange={(e) => setHasta(e.target.value)}
+          />
+
+          {hayFiltro && (
+            <Button
+              variant="ghost"
+              onClick={() => { setFiltroEquipo('all'); setFiltroConcepto('all'); setDesde(''); setHasta(''); }}
+            >
+              Quitar filtros
+            </Button>
+          )}
+
           {!embebido && (
             <Button asChild variant="outline" className="mr-2 w-full sm:w-auto">
               <Link href="/pagos/resumen">
@@ -297,20 +380,95 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
                       <Printer className="h-4 w-4" />
                     </Button>
                     {!readOnly && (
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(pago.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => abrirEdicion(pago)} title="Corregir este recibo">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(pago.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                   </TableCell>
                 </TableRow>
               ))}
               {!isLoading && pagos?.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No hay pagos registrados</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                    {hayFiltro ? 'Ningún pago coincide con el filtro' : 'No hay pagos registrados'}
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && (pagos?.length ?? 0) > 0 && (
+                <TableRow className="border-t-2 bg-muted/40">
+                  <TableCell colSpan={4} className="font-bold">
+                    {hayFiltro ? 'Total de lo filtrado' : 'Total'}
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      ({pagos?.length} {pagos?.length === 1 ? 'recibo' : 'recibos'})
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-black text-green-600">
+                    {formatMoney(totalFiltrado)}
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Corregir un recibo ya registrado, conservando su número. */}
+      <Dialog open={editando != null} onOpenChange={(v) => !v && setEditando(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Corregir el recibo{' '}
+              <span className="font-mono">
+                {editando?.codigoRecibo ?? (editando?.nRecibo ? `#${editando.nRecibo}` : '')}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {editando?.equipoNombre} · el número del recibo no cambia.
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="edit-concepto" className="text-sm font-medium">Concepto</label>
+              <Select value={editConcepto} onValueChange={setEditConcepto}>
+                <SelectTrigger id="edit-concepto"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CONCEPTOS.map((c) => (
+                    <SelectItem key={c} value={c}>{CONCEPTO_LABEL[c] ?? c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="edit-monto" className="text-sm font-medium">Monto</label>
+              <Input
+                id="edit-monto"
+                inputMode="numeric"
+                value={editMonto}
+                onChange={(e) => setEditMonto(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="edit-fecha" className="text-sm font-medium">Fecha</label>
+              <Input id="edit-fecha" type="date" value={editFecha} onChange={(e) => setEditFecha(e.target.value)} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditando(null)}>Cancelar</Button>
+            <Button onClick={guardarEdicion} disabled={updateMutation.isPending}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={pagoRecibo != null} onOpenChange={(v) => !v && setPagoRecibo(null)}>
         <DialogContent className="max-w-lg">

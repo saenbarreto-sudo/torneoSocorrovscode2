@@ -17,6 +17,7 @@ export * from './dashboardResumen';
 export * from './deleteSemanaFechaResult';
 export * from './egreso';
 export * from './egresoInput';
+export * from './egresoUpdate';
 export * from './equipo';
 export * from './equipoInput';
 export * from './equipoUpdate';

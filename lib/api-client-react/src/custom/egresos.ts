@@ -27,14 +27,41 @@ export interface EgresoInput {
   valor: number;
 }
 
-export const getGetEgresosQueryKey = () => ["/api/egresos"] as const;
+/** Filtros del listado: categoría y rango de fechas (ver openapi.yaml). */
+export interface EgresosFiltros {
+  categoria?: string;
+  desde?: string;
+  hasta?: string;
+}
 
-const getEgresos = (): Promise<Egreso[]> => customFetch<Egreso[]>("/api/egresos", { method: "GET" });
+/**
+ * Los filtros entran en la clave de caché: si no, al cambiar de categoría
+ * react-query serviría la lista anterior creyendo que es la misma consulta.
+ */
+export const getGetEgresosQueryKey = (filtros?: EgresosFiltros) =>
+  filtros && Object.values(filtros).some(Boolean)
+    ? (["/api/egresos", filtros] as const)
+    : (["/api/egresos"] as const);
 
-export function useGetEgresos(options?: { query?: Partial<UseQueryOptions<Egreso[], ErrorType<unknown>>> }) {
+function construirUrl(filtros?: EgresosFiltros): string {
+  const params = new URLSearchParams();
+  if (filtros?.categoria) params.set("categoria", filtros.categoria);
+  if (filtros?.desde) params.set("desde", filtros.desde);
+  if (filtros?.hasta) params.set("hasta", filtros.hasta);
+  const cadena = params.toString();
+  return cadena ? `/api/egresos?${cadena}` : "/api/egresos";
+}
+
+const getEgresos = (filtros?: EgresosFiltros): Promise<Egreso[]> =>
+  customFetch<Egreso[]>(construirUrl(filtros), { method: "GET" });
+
+export function useGetEgresos(
+  filtros?: EgresosFiltros,
+  options?: { query?: Partial<UseQueryOptions<Egreso[], ErrorType<unknown>>> },
+) {
   return useQuery<Egreso[], ErrorType<unknown>>({
-    queryKey: getGetEgresosQueryKey(),
-    queryFn: getEgresos,
+    queryKey: getGetEgresosQueryKey(filtros),
+    queryFn: () => getEgresos(filtros),
     ...options?.query,
   });
 }
@@ -45,6 +72,27 @@ export function useCreateEgreso() {
     mutationFn: ({ data }) =>
       customFetch<Egreso>("/api/egresos", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getGetEgresosQueryKey() });
+    },
+  });
+}
+
+/** Para corregir un gasto ya registrado: solo se manda lo que cambió. */
+export interface EgresoUpdate {
+  fecha?: string;
+  descripcion?: string;
+  /** @nullable */
+  categoria?: string | null;
+  valor?: number;
+}
+
+export function useUpdateEgreso() {
+  const queryClient = useQueryClient();
+  return useMutation<Egreso, ErrorType<{ error?: string }>, { id: number; data: EgresoUpdate }>({
+    mutationFn: ({ id, data }) =>
+      customFetch<Egreso>(`/api/egresos/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      // Sin "exact": alcanza el listado sin filtros y todos los filtrados.
       queryClient.invalidateQueries({ queryKey: getGetEgresosQueryKey() });
     },
   });

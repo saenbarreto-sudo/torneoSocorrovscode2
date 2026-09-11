@@ -1018,6 +1018,8 @@ export const GetAmonestadosResponse = zod.array(GetAmonestadosResponseItem)
 export const GetPagosQueryParams = zod.object({
   "equipoId": zod.coerce.number().optional(),
   "concepto": zod.coerce.string().optional(),
+  "desde": zod.coerce.string().optional().describe('Fecha mínima (inclusive), para ver un periodo puntual.'),
+  "hasta": zod.coerce.string().optional().describe('Fecha máxima (inclusive).'),
   "temporada": zod.coerce.string().optional()
 })
 
@@ -1614,6 +1616,9 @@ export const DeleteGolResponse = zod.void()
  * @summary List organization expenses
  */
 export const GetEgresosQueryParams = zod.object({
+  "categoria": zod.coerce.string().optional(),
+  "desde": zod.coerce.string().optional().describe('Fecha mínima (inclusive), para ver un periodo puntual.'),
+  "hasta": zod.coerce.string().optional().describe('Fecha máxima (inclusive).'),
   "temporada": zod.coerce.string().optional()
 })
 
@@ -1645,6 +1650,36 @@ export const CreateEgresoBody = zod.object({
 })
 
 export const CreateEgresoResponse = zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "descripcion": zod.string(),
+  "categoria": zod.string().nullish(),
+  "valor": zod.number(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Correct an expense already recorded
+ */
+export const UpdateEgresoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+export const updateEgresoBodyValorMin = 0;
+
+
+
+export const UpdateEgresoBody = zod.object({
+  "fecha": zod.string().min(1).optional(),
+  "descripcion": zod.string().min(1).optional(),
+  "categoria": zod.string().nullish(),
+  "valor": zod.number().min(updateEgresoBodyValorMin).optional()
+})
+
+export const UpdateEgresoResponse = zod.object({
   "id": zod.number(),
   "fecha": zod.string(),
   "descripcion": zod.string(),

@@ -44,7 +44,7 @@ export default function Tesoreria() {
   // un saldo a medias confundiría más de lo que ayuda.
   const veCajaCompleta = veRecibos && veEgresos;
   const { data: pagos } = useQuery<Pago[]>({ ...getGetPagosQueryOptions(), enabled: veCajaCompleta });
-  const { data: egresos } = useGetEgresos({ query: { enabled: veCajaCompleta } });
+  const { data: egresos } = useGetEgresos(undefined, { query: { enabled: veCajaCompleta } });
 
   const totalIngresos = (pagos ?? []).reduce((suma, p) => suma + p.monto, 0);
   const totalEgresos = (egresos ?? []).reduce((suma, e) => suma + e.valor, 0);

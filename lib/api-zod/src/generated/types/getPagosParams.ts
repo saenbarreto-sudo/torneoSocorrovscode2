@@ -10,5 +10,13 @@ import type { TemporadaParameter } from './temporadaParameter';
 export type GetPagosParams = {
 equipoId?: number;
 concepto?: string;
+/**
+ * Fecha mínima (inclusive), para ver un periodo puntual.
+ */
+desde?: string;
+/**
+ * Fecha máxima (inclusive).
+ */
+hasta?: string;
 temporada?: TemporadaParameter;
 };

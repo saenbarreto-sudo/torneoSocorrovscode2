@@ -346,6 +346,22 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
     }
   }
 
+  /**
+   * Desde el historial: reabre esa mesa y salta a ese día, para poder
+   * corregirla de una. Sin esto tocaba cambiar de día arriba y recién ahí
+   * darle "Abrir de nuevo".
+   */
+  async function reabrirYCorregir(mesaId: number, fechaMesa: string) {
+    try {
+      await cambiarEstado.mutateAsync({ id: mesaId, data: { estado: 'abierta' } });
+      await queryClient.invalidateQueries({ queryKey: getGetMesaPorFechaQueryKey(fechaMesa) });
+      setFecha(fechaMesa);
+      toast({ title: 'Mesa abierta', description: `Ya puedes corregir la del ${formatFecha(fechaMesa)}.` });
+    } catch (err) {
+      toast({ title: 'No se pudo abrir', description: extractErrorMessage(err), variant: 'destructive' });
+    }
+  }
+
   async function onCambiarEstado(nuevo: 'abierta' | 'cerrada') {
     if (!detalle?.mesa) return;
     try {
@@ -689,7 +705,12 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         </Card>
       </div>
 
-      <HistorialMesas fechaActual={fecha} onVerDia={setFecha} />
+      <HistorialMesas
+        fechaActual={fecha}
+        onVerDia={setFecha}
+        onCorregir={reabrirYCorregir}
+        puedeEscribir={puedeEscribir}
+      />
 
       <ImprimirPortal activo={imprimiendo}>{planilla}</ImprimirPortal>
     </div>
@@ -788,9 +809,13 @@ function ListaGastos({
 function HistorialMesas({
   fechaActual,
   onVerDia,
+  onCorregir,
+  puedeEscribir,
 }: {
   fechaActual: string;
   onVerDia: (fecha: string) => void;
+  onCorregir: (mesaId: number, fecha: string) => void;
+  puedeEscribir: boolean;
 }) {
   const { data: mesas } = useGetMesas();
   const { data: resumen } = useGetResumenMesas();
@@ -847,6 +872,7 @@ function HistorialMesas({
                   <TableHead className="text-right">Entró</TableHead>
                   <TableHead className="text-right">Salió</TableHead>
                   <TableHead className="text-right">Queda</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -872,6 +898,24 @@ function HistorialMesas({
                     <TableCell className={`text-right font-mono font-bold ${m.saldo < 0 ? 'text-destructive' : ''}`}>
                       {formatMoney(m.saldo)}
                     </TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      {puedeEscribir && m.estado === 'cerrada' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Reabrir esta mesa para corregirla"
+                          onClick={(e) => {
+                            // Abre la mesa Y salta a ese día, para poder
+                            // corregirla de una sin ir arriba a reabrirla.
+                            e.stopPropagation();
+                            onCorregir(m.id, m.fecha);
+                          }}
+                        >
+                          <Unlock className="h-3.5 w-3.5 mr-1" />
+                          Corregir
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="border-t-2 bg-muted/40">
@@ -883,6 +927,7 @@ function HistorialMesas({
                   >
                     {formatMoney(totales.saldo)}
                   </TableCell>
+                  <TableCell />
                 </TableRow>
               </TableBody>
             </Table>

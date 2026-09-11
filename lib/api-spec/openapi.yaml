@@ -845,6 +845,18 @@ paths:
           required: false
           schema:
             type: string
+        - name: desde
+          in: query
+          required: false
+          description: Fecha mínima (inclusive), para ver un periodo puntual.
+          schema:
+            type: string
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha máxima (inclusive).
+          schema:
+            type: string
         - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
@@ -1320,6 +1332,23 @@ paths:
       tags: [egresos]
       summary: List organization expenses
       parameters:
+        - name: categoria
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: desde
+          in: query
+          required: false
+          description: Fecha mínima (inclusive), para ver un periodo puntual.
+          schema:
+            type: string
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha máxima (inclusive).
+          schema:
+            type: string
         - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
@@ -1349,6 +1378,31 @@ paths:
                 $ref: "#/components/schemas/Egreso"
 
   /egresos/{id}:
+    patch:
+      operationId: updateEgreso
+      tags: [egresos]
+      summary: Correct an expense already recorded
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EgresoUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Egreso"
+        "404":
+          description: Not found
     delete:
       operationId: deleteEgreso
       tags: [egresos]
@@ -2851,6 +2905,23 @@ components:
           minLength: 1
         categoria:
           type: string
+        valor:
+          type: number
+          minimum: 0
+
+    # Para corregir un gasto ya registrado: todos los campos son opcionales,
+    # solo se cambia lo que venga.
+    EgresoUpdate:
+      type: object
+      properties:
+        fecha:
+          type: string
+          minLength: 1
+        descripcion:
+          type: string
+          minLength: 1
+        categoria:
+          type: ["string", "null"]
         valor:
           type: number
           minimum: 0
