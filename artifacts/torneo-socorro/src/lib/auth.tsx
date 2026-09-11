@@ -58,9 +58,22 @@ const WRITE_PERMISSIONS: Record<Role, string[] | "*"> = {
   publico: [],
 }
 
+/**
+ * Si se está viendo un torneo YA CERRADO, nadie puede escribir — ni el
+ * Comité. Cualquier cosa que se guardara iría contra el torneo en curso (la
+ * API solo escribe ahí), así que se registraría en el año equivocado. Lo
+ * fija TemporadaProvider al cambiar de torneo; ver lib/temporada.tsx.
+ */
+let _temporadaEnCurso = true
+
+export function setTemporadaEnCurso(enCurso: boolean): void {
+  _temporadaEnCurso = enCurso
+}
+
 /** true si el rol puede crear/editar/eliminar en el recurso indicado. */
 export function canWrite(role: Role | null, resource: string): boolean {
   if (!role) return false
+  if (!_temporadaEnCurso) return false
   const allowed = WRITE_PERMISSIONS[role]
   if (allowed === "*") return true
   return allowed.includes(resource)

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, fasesTable } from "@workspace/db";
+import { filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import {
   GetPosicionesResponse,
@@ -20,6 +21,7 @@ const router: IRouter = Router();
 const FASES_TEMPORADA_REGULAR = ["Primera vuelta", "Segunda vuelta"];
 
 router.get("/posiciones", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   const query = GetPosicionesQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -38,7 +40,7 @@ router.get("/posiciones", async (req, res): Promise<void> => {
     ? sql`AND EXISTS (
         SELECT 1 FROM partidos px
         WHERE (px.local_id = e.id OR px.visitante_id = e.id)
-          AND px.temporada IS NULL
+          AND ${filtroTemporadaSql("px.temporada", temporada)}
           AND px.fase = ${query.data.fase}
       )`
     : sql``;
@@ -82,7 +84,7 @@ router.get("/posiciones", async (req, res): Promise<void> => {
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_visitante ELSE 0 END), 0)::int as gf_visitante,
         COALESCE(SUM(CASE WHEN p.visitante_id = e.id AND p.jugado THEN p.goles_local ELSE 0 END), 0)::int as gc_visitante
       FROM equipos e
-      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND p.temporada IS NULL ${filtroFase}
+      LEFT JOIN partidos p ON (p.local_id = e.id OR p.visitante_id = e.id) AND ${filtroTemporadaSql("p.temporada", temporada)} ${filtroFase}
       WHERE e.activo = true ${filtroEquipoEnFase}
       GROUP BY e.id, e.nombre, e.puntos_bonificacion
     ),
@@ -95,7 +97,7 @@ router.get("/posiciones", async (req, res): Promise<void> => {
       FROM tarjetas t
       JOIN jugadores j ON j.id = t.jugador_id
       JOIN partidos p ON p.id = t.partido_id
-      WHERE p.jugado = true AND p.temporada IS NULL ${filtroFase}
+      WHERE p.jugado = true AND ${filtroTemporadaSql("p.temporada", temporada)} ${filtroFase}
       GROUP BY j.equipo_id
     )
     SELECT
@@ -136,7 +138,8 @@ router.get("/posiciones", async (req, res): Promise<void> => {
   res.json(GetPosicionesResponse.parse(data));
 });
 
-router.get("/fases", async (_req, res): Promise<void> => {
+router.get("/fases", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   // Solo fases con partidos de verdad en el torneo actual (no todo lo que
   // esté registrado en el catálogo "fases" — ese puede traer fijas como
   // "Muerte súbita" que todavía nadie usó). El tipo sale del catálogo si ya
@@ -146,8 +149,8 @@ router.get("/fases", async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT DISTINCT p.fase as nombre, COALESCE(f.tipo, 'eliminacion') as tipo, COALESCE(f.orden, 999999) as orden
     FROM partidos p
-    LEFT JOIN fases f ON f.nombre = p.fase AND f.temporada IS NULL
-    WHERE p.temporada IS NULL
+    LEFT JOIN fases f ON f.nombre = p.fase AND ${filtroTemporadaSql("f.temporada", temporada)}
+    WHERE ${filtroTemporadaSql("p.temporada", temporada)}
       AND p.fase IS NOT NULL
       AND p.fase NOT IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)})
     ORDER BY orden ASC, nombre ASC

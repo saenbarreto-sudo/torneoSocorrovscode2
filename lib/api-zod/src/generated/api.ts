@@ -19,6 +19,10 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Tournament summary stats
  */
+export const GetDashboardResumenQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetDashboardResumenResponse = zod.object({
   "totalEquipos": zod.number(),
   "totalJugadores": zod.number(),
@@ -357,7 +361,8 @@ export const GetPartidosQueryParams = zod.object({
   "semana": zod.coerce.number().optional(),
   "equipoId": zod.coerce.number().optional(),
   "desde": zod.coerce.string().optional().describe('Fecha mínima (inclusive), para traer los partidos de una Programación por su rango.'),
-  "hasta": zod.coerce.string().optional().describe('Fecha máxima (inclusive).')
+  "hasta": zod.coerce.string().optional().describe('Fecha máxima (inclusive).'),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetPartidosResponseItem = zod.object({
@@ -552,7 +557,8 @@ export const DeletePartidoResponse = zod.void()
  * @summary Get standings table
  */
 export const GetPosicionesQueryParams = zod.object({
-  "fase": zod.coerce.string().optional().describe('Si se omite, trae la tabla general (primera + segunda vuelta, o partidos sin fase asignada). Si se pasa, filtra solo los partidos de esa fase exacta (ej. \"Liguilla\", \"Cuartos\").\n')
+  "fase": zod.coerce.string().optional().describe('Si se omite, trae la tabla general (primera + segunda vuelta, o partidos sin fase asignada). Si se pasa, filtra solo los partidos de esa fase exacta (ej. \"Liguilla\", \"Cuartos\").\n'),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetPosicionesResponseItem = zod.object({
@@ -589,6 +595,10 @@ export const GetPosicionesResponse = zod.array(GetPosicionesResponseItem)
  * Fases distintas a "Primera vuelta"/"Segunda vuelta" que ya tienen partidos en el torneo actual (esas dos son la tabla general), con su tipo (para saber si Posiciones la muestra como tabla de puntos o como resultados de llave) y en el orden real en que se crearon. Sirve para armar el selector de fases en Posiciones y en "Armar fase".
  * @summary List the extra tournament phases in play (beyond the regular season)
  */
+export const GetFasesQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetFasesResponseItem = zod.object({
   "nombre": zod.string(),
   "tipo": zod.string(),
@@ -696,6 +706,10 @@ export const GetEventosResponse = zod.array(GetEventosResponseItem)
 /**
  * @summary History of match-day cash sheets, newest first
  */
+export const GetMesasQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetMesasResponseItem = zod.object({
   "id": zod.number(),
   "fecha": zod.string(),
@@ -828,6 +842,10 @@ export const CambiarEstadoMesaResponse = zod.object({
 /**
  * @summary Top scorers list
  */
+export const GetGoleadoresQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetGoleadoresResponseItem = zod.object({
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
@@ -843,7 +861,8 @@ export const GetGoleadoresResponse = zod.array(GetGoleadoresResponseItem)
 export const GetTarjetasQueryParams = zod.object({
   "tipo": zod.enum(['amarilla', 'roja']).optional(),
   "jugadorId": zod.coerce.number().optional(),
-  "partidoId": zod.coerce.number().optional()
+  "partidoId": zod.coerce.number().optional(),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetTarjetasResponseItem = zod.object({
@@ -954,6 +973,10 @@ export const DeleteTarjetaResponse = zod.void()
 /**
  * @summary Players with cards summary (fairplay)
  */
+export const GetAmonestadosQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetAmonestadosResponseItem = zod.object({
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
@@ -971,7 +994,8 @@ export const GetAmonestadosResponse = zod.array(GetAmonestadosResponseItem)
  */
 export const GetPagosQueryParams = zod.object({
   "equipoId": zod.coerce.number().optional(),
-  "concepto": zod.coerce.string().optional()
+  "concepto": zod.coerce.string().optional(),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetPagosResponseItem = zod.object({
@@ -1065,7 +1089,8 @@ export const DeletePagoResponse = zod.void()
  * @summary Payment summary per team (inscriptions, debts)
  */
 export const GetPagosResumenEquiposQueryParams = zod.object({
-  "concepto": zod.coerce.string().optional().describe('Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas, Amarillas, FOFI). Por defecto Inscripcion, que es el único concepto con un monto adeudado configurado por equipo (deuda de inscripción); para los demás solo se puede mostrar lo pagado.')
+  "concepto": zod.coerce.string().optional().describe('Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas, Amarillas, FOFI). Por defecto Inscripcion, que es el único concepto con un monto adeudado configurado por equipo (deuda de inscripción); para los demás solo se puede mostrar lo pagado.'),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetPagosResumenEquiposResponseItem = zod.object({
@@ -1082,6 +1107,10 @@ export const GetPagosResumenEquiposResponse = zod.array(GetPagosResumenEquiposRe
 /**
  * @summary List tournament schedule weeks
  */
+export const GetProgramacionQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetProgramacionResponseItem = zod.object({
   "id": zod.number(),
   "semana": zod.number(),
@@ -1391,6 +1420,10 @@ export const DeleteUsuarioResponse = zod.void()
 /**
  * @summary Least-beaten defenses (valla menos vencida)
  */
+export const GetVallasQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetVallasResponseItem = zod.object({
   "equipoId": zod.number(),
   "equipoNombre": zod.string(),
@@ -1404,6 +1437,10 @@ export const GetVallasResponse = zod.array(GetVallasResponseItem)
 /**
  * @summary Active suspensions with matches served / remaining
  */
+export const GetSancionesQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetSancionesResponseItem = zod.object({
   "tarjetaId": zod.number(),
   "jugadorId": zod.number(),
@@ -1492,7 +1529,8 @@ export const SavePlanillaResponse = zod.void()
  * @summary List goals for a match (or all goals)
  */
 export const GetGolesQueryParams = zod.object({
-  "partidoId": zod.coerce.number().optional()
+  "partidoId": zod.coerce.number().optional(),
+  "temporada": zod.coerce.string().optional()
 })
 
 export const GetGolesResponseItem = zod.object({
@@ -1552,6 +1590,10 @@ export const DeleteGolResponse = zod.void()
 /**
  * @summary List organization expenses
  */
+export const GetEgresosQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
 export const GetEgresosResponseItem = zod.object({
   "id": zod.number(),
   "fecha": zod.string(),

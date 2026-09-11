@@ -5,6 +5,7 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { TemporadaParameter } from './temporadaParameter';
 
 export type GetPartidosParams = {
 semana?: number;
@@ -17,4 +18,5 @@ desde?: string;
  * Fecha máxima (inclusive).
  */
 hasta?: string;
+temporada?: TemporadaParameter;
 };

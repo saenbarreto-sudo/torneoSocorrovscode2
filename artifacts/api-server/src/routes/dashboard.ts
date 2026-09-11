@@ -1,11 +1,13 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
+import { filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
 import { GetDashboardResumenResponse } from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/resumen", async (_req, res): Promise<void> => {
+router.get("/dashboard/resumen", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   // "temporada IS NULL" es el torneo actual — ver el comentario junto al
   // campo en lib/db/src/schema/partidos.ts. Lo importado del historial de
   // temporadas pasadas no debe contar acá, para no inflar los totales en
@@ -14,11 +16,11 @@ router.get("/dashboard/resumen", async (_req, res): Promise<void> => {
     SELECT
       (SELECT COUNT(*)::int FROM equipos WHERE activo = true) as total_equipos,
       (SELECT COUNT(*)::int FROM jugadores WHERE activo = true) as total_jugadores,
-      (SELECT COUNT(*)::int FROM partidos WHERE jugado = true AND temporada IS NULL) as total_partidos_jugados,
-      (SELECT COUNT(*)::int FROM partidos WHERE temporada IS NULL) as total_partidos_programados,
-      (SELECT COALESCE(SUM(cantidad), 0)::int FROM goles WHERE propio = false AND temporada IS NULL) as total_goles,
-      (SELECT COUNT(*)::int FROM tarjetas WHERE tipo = 'amarilla' AND temporada IS NULL) as total_amarillas,
-      (SELECT COUNT(*)::int FROM tarjetas WHERE tipo = 'roja' AND temporada IS NULL) as total_rojas,
+      (SELECT COUNT(*)::int FROM partidos WHERE jugado = true AND ${filtroTemporadaSql("temporada", temporada)}) as total_partidos_jugados,
+      (SELECT COUNT(*)::int FROM partidos WHERE ${filtroTemporadaSql("temporada", temporada)}) as total_partidos_programados,
+      (SELECT COALESCE(SUM(cantidad), 0)::int FROM goles WHERE propio = false AND ${filtroTemporadaSql("temporada", temporada)}) as total_goles,
+      (SELECT COUNT(*)::int FROM tarjetas WHERE tipo = 'amarilla' AND ${filtroTemporadaSql("temporada", temporada)}) as total_amarillas,
+      (SELECT COUNT(*)::int FROM tarjetas WHERE tipo = 'roja' AND ${filtroTemporadaSql("temporada", temporada)}) as total_rojas,
       (SELECT COALESCE(SUM(monto), 0)::int FROM pagos) as recaudacion_total,
       (SELECT p.fecha_desde FROM programacion p WHERE p.fecha_desde > CURRENT_DATE ORDER BY p.fecha_desde LIMIT 1) as proxima_fecha
   `);
@@ -31,7 +33,7 @@ router.get("/dashboard/resumen", async (_req, res): Promise<void> => {
     FROM jugadores j
     JOIN equipos e ON e.id = j.equipo_id
     JOIN goles g ON g.jugador_id = j.id
-    WHERE g.propio = false AND g.temporada IS NULL
+    WHERE g.propio = false AND ${filtroTemporadaSql("g.temporada", temporada)}
     GROUP BY j.id, j.nombre, e.nombre
     ORDER BY total_goles DESC
     LIMIT 1

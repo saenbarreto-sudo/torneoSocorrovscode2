@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, isNull, gte, lte } from "drizzle-orm";
 import { db, programacionTable, partidosTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
+import { filtroTemporada, temporadaPedida } from "../lib/temporada";
 import {
   CreateSemanaFechaBody,
   CreateSemanaFechaResponse,
@@ -15,11 +16,11 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/programacion", async (_req, res): Promise<void> => {
+router.get("/programacion", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(programacionTable)
-    .where(isNull(programacionTable.temporada))
+    .where(filtroTemporada(programacionTable.temporada, temporadaPedida(req)))
     .orderBy(programacionTable.semana);
   res.json(GetProgramacionResponse.parse(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() }))));
 });

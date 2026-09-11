@@ -8,6 +8,9 @@ export type BodyType<T> = T;
 
 export type AuthTokenGetter = () => Promise<string | null> | string | null;
 
+/** Devuelve el torneo cerrado que se está consultando, o null para el torneo en curso. */
+export type TemporadaGetter = () => string | null;
+
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
@@ -17,6 +20,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _temporadaGetter: TemporadaGetter | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +46,43 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Registra de qué torneo se están consultando los datos.
+ *
+ * El torneo EN CURSO no lleva marca: es lo que responde la API cuando no se
+ * manda nada, y es el caso normal. Cuando el usuario elige consultar un
+ * torneo ya cerrado ("2025-2026"), este getter lo devuelve y se agrega como
+ * `?temporada=` a TODA consulta de lectura.
+ *
+ * Se hace acá, en un solo punto, en vez de pasarlo pantalla por pantalla:
+ * son más de quince consultas distintas y bastaría olvidar una para mostrar
+ * datos del torneo en curso diciendo que son de otro año. Solo aplica a
+ * lecturas (GET/HEAD) — escribir siempre va contra el torneo en curso.
+ *
+ * Pasar `null` para volver al comportamiento normal.
+ */
+export function setTemporadaGetter(getter: TemporadaGetter | null): void {
+  _temporadaGetter = getter;
+}
+
+/** Agrega `?temporada=` a la URL si hay un torneo cerrado seleccionado. */
+function applyTemporada(input: RequestInfo | URL, method: string): RequestInfo | URL {
+  if (!_temporadaGetter) return input;
+  if (method !== "GET" && method !== "HEAD") return input;
+
+  const temporada = _temporadaGetter();
+  if (!temporada) return input;
+
+  const url = resolveUrl(input);
+  // Si quien llama ya decidió la temporada, manda esa.
+  if (/[?&]temporada=/.test(url)) return input;
+
+  const conParam = `${url}${url.includes("?") ? "&" : "?"}temporada=${encodeURIComponent(temporada)}`;
+  if (typeof input === "string") return conParam;
+  if (isUrl(input)) return new URL(conParam, input.origin);
+  return new Request(conParam, input as Request);
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -330,6 +371,7 @@ export async function customFetch<T = unknown>(
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
   const method = resolveMethod(input, init.method);
+  input = applyTemporada(input, method);
 
   if (init.body != null && (method === "GET" || method === "HEAD")) {
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);

@@ -674,6 +674,12 @@ export interface AjustesUpdate {
   valorTraspaso?: number;
 }
 
+export type TemporadaParameter = string;
+
+export type GetDashboardResumenParams = {
+temporada?: TemporadaParameter;
+};
+
 export type GetJugadoresParams = {
 equipoId?: number;
 };
@@ -689,6 +695,7 @@ desde?: string;
  * Fecha máxima (inclusive).
  */
 hasta?: string;
+temporada?: TemporadaParameter;
 };
 
 export type GetPosicionesParams = {
@@ -696,6 +703,11 @@ export type GetPosicionesParams = {
  * Si se omite, trae la tabla general (primera + segunda vuelta, o partidos sin fase asignada). Si se pasa, filtra solo los partidos de esa fase exacta (ej. "Liguilla", "Cuartos").
  */
 fase?: string;
+temporada?: TemporadaParameter;
+};
+
+export type GetFasesParams = {
+temporada?: TemporadaParameter;
 };
 
 export type GetEventosParams = {
@@ -717,10 +729,19 @@ export const GetEventosAccion = {
   borrar: 'borrar',
 } as const;
 
+export type GetMesasParams = {
+temporada?: TemporadaParameter;
+};
+
+export type GetGoleadoresParams = {
+temporada?: TemporadaParameter;
+};
+
 export type GetTarjetasParams = {
 tipo?: GetTarjetasTipo;
 jugadorId?: number;
 partidoId?: number;
+temporada?: TemporadaParameter;
 };
 
 export type GetTarjetasTipo = typeof GetTarjetasTipo[keyof typeof GetTarjetasTipo];
@@ -731,9 +752,14 @@ export const GetTarjetasTipo = {
   roja: 'roja',
 } as const;
 
+export type GetAmonestadosParams = {
+temporada?: TemporadaParameter;
+};
+
 export type GetPagosParams = {
 equipoId?: number;
 concepto?: string;
+temporada?: TemporadaParameter;
 };
 
 export type GetPagosResumenEquiposParams = {
@@ -741,5 +767,10 @@ export type GetPagosResumenEquiposParams = {
  * Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas, Amarillas, FOFI). Por defecto Inscripcion, que es el único concepto con un monto adeudado configurado por equipo (deuda de inscripción); para los demás solo se puede mostrar lo pagado.
  */
 concepto?: string;
+temporada?: TemporadaParameter;
+};
+
+export type GetProgramacionParams = {
+temporada?: TemporadaParameter;
 };
 

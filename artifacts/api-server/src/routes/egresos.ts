@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, isNull } from "drizzle-orm";
 import { db, egresosTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
+import { filtroTemporada, temporadaPedida } from "../lib/temporada";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
 import {
   CreateEgresoBody,
@@ -19,11 +20,11 @@ function mapEgreso(row: typeof egresosTable.$inferSelect) {
   };
 }
 
-router.get("/egresos", async (_req, res): Promise<void> => {
+router.get("/egresos", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(egresosTable)
-    .where(isNull(egresosTable.temporada))
+    .where(filtroTemporada(egresosTable.temporada, temporadaPedida(req)))
     .orderBy(desc(egresosTable.fecha));
   res.json(GetEgresosResponse.parse(rows.map(mapEgreso)));
 });

@@ -5,10 +5,12 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { TemporadaParameter } from './temporadaParameter';
 
 export type GetPagosResumenEquiposParams = {
 /**
  * Uno de los conceptos de pago (Inscripcion, Multas, Carnet, Rojas, Amarillas, FOFI). Por defecto Inscripcion, que es el único concepto con un monto adeudado configurado por equipo (deuda de inscripción); para los demás solo se puede mostrar lo pagado.
  */
 concepto?: string;
+temporada?: TemporadaParameter;
 };

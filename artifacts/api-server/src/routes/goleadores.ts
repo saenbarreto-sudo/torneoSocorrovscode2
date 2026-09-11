@@ -1,11 +1,13 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
+import { filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
 import { GetGoleadoresResponse, GetVallasResponse } from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/goleadores", async (_req, res): Promise<void> => {
+router.get("/goleadores", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   // "temporada IS NULL" = torneo actual (ver schema/partidos.ts). Sin este
   // filtro, un historial importado de una temporada pasada se sumaría a la
   // tabla de goleadores del torneo en curso.
@@ -39,7 +41,7 @@ router.get("/goleadores", async (_req, res): Promise<void> => {
       LIMIT 1
     ) heq ON true
     JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
-    WHERE g.propio = false AND g.temporada IS NULL
+    WHERE g.propio = false AND ${filtroTemporadaSql("g.temporada", temporada)}
     GROUP BY j.id, j.nombre, e.id, e.nombre
     HAVING SUM(g.cantidad) > 0
     ORDER BY total_goles DESC, j.nombre ASC
@@ -66,7 +68,8 @@ router.get("/goleadores", async (_req, res): Promise<void> => {
  * fase sale del catálogo "fases"; una fase sin registrar se trata como
  * eliminación (no cuenta), que es lo más seguro para no inflar el premio.
  */
-router.get("/vallas", async (_req, res): Promise<void> => {
+router.get("/vallas", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   const rows = await db.execute(sql`
     SELECT
       e.id as equipo_id,
@@ -82,8 +85,8 @@ router.get("/vallas", async (_req, res): Promise<void> => {
       ON (p.local_id = e.id OR p.visitante_id = e.id)
       AND p.jugado = true
       AND p.walkover = false
-      AND p.temporada IS NULL
-      AND (p.fase IS NULL OR COALESCE((SELECT f.tipo FROM fases f WHERE f.nombre = p.fase AND f.temporada IS NULL), 'eliminacion') != 'eliminacion')
+      AND ${filtroTemporadaSql("p.temporada", temporada)}
+      AND (p.fase IS NULL OR COALESCE((SELECT f.tipo FROM fases f WHERE f.nombre = p.fase AND ${filtroTemporadaSql("f.temporada", temporada)}), 'eliminacion') != 'eliminacion')
     WHERE e.activo = true
     GROUP BY e.id, e.nombre
     ORDER BY goles_recibidos ASC, partidos_jugados DESC, e.nombre ASC

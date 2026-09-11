@@ -8,6 +8,7 @@ import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wo
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthProvider, canAccessRoute, useAuth } from '@/lib/auth';
 import { ThemeProvider } from '@/components/theme-provider';
+import { TemporadaProvider } from '@/lib/temporada';
 import { Loader2 } from 'lucide-react';
 
 import Dashboard from '@/pages/dashboard';
@@ -105,7 +106,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <Gate />
+            <TemporadaProvider>
+              <Gate />
+            </TemporadaProvider>
           </AuthProvider>
           <Toaster />
         </TooltipProvider>

@@ -5,6 +5,7 @@ import { TorneoSocorroLogo } from "@/components/logo"
 import { canAccessRoute, useAuth } from "@/lib/auth"
 import { ModeToggle } from "@/components/mode-toggle"
 import { TarjetaSesion } from "@/components/layout/tarjeta-sesion"
+import { SelectorTemporada, AvisoTorneoCerrado } from "@/components/layout/selector-temporada"
 import {
   Sheet,
   SheetContent,
@@ -100,6 +101,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <TarjetaSesion />
+        <SelectorTemporada />
 
         <nav className="flex-1 px-4 pb-6 space-y-1 overflow-y-auto">
           <NavLinks items={visibleNavItems} location={location} />
@@ -144,6 +146,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SheetHeader>
 
           <TarjetaSesion />
+          <SelectorTemporada />
 
           <nav className="flex-1 px-4 pb-6 space-y-1 overflow-y-auto">
             <NavLinks
@@ -189,6 +192,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
+
+        <AvisoTorneoCerrado />
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8">
           <div className="mx-auto max-w-7xl">{children}</div>

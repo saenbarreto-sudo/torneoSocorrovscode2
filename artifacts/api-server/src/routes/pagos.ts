@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { db, pagosTable, equiposTable, tarjetasTable } from "@workspace/db";
+import { filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import {
   CreatePagoBody,
@@ -64,6 +65,7 @@ function mapPago(row: Record<string, unknown>) {
 }
 
 router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   const query = GetPagosResumenEquiposQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -96,7 +98,7 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
         : sql`0`
       } as porcentaje_pagado
     FROM equipos e
-    LEFT JOIN pagos p ON p.equipo_id = e.id AND p.temporada IS NULL
+    LEFT JOIN pagos p ON p.equipo_id = e.id AND ${filtroTemporadaSql("p.temporada", temporada)}
     WHERE e.activo = true
     GROUP BY e.id, e.nombre, e.deuda_inscripcion
     ORDER BY pagado DESC
@@ -113,6 +115,7 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
 });
 
 router.get("/pagos", async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
   const query = GetPagosQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -133,7 +136,7 @@ router.get("/pagos", async (req, res): Promise<void> => {
     SELECT p.*, e.nombre as equipo_nombre
     FROM pagos p
     JOIN equipos e ON e.id = p.equipo_id
-    WHERE p.temporada IS NULL
+    WHERE ${filtroTemporadaSql("p.temporada", temporada)}
     ${whereClause}
     ORDER BY p.created_at DESC
   `);

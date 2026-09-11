@@ -5,10 +5,12 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { TemporadaParameter } from './temporadaParameter';
 
 export type GetPosicionesParams = {
 /**
  * Si se omite, trae la tabla general (primera + segunda vuelta, o partidos sin fase asignada). Si se pasa, filtra solo los partidos de esa fase exacta (ej. "Liguilla", "Cuartos").
  */
 fase?: string;
+temporada?: TemporadaParameter;
 };

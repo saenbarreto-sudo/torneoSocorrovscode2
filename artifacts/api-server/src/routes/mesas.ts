@@ -3,6 +3,7 @@ import { and, eq, desc, inArray, isNull } from "drizzle-orm";
 import { db, mesasTable, pagosTable, egresosTable, equiposTable, ESTADOS_MESA } from "@workspace/db";
 import type { EstadoMesa } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
+import { filtroTemporada, temporadaPedida } from "../lib/temporada";
 
 const router: IRouter = Router();
 
@@ -48,10 +49,9 @@ function mapMesa(
 
 /** El cuadre completo de un día, tal como lo consume la pantalla. */
 async function detalleDeFecha(fecha: string) {
-  const [mesa] = await db
-    .select()
-    .from(mesasTable)
-    .where(and(eq(mesasTable.fecha, fecha), isNull(mesasTable.temporada)));
+  // Sin filtro de temporada: la fecha ya identifica una sola mesa (es
+  // única), así que sirve igual para el torneo en curso y para uno cerrado.
+  const [mesa] = await db.select().from(mesasTable).where(eq(mesasTable.fecha, fecha));
   if (!mesa) {
     return { fecha, mesa: null, ingresos: [], egresos: [], totalIngresos: 0, totalEgresos: 0, saldo: 0 };
   }
@@ -86,11 +86,11 @@ async function detalleDeFecha(fecha: string) {
   };
 }
 
-router.get("/mesas", requireAuth, async (_req, res): Promise<void> => {
+router.get("/mesas", requireAuth, async (req, res): Promise<void> => {
   const mesas = await db
     .select()
     .from(mesasTable)
-    .where(isNull(mesasTable.temporada))
+    .where(filtroTemporada(mesasTable.temporada, temporadaPedida(req)))
     .orderBy(desc(mesasTable.fecha));
   const resultado = [];
   for (const mesa of mesas) {

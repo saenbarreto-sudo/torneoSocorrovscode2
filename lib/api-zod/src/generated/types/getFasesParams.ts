@@ -5,12 +5,8 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
-import type { GetTarjetasTipo } from './getTarjetasTipo';
 import type { TemporadaParameter } from './temporadaParameter';
 
-export type GetTarjetasParams = {
-tipo?: GetTarjetasTipo;
-jugadorId?: number;
-partidoId?: number;
+export type GetFasesParams = {
 temporada?: TemporadaParameter;
 };

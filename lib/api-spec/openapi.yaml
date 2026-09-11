@@ -69,6 +69,8 @@ paths:
       operationId: getDashboardResumen
       tags: [dashboard]
       summary: Tournament summary stats
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: Summary stats
@@ -313,6 +315,7 @@ paths:
           description: Fecha máxima (inclusive).
           schema:
             type: string
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of matches
@@ -432,6 +435,7 @@ paths:
             partidos de esa fase exacta (ej. "Liguilla", "Cuartos").
           schema:
             type: string
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: Standings
@@ -454,6 +458,8 @@ paths:
         como resultados de llave) y en el orden real en que se crearon.
         Sirve para armar el selector de fases en Posiciones y en "Armar
         fase".
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of phases
@@ -589,6 +595,8 @@ paths:
       operationId: getMesas
       tags: [mesas]
       summary: History of match-day cash sheets, newest first
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: Mesas with their totals
@@ -683,6 +691,8 @@ paths:
       operationId: getGoleadores
       tags: [goleadores]
       summary: Top scorers list
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of scorers
@@ -716,6 +726,7 @@ paths:
           required: false
           schema:
             type: number
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of cards
@@ -786,6 +797,8 @@ paths:
       operationId: getAmonestados
       tags: [tarjetas]
       summary: Players with cards summary (fairplay)
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of warned players
@@ -813,6 +826,7 @@ paths:
           required: false
           schema:
             type: string
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of payments
@@ -894,6 +908,7 @@ paths:
             inscripción); para los demás solo se puede mostrar lo pagado.
           schema:
             type: string
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: Payment summary per team
@@ -910,6 +925,8 @@ paths:
       operationId: getProgramacion
       tags: [programacion]
       summary: List tournament schedule weeks
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: Schedule
@@ -1149,6 +1166,8 @@ paths:
       operationId: getVallas
       tags: [vallas]
       summary: Least-beaten defenses (valla menos vencida)
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of defenses
@@ -1165,6 +1184,8 @@ paths:
       operationId: getSanciones
       tags: [sanciones]
       summary: Active suspensions with matches served / remaining
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of suspensions
@@ -1230,6 +1251,7 @@ paths:
           required: false
           schema:
             type: number
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of goals
@@ -1278,6 +1300,8 @@ paths:
       operationId: getEgresos
       tags: [egresos]
       summary: List organization expenses
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
       responses:
         "200":
           description: List of expenses
@@ -1321,6 +1345,16 @@ paths:
           description: Deleted
 
 components:
+  parameters:
+    # Qué torneo se está consultando. Si no viene, es el torneo EN CURSO
+    # (sus datos no llevan sello de temporada). Con un valor tipo
+    # "2025-2026" se consulta un torneo ya cerrado, en modo lectura.
+    Temporada:
+      name: temporada
+      in: query
+      required: false
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
