@@ -87,12 +87,31 @@ export function CuadroFinal({
   tercerPuesto?: Partido | null;
 }) {
   let numeroCruce = 0;
+  const hoy = new Date().toISOString().slice(0, 10);
+  const [ano, mes, dia] = hoy.split('-');
 
   return (
     <div className="hoja-horizontal bg-white text-[hsl(273_45%_12%)] border border-[hsl(273_20%_85%)] rounded-lg overflow-hidden">
-      <div className="bg-[hsl(273_51%_32%)] text-white px-4 py-3 text-center">
-        <div className="font-extrabold text-base leading-tight tracking-tight">TORNEO SOCORRO SENIOR MASTER PLUS 40</div>
-        <div className="text-xs text-white/80">Fase Final · Eliminación directa</div>
+      {/* Mismo encabezado que el resto de las tablas imprimibles (ver
+          tabla-imprimible.tsx): grilla 1fr/auto/1fr para que el nombre
+          quede centrado de verdad, con el escudo a la izquierda. */}
+      <div className="bg-[hsl(273_51%_32%)] text-white px-4 py-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <img
+          src="/logo-torneo-socorro.png"
+          alt="Escudo Torneo Socorro"
+          className="h-12 w-12 object-contain shrink-0 justify-self-start"
+        />
+        <div className="text-center">
+          <div className="font-extrabold text-base leading-tight tracking-tight">TORNEO SOCORRO</div>
+          <div className="text-xs text-white/80 tracking-wide">SENIOR MASTER PLUS 40</div>
+          <div className="text-xs font-bold mt-1 bg-white/15 inline-block px-2 py-0.5 rounded">
+            Fase Final · Eliminación directa
+          </div>
+        </div>
+        <div className="text-right shrink-0 justify-self-end">
+          <div className="text-[10px] text-white/70 uppercase tracking-wide">Generado</div>
+          <div className="font-mono text-sm">{`${dia}/${mes}/${ano}`}</div>
+        </div>
       </div>
       <div className="h-1 bg-[hsl(340_74%_27%)]" />
 
