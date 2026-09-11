@@ -24,6 +24,8 @@ export interface AjustesUpdate {
   valorArbitrajeFinalTorneo?: number;
   valorTernaFinalTorneo?: number;
   ternaFinalTorneo?: boolean;
+  valorMesa?: number;
+  valorCintaCapitan?: number;
   valorAmarilla?: number;
   valorRoja?: number;
   valorFofi?: number;

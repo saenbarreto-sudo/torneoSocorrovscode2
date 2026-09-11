@@ -302,6 +302,88 @@ export interface FasesLoteResult {
   omitidas: number;
 }
 
+export type MesaResumenEstado = typeof MesaResumenEstado[keyof typeof MesaResumenEstado];
+
+
+export const MesaResumenEstado = {
+  abierta: 'abierta',
+  cerrada: 'cerrada',
+} as const;
+
+export interface MesaResumen {
+  id: number;
+  fecha: string;
+  /** @nullable */
+  nombre?: string | null;
+  estado: MesaResumenEstado;
+  /** @nullable */
+  observaciones?: string | null;
+  totalIngresos: number;
+  totalEgresos: number;
+  saldo: number;
+}
+
+export interface MesaIngreso {
+  id: number;
+  /** @nullable */
+  equipoId?: number | null;
+  /** @nullable */
+  equipoNombre?: string | null;
+  concepto: string;
+  monto: number;
+}
+
+export interface MesaEgreso {
+  id: number;
+  /** @nullable */
+  categoria?: string | null;
+  descripcion: string;
+  valor: number;
+}
+
+export interface MesaDetalle {
+  fecha: string;
+  mesa?: MesaResumen | null;
+  ingresos: MesaIngreso[];
+  egresos: MesaEgreso[];
+  totalIngresos: number;
+  totalEgresos: number;
+  saldo: number;
+}
+
+export type MesaGuardarInputIngresosItem = {
+  /** @nullable */
+  equipoId?: number | null;
+  concepto: string;
+  monto: number;
+};
+
+export type MesaGuardarInputEgresosItem = {
+  /** @nullable */
+  categoria?: string | null;
+  descripcion: string;
+  valor: number;
+};
+
+export interface MesaGuardarInput {
+  nombre?: string;
+  observaciones?: string;
+  ingresos: MesaGuardarInputIngresosItem[];
+  egresos: MesaGuardarInputEgresosItem[];
+}
+
+export type MesaEstadoInputEstado = typeof MesaEstadoInputEstado[keyof typeof MesaEstadoInputEstado];
+
+
+export const MesaEstadoInputEstado = {
+  abierta: 'abierta',
+  cerrada: 'cerrada',
+} as const;
+
+export interface MesaEstadoInput {
+  estado: MesaEstadoInputEstado;
+}
+
 export type TarjetaTipo = typeof TarjetaTipo[keyof typeof TarjetaTipo];
 
 
@@ -484,6 +566,8 @@ export interface Ajustes {
   valorArbitrajeFinalTorneo: number;
   valorTernaFinalTorneo: number;
   ternaFinalTorneo: boolean;
+  valorMesa: number;
+  valorCintaCapitan: number;
   valorAmarilla: number;
   valorRoja: number;
   valorFofi: number;
@@ -511,6 +595,8 @@ export interface AjustesUpdate {
   valorArbitrajeFinalTorneo?: number;
   valorTernaFinalTorneo?: number;
   ternaFinalTorneo?: boolean;
+  valorMesa?: number;
+  valorCintaCapitan?: number;
   valorAmarilla?: number;
   valorRoja?: number;
   valorFofi?: number;

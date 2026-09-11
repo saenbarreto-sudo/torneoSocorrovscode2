@@ -9,6 +9,7 @@ import { formatMoney } from '@/lib/utils';
 import Pagos from '@/pages/pagos';
 import PagosResumen from '@/pages/pagos-resumen';
 import Egresos from '@/pages/egresos';
+import Mesa from '@/pages/mesa';
 
 /**
  * Tesorería junta en una sola pantalla las tres vistas de plata del torneo:
@@ -22,7 +23,7 @@ import Egresos from '@/pages/egresos';
  * aparece solo si el rol ya tenía acceso a esa ruta (un delegado, por
  * ejemplo, sigue viendo únicamente el estado de cuenta de su equipo).
  */
-type Pestana = 'recibos' | 'estado' | 'egresos';
+type Pestana = 'recibos' | 'estado' | 'egresos' | 'mesa';
 
 export default function Tesoreria() {
   const { role } = useAuth();
@@ -34,6 +35,7 @@ export default function Tesoreria() {
     ...(veRecibos ? [{ valor: 'recibos' as const, etiqueta: 'Recibos' }] : []),
     ...(veEstado ? [{ valor: 'estado' as const, etiqueta: 'Estado de cuenta' }] : []),
     ...(veEgresos ? [{ valor: 'egresos' as const, etiqueta: 'Egresos' }] : []),
+    ...(veEgresos ? [{ valor: 'mesa' as const, etiqueta: 'Mesa' }] : []),
   ];
 
   const [pestana, setPestana] = useState<Pestana>(pestanasDisponibles[0]?.valor ?? 'estado');
@@ -115,6 +117,7 @@ export default function Tesoreria() {
       {pestana === 'recibos' && veRecibos && <Pagos embebido />}
       {pestana === 'estado' && veEstado && <PagosResumen embebido />}
       {pestana === 'egresos' && veEgresos && <Egresos embebido />}
+      {pestana === 'mesa' && veEgresos && <Mesa embebido />}
     </div>
   );
 }

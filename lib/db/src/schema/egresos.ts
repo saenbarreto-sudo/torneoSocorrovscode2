@@ -1,6 +1,7 @@
 import { pgTable, text, serial, timestamp, integer, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { mesasTable } from "./mesas";
 
 /**
  * Gastos de la organización (no de los equipos): compra de láminas para
@@ -15,6 +16,9 @@ export const egresosTable = pgTable("egresos", {
   descripcion: text("descripcion").notNull(),
   categoria: text("categoria"), // Ej: "Carnets", "Uniformes", "Balones", "Arbitraje", "Otro"
   valor: integer("valor").notNull(),
+  // Si este gasto salió de la mesa de un día de juego (árbitro, cal,
+  // balones, ayuda a los trabajadores), queda enlazado a esa mesa.
+  mesaId: integer("mesa_id").references(() => mesasTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

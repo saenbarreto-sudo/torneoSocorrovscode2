@@ -12,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
+  const [mostrarAyuda, setMostrarAyuda] = React.useState(false)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,6 +76,21 @@ export default function Login() {
               Ingresar
             </Button>
           </form>
+
+          <button
+            type="button"
+            onClick={() => setMostrarAyuda((v) => !v)}
+            className="w-full text-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-3 transition-colors"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+
+          {mostrarAyuda && (
+            <div className="mt-3 rounded-md bg-muted/60 border border-border p-3 text-xs text-muted-foreground leading-relaxed">
+              Escríbele al Comité Organizador para que te asigne una nueva. Una vez entres, puedes
+              cambiarla tú mismo desde el menú, en <span className="font-semibold">Cambiar mi contraseña</span>.
+            </div>
+          )}
 
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">

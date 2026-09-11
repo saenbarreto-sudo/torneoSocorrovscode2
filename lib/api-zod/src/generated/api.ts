@@ -615,6 +615,138 @@ export const CreateFasesLoteResponse = zod.object({
 
 
 /**
+ * @summary History of match-day cash sheets, newest first
+ */
+export const GetMesasResponseItem = zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "nombre": zod.string().nullish(),
+  "estado": zod.enum(['abierta', 'cerrada']),
+  "observaciones": zod.string().nullish(),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+})
+export const GetMesasResponse = zod.array(GetMesasResponseItem)
+
+
+/**
+ * Devuelve el cuadre de esa fecha. Si todavía no se ha creado la mesa de ese día, responde igual con las listas vacías y mesa en null, para que la pantalla pueda mostrar el día en blanco y listo para llenar.
+ * @summary The cash sheet of one match day (income, expenses and balance)
+ */
+export const GetMesaPorFechaParams = zod.object({
+  "fecha": zod.coerce.string()
+})
+
+export const GetMesaPorFechaResponse = zod.object({
+  "fecha": zod.string(),
+  "mesa": zod.union([zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "nombre": zod.string().nullish(),
+  "estado": zod.enum(['abierta', 'cerrada']),
+  "observaciones": zod.string().nullish(),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+}),zod.null()]).optional(),
+  "ingresos": zod.array(zod.object({
+  "id": zod.number(),
+  "equipoId": zod.number().nullish(),
+  "equipoNombre": zod.string().nullish(),
+  "concepto": zod.string(),
+  "monto": zod.number()
+})),
+  "egresos": zod.array(zod.object({
+  "id": zod.number(),
+  "categoria": zod.string().nullish(),
+  "descripcion": zod.string(),
+  "valor": zod.number()
+})),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+})
+
+
+/**
+ * Crea la mesa de esa fecha si no existía y reemplaza sus líneas por las que vengan en el cuerpo. Los ingresos se guardan como pagos de los equipos (entran al saldo de Tesorería y, si un equipo no paga, a su estado de cuenta) y los gastos como egresos del torneo.
+ * @summary Save the whole cash sheet of a match day at once
+ */
+export const GuardarMesaParams = zod.object({
+  "fecha": zod.coerce.string()
+})
+
+export const GuardarMesaBody = zod.object({
+  "nombre": zod.string().optional(),
+  "observaciones": zod.string().optional(),
+  "ingresos": zod.array(zod.object({
+  "equipoId": zod.number().nullish(),
+  "concepto": zod.string(),
+  "monto": zod.number()
+})),
+  "egresos": zod.array(zod.object({
+  "categoria": zod.string().nullish(),
+  "descripcion": zod.string(),
+  "valor": zod.number()
+}))
+})
+
+export const GuardarMesaResponse = zod.object({
+  "fecha": zod.string(),
+  "mesa": zod.union([zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "nombre": zod.string().nullish(),
+  "estado": zod.enum(['abierta', 'cerrada']),
+  "observaciones": zod.string().nullish(),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+}),zod.null()]).optional(),
+  "ingresos": zod.array(zod.object({
+  "id": zod.number(),
+  "equipoId": zod.number().nullish(),
+  "equipoNombre": zod.string().nullish(),
+  "concepto": zod.string(),
+  "monto": zod.number()
+})),
+  "egresos": zod.array(zod.object({
+  "id": zod.number(),
+  "categoria": zod.string().nullish(),
+  "descripcion": zod.string(),
+  "valor": zod.number()
+})),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+})
+
+
+/**
+ * @summary Close a cash sheet (or reopen it to fix something)
+ */
+export const CambiarEstadoMesaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CambiarEstadoMesaBody = zod.object({
+  "estado": zod.enum(['abierta', 'cerrada'])
+})
+
+export const CambiarEstadoMesaResponse = zod.object({
+  "id": zod.number(),
+  "fecha": zod.string(),
+  "nombre": zod.string().nullish(),
+  "estado": zod.enum(['abierta', 'cerrada']),
+  "observaciones": zod.string().nullish(),
+  "totalIngresos": zod.number(),
+  "totalEgresos": zod.number(),
+  "saldo": zod.number()
+})
+
+
+/**
  * @summary Top scorers list
  */
 export const GetGoleadoresResponseItem = zod.object({
@@ -977,6 +1109,24 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Change your own password (any signed-in user)
+ */
+
+export const cambiarPasswordBodyPasswordNuevaMin = 4;
+
+
+
+export const CambiarPasswordBody = zod.object({
+  "passwordActual": zod.string().min(1),
+  "passwordNueva": zod.string().min(cambiarPasswordBodyPasswordNuevaMin)
+})
+
+export const CambiarPasswordResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
  * @summary Get the tournament-wide money settings (referee fee, card fines, FOFI, transfer fee...)
  */
 export const GetAjustesResponse = zod.object({
@@ -998,6 +1148,8 @@ export const GetAjustesResponse = zod.object({
   "valorArbitrajeFinalTorneo": zod.number(),
   "valorTernaFinalTorneo": zod.number(),
   "ternaFinalTorneo": zod.boolean(),
+  "valorMesa": zod.number(),
+  "valorCintaCapitan": zod.number(),
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),
@@ -1029,6 +1181,8 @@ export const UpdateAjustesBody = zod.object({
   "valorArbitrajeFinalTorneo": zod.number().optional(),
   "valorTernaFinalTorneo": zod.number().optional(),
   "ternaFinalTorneo": zod.boolean().optional(),
+  "valorMesa": zod.number().optional(),
+  "valorCintaCapitan": zod.number().optional(),
   "valorAmarilla": zod.number().optional(),
   "valorRoja": zod.number().optional(),
   "valorFofi": zod.number().optional(),
@@ -1056,6 +1210,8 @@ export const UpdateAjustesResponse = zod.object({
   "valorArbitrajeFinalTorneo": zod.number(),
   "valorTernaFinalTorneo": zod.number(),
   "ternaFinalTorneo": zod.boolean(),
+  "valorMesa": zod.number(),
+  "valorCintaCapitan": zod.number(),
   "valorAmarilla": zod.number(),
   "valorRoja": zod.number(),
   "valorFofi": zod.number(),

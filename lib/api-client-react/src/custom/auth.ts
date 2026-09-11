@@ -1,11 +1,11 @@
-// Hooks de autenticación (login por usuario/contraseña).
+// Hooks de autenticación (login, sesión actual y cambio de contraseña).
 //
 // A diferencia del resto de este paquete, este archivo NO es generado por
-// orval (no hay endpoints de auth en el openapi.yaml todavía). Está escrito
-// a mano siguiendo el mismo patrón (customFetch + react-query) para que se
-// integre igual que los demás hooks. Si más adelante agregan /auth al
-// openapi.yaml y corren "pnpm run codegen", esto se puede reemplazar por
-// la versión generada.
+// orval: el tag "auth" está excluido del cliente de React (ver
+// lib/api-spec/orval.config.ts). Los endpoints SÍ están en el openapi.yaml
+// y el cliente zod sí los genera; acá se escriben a mano siguiendo el mismo
+// patrón (customFetch + react-query) para que se integren igual que los
+// demás hooks.
 import { useMutation, useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { customFetch, type ErrorType } from "../custom-fetch";
 
@@ -56,5 +56,24 @@ export const useMe = (options?: {
     retry: false,
     ...options?.query,
     enabled: options?.enabled,
+  });
+};
+
+export interface CambiarPasswordInput {
+  passwordActual: string;
+  passwordNueva: string;
+}
+
+export const cambiarPassword = (body: CambiarPasswordInput): Promise<{ ok: boolean }> => {
+  return customFetch<{ ok: boolean }>("/api/auth/password", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+};
+
+export const useCambiarPassword = () => {
+  return useMutation<{ ok: boolean }, ErrorType<{ error?: string }>, CambiarPasswordInput>({
+    mutationFn: (body) => cambiarPassword(body),
   });
 };

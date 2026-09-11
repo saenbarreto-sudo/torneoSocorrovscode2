@@ -42,6 +42,8 @@ tags:
     description: Active suspensions
   - name: egresos
     description: Organization expenses
+  - name: mesas
+    description: Match-day cash sheet (la mesa)
 
 paths:
   /healthz:
@@ -480,6 +482,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/FasesLoteResult"
 
+  # ── MESA ───────────────────────────────────────────────────────────────────
+  /mesas:
+    get:
+      operationId: getMesas
+      tags: [mesas]
+      summary: History of match-day cash sheets, newest first
+      responses:
+        "200":
+          description: Mesas with their totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MesaResumen"
+
+  /mesas/{fecha}:
+    get:
+      operationId: getMesaPorFecha
+      tags: [mesas]
+      summary: The cash sheet of one match day (income, expenses and balance)
+      description: >
+        Devuelve el cuadre de esa fecha. Si todavía no se ha creado la mesa
+        de ese día, responde igual con las listas vacías y mesa en null, para
+        que la pantalla pueda mostrar el día en blanco y listo para llenar.
+      parameters:
+        - name: fecha
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The day's cash sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MesaDetalle"
+    put:
+      operationId: guardarMesa
+      tags: [mesas]
+      summary: Save the whole cash sheet of a match day at once
+      description: >
+        Crea la mesa de esa fecha si no existía y reemplaza sus líneas por
+        las que vengan en el cuerpo. Los ingresos se guardan como pagos de
+        los equipos (entran al saldo de Tesorería y, si un equipo no paga,
+        a su estado de cuenta) y los gastos como egresos del torneo.
+      parameters:
+        - name: fecha
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MesaGuardarInput"
+      responses:
+        "200":
+          description: The saved cash sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MesaDetalle"
+        "409":
+          description: The mesa is already closed and cannot be modified
+
+  /mesas/{id}/estado:
+    patch:
+      operationId: cambiarEstadoMesa
+      tags: [mesas]
+      summary: Close a cash sheet (or reopen it to fix something)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MesaEstadoInput"
+      responses:
+        "200":
+          description: Updated mesa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MesaResumen"
+
   # ── GOLEADORES ─────────────────────────────────────────────────────────────
   /goleadores:
     get:
@@ -818,6 +914,31 @@ paths:
                 $ref: "#/components/schemas/SessionUser"
         "401":
           description: Not authenticated
+
+  /auth/password:
+    patch:
+      operationId: cambiarPassword
+      tags: [auth]
+      summary: Change your own password (any signed-in user)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CambiarPasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "401":
+          description: Not authenticated, or the current password is wrong
 
   # ── AJUSTES ──────────────────────────────────────────────────────────────
   /ajustes:
@@ -1857,6 +1978,140 @@ components:
           type: string
           minLength: 1
 
+    # ── MESA ────────────────────────────────────────────────────────────────
+    # La caja de un día de juego. Los ingresos son pagos de los equipos y los
+    # gastos son egresos del torneo: por eso la mesa entra sola al saldo de
+    # Tesorería, sin ser una bolsa de plata aparte.
+    MesaResumen:
+      type: object
+      required: [id, fecha, estado, totalIngresos, totalEgresos, saldo]
+      properties:
+        id:
+          type: number
+        fecha:
+          type: string
+        nombre:
+          type: ["string", "null"]
+        estado:
+          type: string
+          enum: [abierta, cerrada]
+        observaciones:
+          type: ["string", "null"]
+        totalIngresos:
+          type: number
+        totalEgresos:
+          type: number
+        saldo:
+          type: number
+
+    MesaIngreso:
+      type: object
+      required: [id, concepto, monto]
+      properties:
+        id:
+          type: number
+        equipoId:
+          type: ["number", "null"]
+        equipoNombre:
+          type: ["string", "null"]
+        concepto:
+          type: string
+        monto:
+          type: number
+
+    MesaEgreso:
+      type: object
+      required: [id, descripcion, valor]
+      properties:
+        id:
+          type: number
+        categoria:
+          type: ["string", "null"]
+        descripcion:
+          type: string
+        valor:
+          type: number
+
+    MesaDetalle:
+      type: object
+      required: [fecha, ingresos, egresos, totalIngresos, totalEgresos, saldo]
+      properties:
+        fecha:
+          type: string
+        # null mientras no se haya guardado nada de ese día.
+        mesa:
+          oneOf:
+            - $ref: "#/components/schemas/MesaResumen"
+            - type: "null"
+        ingresos:
+          type: array
+          items:
+            $ref: "#/components/schemas/MesaIngreso"
+        egresos:
+          type: array
+          items:
+            $ref: "#/components/schemas/MesaEgreso"
+        totalIngresos:
+          type: number
+        totalEgresos:
+          type: number
+        saldo:
+          type: number
+
+    MesaEstadoInput:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [abierta, cerrada]
+
+    MesaGuardarInput:
+      type: object
+      required: [ingresos, egresos]
+      properties:
+        nombre:
+          type: string
+        observaciones:
+          type: string
+        ingresos:
+          type: array
+          items:
+            type: object
+            required: [concepto, monto]
+            properties:
+              equipoId:
+                type: ["number", "null"]
+              concepto:
+                type: string
+              monto:
+                type: number
+        egresos:
+          type: array
+          items:
+            type: object
+            required: [descripcion, valor]
+            properties:
+              categoria:
+                type: ["string", "null"]
+              descripcion:
+                type: string
+              valor:
+                type: number
+
+    # Cambio de la propia contraseña: se exige la actual para confirmar
+    # identidad, así un token robado no basta para dejar a alguien por fuera.
+    CambiarPasswordInput:
+      type: object
+      required: [passwordActual, passwordNueva]
+      properties:
+        passwordActual:
+          type: string
+          minLength: 1
+        passwordNueva:
+          type: string
+          minLength: 4
+
     # Usuario tal como lo ve la sesión: nunca incluye el hash de contraseña.
     SessionUser:
       type: object
@@ -1905,6 +2160,8 @@ components:
           valorArbitrajeFinalTorneo,
           valorTernaFinalTorneo,
           ternaFinalTorneo,
+          valorMesa,
+          valorCintaCapitan,
           valorAmarilla,
           valorRoja,
           valorFofi,
@@ -1953,6 +2210,12 @@ components:
           type: number
         ternaFinalTorneo:
           type: boolean
+        # La mesa: lo que paga CADA equipo por cada partido que juega ese
+        # día. En las fases con terna, cada equipo paga el doble.
+        valorMesa:
+          type: number
+        valorCintaCapitan:
+          type: number
         # El valor que se le asigna automáticamente a cada tarjeta amarilla
         # nueva que se registra desde la planilla de un partido.
         valorAmarilla:
@@ -2007,6 +2270,10 @@ components:
           type: number
         ternaFinalTorneo:
           type: boolean
+        valorMesa:
+          type: number
+        valorCintaCapitan:
+          type: number
         valorAmarilla:
           type: number
         valorRoja:

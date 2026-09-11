@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usuariosTable } from "@workspace/db";
-import { verifyPassword } from "../lib/password";
+import { hashPassword, verifyPassword } from "../lib/password";
 import { signToken, verifyToken } from "../lib/auth-token";
+import { requireAuth } from "../lib/require-auth";
 
 const router: IRouter = Router();
 
@@ -56,6 +57,43 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   }
 
   res.json(toPublicUser(usuario));
+});
+
+// Cambio de contraseña por el propio usuario. Pide la contraseña actual
+// para confirmar que es quien dice ser. Es la única vía que tiene un
+// delegado: la pantalla de Usuarios, donde se reasignan contraseñas ajenas,
+// es solo del Comité Organizador.
+router.patch("/auth/password", requireAuth, async (req, res): Promise<void> => {
+  const { passwordActual, passwordNueva } = (req.body ?? {}) as {
+    passwordActual?: unknown;
+    passwordNueva?: unknown;
+  };
+
+  if (typeof passwordActual !== "string" || typeof passwordNueva !== "string" || !passwordActual || !passwordNueva) {
+    res.status(400).json({ error: "La contraseña actual y la nueva son requeridas" });
+    return;
+  }
+  if (passwordNueva.length < 4) {
+    res.status(400).json({ error: "La contraseña nueva debe tener al menos 4 caracteres" });
+    return;
+  }
+
+  const [usuario] = await db.select().from(usuariosTable).where(eq(usuariosTable.id, req.user!.sub));
+  if (!usuario || !usuario.activo) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+  if (!verifyPassword(passwordActual, usuario.passwordHash)) {
+    res.status(401).json({ error: "La contraseña actual no es correcta" });
+    return;
+  }
+
+  await db
+    .update(usuariosTable)
+    .set({ passwordHash: hashPassword(passwordNueva) })
+    .where(eq(usuariosTable.id, usuario.id));
+
+  res.json({ ok: true });
 });
 
 export default router;

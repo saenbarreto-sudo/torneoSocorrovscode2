@@ -11,6 +11,7 @@
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "seed": "tsx src/seed.ts",
+    "reset-password": "tsx src/reset-password.ts",
     "import-jugadores": "tsx src/import-jugadores.ts",
     "import-carnetizacion": "tsx src/import-carnetizacion.ts",
     "import-fotos": "tsx src/import-fotos.ts",

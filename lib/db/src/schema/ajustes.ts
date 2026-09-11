@@ -39,6 +39,12 @@ export const ajustesTable = pgTable("ajustes", {
   valorArbitrajeFinalTorneo: integer("valor_arbitraje_final_torneo").notNull().default(0),
   valorTernaFinalTorneo: integer("valor_terna_final_torneo").notNull().default(0),
   ternaFinalTorneo: boolean("terna_final_torneo").notNull().default(false),
+  // La mesa: lo que paga CADA equipo por cada partido que juega ese día.
+  // En las fases que se juegan con terna (los tres árbitros), cada equipo
+  // paga el doble de este valor — por eso es un solo número y no una lista
+  // por fase: la casilla de terna de arriba ya dice cuándo se duplica.
+  valorMesa: integer("valor_mesa").notNull().default(0),
+  valorCintaCapitan: integer("valor_cinta_capitan").notNull().default(0),
   valorAmarilla: integer("valor_amarilla").notNull().default(0),
   valorRoja: integer("valor_roja").notNull().default(0),
   valorFofi: integer("valor_fofi").notNull().default(0),

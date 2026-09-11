@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { equiposTable } from "./equipos";
 import { tarjetasTable } from "./tarjetas";
+import { mesasTable } from "./mesas";
 
 export const pagosTable = pgTable("pagos", {
   id: serial("id").primaryKey(),
@@ -20,6 +21,11 @@ export const pagosTable = pgTable("pagos", {
   // borra después, el pago no desaparece con ella (es un registro de plata
   // real) — solo pierde el enlace.
   tarjetaId: integer("tarjeta_id").references(() => tarjetasTable.id, { onDelete: "set null" }),
+  // Si este pago se recibió en la mesa de un día de juego (el arbitraje que
+  // paga cada equipo, o una cinta de capitán), queda enlazado a esa mesa.
+  // Al borrar la mesa el pago no desaparece: sigue siendo plata que entró,
+  // solo pierde el enlace.
+  mesaId: integer("mesa_id").references(() => mesasTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

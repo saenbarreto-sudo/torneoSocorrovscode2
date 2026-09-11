@@ -12,3 +12,4 @@ export * from "./programacion";
 export * from "./usuarios";
 export * from "./ajustes";
 export * from "./fases";
+export * from "./mesas";

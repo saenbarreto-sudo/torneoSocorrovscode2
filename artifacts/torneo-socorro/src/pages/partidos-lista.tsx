@@ -564,13 +564,14 @@ export default function Partidos({
                 <TableHead className="text-right">Local</TableHead>
                 <TableHead className="text-center w-24">Resultado</TableHead>
                 <TableHead>Visitante</TableHead>
+                <TableHead>Fase</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-6">Cargando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-6">Cargando...</TableCell></TableRow>
               ) : partidos.map((partido) => (
                 <TableRow key={partido.id}>
                   <TableCell className="text-center font-mono font-bold">{partido.semana}</TableCell>
@@ -588,6 +589,7 @@ export default function Partidos({
                     )}
                   </TableCell>
                   <TableCell className="font-bold">{partido.visitanteNombre}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{partido.fase || '—'}</TableCell>
                   <TableCell className="text-center">
                     {partido.jugado ? (
                       <Badge variant="success" className="gap-1"><CheckCircle2 className="h-3 w-3" /> Finalizado</Badge>
@@ -630,7 +632,7 @@ export default function Partidos({
                 </TableRow>
               ))}
               {!isLoading && partidos.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">No hay partidos en esta fecha</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">No hay partidos en esta fecha</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

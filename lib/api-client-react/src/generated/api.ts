@@ -43,6 +43,10 @@ import type {
   JugadorHistorialEquipo,
   JugadorInput,
   JugadorUpdate,
+  MesaDetalle,
+  MesaEstadoInput,
+  MesaGuardarInput,
+  MesaResumen,
   Pago,
   PagoEquipoResumen,
   PagoInput,
@@ -1740,6 +1744,306 @@ export const useCreateFasesLote = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateFasesLoteMutationOptions(options));
+    }
+
+export const getGetMesasUrl = () => {
+
+
+
+
+  return `/api/mesas`
+}
+
+/**
+ * @summary History of match-day cash sheets, newest first
+ */
+export const getMesas = async ( options?: Parameters<typeof customFetch>[1]): Promise<MesaResumen[]> => {
+
+  return customFetch<MesaResumen[]>(getGetMesasUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMesasQueryKey = () => {
+    return [
+    `/api/mesas`
+    ] as const;
+    }
+
+
+export const getGetMesasQueryOptions = <TData = Awaited<ReturnType<typeof getMesas>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMesas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMesasQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMesas>>> = ({ signal }) => getMesas({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMesas>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMesasQueryResult = NonNullable<Awaited<ReturnType<typeof getMesas>>>
+export type GetMesasQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary History of match-day cash sheets, newest first
+ */
+
+export function useGetMesas<TData = Awaited<ReturnType<typeof getMesas>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMesas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMesasQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMesaPorFechaUrl = (fecha: string,) => {
+
+
+
+
+  return `/api/mesas/${fecha}`
+}
+
+/**
+ * Devuelve el cuadre de esa fecha. Si todavía no se ha creado la mesa de ese día, responde igual con las listas vacías y mesa en null, para que la pantalla pueda mostrar el día en blanco y listo para llenar.
+ * @summary The cash sheet of one match day (income, expenses and balance)
+ */
+export const getMesaPorFecha = async (fecha: string, options?: Parameters<typeof customFetch>[1]): Promise<MesaDetalle> => {
+
+  return customFetch<MesaDetalle>(getGetMesaPorFechaUrl(fecha),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMesaPorFechaQueryKey = (fecha: string,) => {
+    return [
+    `/api/mesas/${fecha}`
+    ] as const;
+    }
+
+
+export const getGetMesaPorFechaQueryOptions = <TData = Awaited<ReturnType<typeof getMesaPorFecha>>, TError = ErrorType<unknown>>(fecha: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMesaPorFecha>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMesaPorFechaQueryKey(fecha);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMesaPorFecha>>> = ({ signal }) => getMesaPorFecha(fecha, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fecha !== null && fecha !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMesaPorFecha>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMesaPorFechaQueryResult = NonNullable<Awaited<ReturnType<typeof getMesaPorFecha>>>
+export type GetMesaPorFechaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The cash sheet of one match day (income, expenses and balance)
+ */
+
+export function useGetMesaPorFecha<TData = Awaited<ReturnType<typeof getMesaPorFecha>>, TError = ErrorType<unknown>>(
+ fecha: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMesaPorFecha>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMesaPorFechaQueryOptions(fecha,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGuardarMesaUrl = (fecha: string,) => {
+
+
+
+
+  return `/api/mesas/${fecha}`
+}
+
+/**
+ * Crea la mesa de esa fecha si no existía y reemplaza sus líneas por las que vengan en el cuerpo. Los ingresos se guardan como pagos de los equipos (entran al saldo de Tesorería y, si un equipo no paga, a su estado de cuenta) y los gastos como egresos del torneo.
+ * @summary Save the whole cash sheet of a match day at once
+ */
+export const guardarMesa = async (fecha: string,
+    mesaGuardarInput: MesaGuardarInput, options?: Parameters<typeof customFetch>[1]): Promise<MesaDetalle> => {
+
+  return customFetch<MesaDetalle>(getGuardarMesaUrl(fecha),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mesaGuardarInput)
+  }
+);}
+
+
+
+
+
+export const getGuardarMesaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof guardarMesa>>, TError,{fecha: string;data: BodyType<MesaGuardarInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof guardarMesa>>, TError,{fecha: string;data: BodyType<MesaGuardarInput>}, TContext> => {
+
+const mutationKey = ['guardarMesa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof guardarMesa>>, {fecha: string;data: BodyType<MesaGuardarInput>}> = (props) => {
+          const {fecha,data} = props ?? {};
+
+          return  guardarMesa(fecha,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GuardarMesaMutationResult = NonNullable<Awaited<ReturnType<typeof guardarMesa>>>
+    export type GuardarMesaMutationBody = BodyType<MesaGuardarInput>
+    export type GuardarMesaMutationError = ErrorType<void>
+
+    /**
+ * @summary Save the whole cash sheet of a match day at once
+ */
+export const useGuardarMesa = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof guardarMesa>>, TError,{fecha: string;data: BodyType<MesaGuardarInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof guardarMesa>>,
+        TError,
+        {fecha: string;data: BodyType<MesaGuardarInput>},
+        TContext
+      > => {
+      return useMutation(getGuardarMesaMutationOptions(options));
+    }
+
+export const getCambiarEstadoMesaUrl = (id: number,) => {
+
+
+
+
+  return `/api/mesas/${id}/estado`
+}
+
+/**
+ * @summary Close a cash sheet (or reopen it to fix something)
+ */
+export const cambiarEstadoMesa = async (id: number,
+    mesaEstadoInput: MesaEstadoInput, options?: Parameters<typeof customFetch>[1]): Promise<MesaResumen> => {
+
+  return customFetch<MesaResumen>(getCambiarEstadoMesaUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mesaEstadoInput)
+  }
+);}
+
+
+
+
+
+export const getCambiarEstadoMesaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoMesa>>, TError,{id: number;data: BodyType<MesaEstadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoMesa>>, TError,{id: number;data: BodyType<MesaEstadoInput>}, TContext> => {
+
+const mutationKey = ['cambiarEstadoMesa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cambiarEstadoMesa>>, {id: number;data: BodyType<MesaEstadoInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  cambiarEstadoMesa(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CambiarEstadoMesaMutationResult = NonNullable<Awaited<ReturnType<typeof cambiarEstadoMesa>>>
+    export type CambiarEstadoMesaMutationBody = BodyType<MesaEstadoInput>
+    export type CambiarEstadoMesaMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Close a cash sheet (or reopen it to fix something)
+ */
+export const useCambiarEstadoMesa = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoMesa>>, TError,{id: number;data: BodyType<MesaEstadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cambiarEstadoMesa>>,
+        TError,
+        {id: number;data: BodyType<MesaEstadoInput>},
+        TContext
+      > => {
+      return useMutation(getCambiarEstadoMesaMutationOptions(options));
     }
 
 export const getGetGoleadoresUrl = () => {

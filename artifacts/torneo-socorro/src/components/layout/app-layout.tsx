@@ -2,8 +2,9 @@ import * as React from "react"
 import { Link, useLocation } from "wouter"
 import { cn } from "@/lib/utils"
 import { TorneoSocorroLogo } from "@/components/logo"
-import { canAccessRoute, ROLE_LABELS, useAuth } from "@/lib/auth"
+import { canAccessRoute, useAuth } from "@/lib/auth"
 import { ModeToggle } from "@/components/mode-toggle"
+import { TarjetaSesion } from "@/components/layout/tarjeta-sesion"
 import {
   Sheet,
   SheetContent,
@@ -73,11 +74,10 @@ function NavLinks({
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation()
-  const { user, role, logout } = useAuth()
+  const { role, logout } = useAuth()
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
 
   const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.href))
-  const sessionLabel = user ? user.nombre : ROLE_LABELS.publico
 
   // Cierra el menú móvil automáticamente al cambiar de página
   React.useEffect(() => {
@@ -99,13 +99,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </h1>
         </div>
 
-        <div className="mx-4 mb-3 px-3 py-2 rounded-md bg-sidebar-accent">
-          <p className="text-[10px] uppercase tracking-wide text-sidebar-accent-foreground/70 font-bold">
-            Sesión activa
-          </p>
-          <p className="text-sm font-semibold text-sidebar-accent-foreground">{sessionLabel}</p>
-          <p className="text-xs text-sidebar-accent-foreground/70">{role ? ROLE_LABELS[role] : ""}</p>
-        </div>
+        <TarjetaSesion />
 
         <nav className="flex-1 px-4 pb-6 space-y-1 overflow-y-auto">
           <NavLinks items={visibleNavItems} location={location} />
@@ -149,13 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </SheetHeader>
 
-          <div className="mx-4 mb-3 px-3 py-2 rounded-md bg-sidebar-accent">
-            <p className="text-[10px] uppercase tracking-wide text-sidebar-accent-foreground/70 font-bold">
-              Sesión activa
-            </p>
-            <p className="text-sm font-semibold text-sidebar-accent-foreground">{sessionLabel}</p>
-            <p className="text-xs text-sidebar-accent-foreground/70">{role ? ROLE_LABELS[role] : ""}</p>
-          </div>
+          <TarjetaSesion />
 
           <nav className="flex-1 px-4 pb-6 space-y-1 overflow-y-auto">
             <NavLinks

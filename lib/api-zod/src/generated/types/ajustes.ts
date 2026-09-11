@@ -25,6 +25,8 @@ export interface Ajustes {
   valorArbitrajeFinalTorneo: number;
   valorTernaFinalTorneo: number;
   ternaFinalTorneo: boolean;
+  valorMesa: number;
+  valorCintaCapitan: number;
   valorAmarilla: number;
   valorRoja: number;
   valorFofi: number;
