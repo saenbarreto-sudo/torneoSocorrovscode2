@@ -31,8 +31,8 @@ export interface AuthUser {
  */
 const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
   admin: "*",
-  delegado: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados", "/tesoreria", "/pagos/resumen"],
-  publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/goleadores", "/vallas", "/amonestados"],
+  delegado: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/arbitros", "/goleadores", "/vallas", "/amonestados", "/tesoreria", "/pagos/resumen"],
+  publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/arbitros", "/goleadores", "/vallas", "/amonestados"],
 }
 
 export function canAccessRoute(role: Role | null, path: string): boolean {

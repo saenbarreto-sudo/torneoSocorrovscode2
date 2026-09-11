@@ -20,7 +20,8 @@ export interface PartidoUpdate {
   penalesVisitante?: number | null;
   jugado?: boolean;
   fase?: string;
-  arbitro?: string;
+  /** @nullable */
+  arbitroId?: number | null;
   mesa?: string;
   walkover?: boolean;
   walkoverGanadorId?: number;

@@ -171,6 +171,106 @@ export interface JugadorHistorialEquipo {
   rojas: number;
 }
 
+export interface Arbitro {
+  id: number;
+  nombre: string;
+  /** @nullable */
+  telefono?: string | null;
+  activo: boolean;
+  /** @nullable */
+  notas?: string | null;
+  partidosDirigidos?: number;
+  createdAt: string;
+}
+
+export interface ArbitroInput {
+  nombre: string;
+  telefono?: string;
+  activo?: boolean;
+  notas?: string;
+}
+
+export interface ArbitroComparativaLinea {
+  arbitroId: number;
+  arbitroNombre: string;
+  activo: boolean;
+  partidosDirigidos: number;
+  amarillas: number;
+  rojas: number;
+  totalPagado: number;
+}
+
+export interface ArbitrosComparativa {
+  arbitros: ArbitroComparativaLinea[];
+  totalPartidos: number;
+  totalPagado: number;
+}
+
+export interface ArbitroResumen {
+  partidosDirigidos: number;
+  amarillas: number;
+  rojas: number;
+  totalPagado: number;
+}
+
+export interface ArbitroEquipo {
+  equipoId: number;
+  equipoNombre: string;
+  partidos: number;
+}
+
+export interface ArbitroFase {
+  fase: string;
+  partidos: number;
+}
+
+export interface ArbitroFecha {
+  fecha: string;
+  partidos: number;
+}
+
+export interface ArbitroPartidoHistorial {
+  partidoId: number;
+  /** @nullable */
+  fecha?: string | null;
+  semana: number;
+  /** @nullable */
+  fase?: string | null;
+  localNombre: string;
+  visitanteNombre: string;
+  /** @nullable */
+  golesLocal?: number | null;
+  /** @nullable */
+  golesVisitante?: number | null;
+  amarillas: number;
+  rojas: number;
+  /** @nullable */
+  pagado?: number | null;
+}
+
+export interface ArbitroProximoPartido {
+  partidoId: number;
+  /** @nullable */
+  fecha?: string | null;
+  /** @nullable */
+  hora?: string | null;
+  semana: number;
+  /** @nullable */
+  fase?: string | null;
+  localNombre: string;
+  visitanteNombre: string;
+}
+
+export interface ArbitroFicha {
+  arbitro: Arbitro;
+  resumen: ArbitroResumen;
+  porEquipo: ArbitroEquipo[];
+  porFase: ArbitroFase[];
+  partidosPorFecha: ArbitroFecha[];
+  historial: ArbitroPartidoHistorial[];
+  proximos: ArbitroProximoPartido[];
+}
+
 export interface Partido {
   id: number;
   semana: number;
@@ -194,7 +294,9 @@ export interface Partido {
   /** @nullable */
   fase?: string | null;
   /** @nullable */
-  arbitro?: string | null;
+  arbitroId?: number | null;
+  /** @nullable */
+  arbitroNombre?: string | null;
   /** @nullable */
   mesa?: string | null;
   walkover?: boolean;
@@ -217,7 +319,8 @@ export interface PartidoInput {
   penalesVisitante?: number | null;
   jugado?: boolean;
   fase: string;
-  arbitro?: string;
+  /** @nullable */
+  arbitroId?: number | null;
   mesa?: string;
   walkover?: boolean;
   walkoverGanadorId?: number;
@@ -248,7 +351,8 @@ export interface PartidoUpdate {
   penalesVisitante?: number | null;
   jugado?: boolean;
   fase?: string;
-  arbitro?: string;
+  /** @nullable */
+  arbitroId?: number | null;
   mesa?: string;
   walkover?: boolean;
   walkoverGanadorId?: number;
@@ -702,6 +806,11 @@ temporada?: TemporadaParameter;
 
 export type GetJugadoresParams = {
 equipoId?: number;
+};
+
+export type GetArbitrosParams = {
+activo?: boolean;
+buscar?: string;
 };
 
 export type GetPartidosParams = {

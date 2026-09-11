@@ -9,6 +9,7 @@ import { requireAuth, requireRole } from "./require-auth";
  */
 export const writeAccess = {
   equipos: requireRole("admin"),
+  arbitros: requireRole("admin"),
   jugadores: requireRole("admin"),
   partidos: requireRole("admin"),
   goles: requireRole("admin"),

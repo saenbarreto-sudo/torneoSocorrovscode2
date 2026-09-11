@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { Loader2 } from 'lucide-react';
+import { SelectorArbitro } from '@/components/selector-arbitro';
 
 /** Fila editable de la planilla, en memoria mientras la mesa la llena. */
 type Fila = Pick<PlanillaJugador, 'jugadorId' | 'jugadorNombre' | 'equipoId' | 'nCarnet'> & {
@@ -199,12 +200,12 @@ export function PlanillaPartido({
   const { data, isLoading } = useGetPlanilla(partido.id);
   const saveMutation = useSavePlanilla(partido.id);
   const [filas, setFilas] = useState<Fila[]>([]);
-  const [arbitro, setArbitro] = useState('');
+  const [arbitroId, setArbitroId] = useState<number | null>(null);
   const [mesa, setMesa] = useState('');
 
   useEffect(() => {
     if (!data) return;
-    setArbitro(data.arbitro ?? '');
+    setArbitroId(data.arbitroId ?? null);
     setMesa(data.mesa ?? '');
     setFilas(
       data.jugadores.map((j) => ({
@@ -296,7 +297,7 @@ export function PlanillaPartido({
     }
     saveMutation.mutate(
       {
-        arbitro,
+        arbitroId,
         mesa,
         jugadores: filas.map((f) => ({
           jugadorId: f.jugadorId,
@@ -337,14 +338,14 @@ export function PlanillaPartido({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3">
         <div className="space-y-1">
           <label htmlFor="planilla-arbitro" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Nombre del árbitro
+            Árbitro
           </label>
-          <Input
+          <SelectorArbitro
             id="planilla-arbitro"
-            value={arbitro}
+            value={arbitroId}
+            onChange={setArbitroId}
             disabled={readOnly}
             placeholder="Quién dirigió el partido"
-            onChange={(e) => setArbitro(e.target.value)}
           />
         </div>
         <div className="space-y-1">

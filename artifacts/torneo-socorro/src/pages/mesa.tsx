@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   useGetPartidos,
   useGetAjustes,
+  useGetArbitros,
   useGuardarMesa,
   useCambiarEstadoMesa,
+  useUpdatePartido,
   useGetMesas,
   useGetResumenMesas,
   useBorrarMesa,
@@ -12,6 +14,7 @@ import {
   getGetMesaPorFechaQueryKey,
   getGetMesasQueryKey,
   getGetResumenMesasQueryKey,
+  getGetPartidosQueryKey,
   type Ajustes,
   type MesaDetalle,
   type Partido,
@@ -37,6 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { ImprimirPortal } from '@/components/imprimir-portal';
+import { SelectorArbitro } from '@/components/selector-arbitro';
 import { useImprimir } from '@/hooks/use-imprimir';
 import { useToast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/lib/api-errors';
@@ -137,7 +141,7 @@ interface LineaArbitro {
   partidoId: number;
   enfrentamiento: string;
   fase: string | null;
-  nombre: string;
+  arbitroId: number | null;
   valor: number;
 }
 
@@ -178,6 +182,8 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
   });
   const guardar = useGuardarMesa();
   const cambiarEstado = useCambiarEstadoMesa();
+  const actualizarPartido = useUpdatePartido();
+  const { data: todosLosArbitros } = useGetArbitros();
 
   const cerrada = detalle?.mesa?.estado === 'cerrada';
   const bloqueado = cerrada || !puedeEscribir;
@@ -255,16 +261,18 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
     const guardadoCal = gastos.find((e) => e.categoria === CATEGORIA_CAL);
     const guardadoBalones = gastos.find((e) => e.categoria === CATEGORIA_BALONES);
 
-    // Una fila de árbitro por partido del día. Si ya se guardó, manda lo
-    // guardado; si no, el nombre sale de la planilla del partido (por si ya
-    // la llenaron) y el valor del que le corresponde a esa fase en Ajustes.
+    // Una fila de árbitro por partido del día. Quién dirige sale siempre del
+    // partido mismo (partido.arbitroId, ya sea que se haya asignado desde
+    // Partidos, la Planilla o aquí mismo): esa es la única fuente de verdad
+    // de la identidad. Lo que se le paga sale de lo ya guardado en la mesa,
+    // o si no, de lo que le corresponde a esa fase en Ajustes.
     const arbitrosGuardados = gastos.filter((e) => e.categoria === CATEGORIA_ARBITRAJE);
     const porPartido = new Map(
       arbitrosGuardados.filter((e) => e.partidoId != null).map((e) => [e.partidoId!, e]),
     );
     // Lo que quedó de antes de que el arbitraje se llevara por partido: una
     // sola línea suelta, sin partido. Se le asigna al primero del día para
-    // no perder el dato.
+    // no perder el valor pagado.
     const sueltos = arbitrosGuardados.filter((e) => e.partidoId == null);
 
     setArbitros(
@@ -274,7 +282,7 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
           partidoId: p.id,
           enfrentamiento: `${p.localNombre} vs ${p.visitanteNombre}`,
           fase: p.fase ?? null,
-          nombre: guardado?.descripcion ?? p.arbitro ?? '',
+          arbitroId: p.arbitroId ?? null,
           valor: guardado?.valor ?? valorArbitroDelPartido(p, ajustes),
         };
       }),
@@ -332,12 +340,13 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         .filter((l) => l.cintas > 0 && valorCinta > 0)
         .map((l) => ({ equipoId: l.equipoId, concepto: CONCEPTO_CINTA, monto: l.cintas * valorCinta })),
     ];
+    const nombreDeArbitro = (id: number | null) => todosLosArbitros?.find((a) => a.id === id)?.nombre;
     const egresos = [
       ...arbitros
         .filter((a) => a.valor > 0)
         .map((a) => ({
           categoria: CATEGORIA_ARBITRAJE,
-          descripcion: a.nombre.trim() || 'Arbitraje',
+          descripcion: nombreDeArbitro(a.arbitroId) ?? 'Árbitro sin asignar',
           valor: a.valor,
           partidoId: a.partidoId,
         })),
@@ -353,7 +362,25 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
 
     try {
       await guardar.mutateAsync({ fecha, data: { ingresos, egresos } });
-      await queryClient.invalidateQueries({ queryKey: getGetMesaPorFechaQueryKey(fecha) });
+      // Quién dirige cada partido se decide aquí mismo (o se corrige): se
+      // guarda en el partido, que es donde vive de verdad esa identidad —
+      // así Partidos y la Planilla lo ven igual, y las estadísticas del
+      // árbitro (en /arbitros) cuentan este partido como suyo.
+      const partidosDelDiaPorId = new Map(partidosDelDia.map((p) => [p.id, p]));
+      const cambiosDeArbitro = arbitros.filter(
+        (a) => (partidosDelDiaPorId.get(a.partidoId)?.arbitroId ?? null) !== a.arbitroId,
+      );
+      await Promise.all(
+        cambiosDeArbitro.map((a) =>
+          actualizarPartido.mutateAsync({ id: a.partidoId, data: { arbitroId: a.arbitroId } }),
+        ),
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getGetMesaPorFechaQueryKey(fecha) }),
+        cambiosDeArbitro.length > 0
+          ? queryClient.invalidateQueries({ queryKey: getGetPartidosQueryKey() })
+          : Promise.resolve(),
+      ]);
       toast({ title: 'Mesa guardada', description: `Quedó un saldo de ${formatMoney(saldo)}.` });
     } catch (err) {
       toast({ title: 'No se pudo guardar', description: extractErrorMessage(err), variant: 'destructive' });
@@ -412,7 +439,7 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         clave: `e-arb-${a.partidoId}`,
         celdas: [
           'Árbitro',
-          `${a.nombre || 'Sin nombre'} · ${a.enfrentamiento}`,
+          `${todosLosArbitros?.find((x) => x.id === a.arbitroId)?.nombre ?? 'Sin asignar'} · ${a.enfrentamiento}`,
           '—',
           formatMoney(a.valor),
         ],
@@ -655,12 +682,13 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
                       {hayTerna(a.fase, ajustes) && <span className="ml-1 font-semibold">· terna</span>}
                     </p>
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="Nombre del árbitro"
-                        disabled={bloqueado}
-                        value={a.nombre}
-                        onChange={(e) => actualizarArbitro(a.partidoId, { nombre: e.target.value })}
-                      />
+                      <div className="flex-1">
+                        <SelectorArbitro
+                          value={a.arbitroId}
+                          onChange={(arbitroId) => actualizarArbitro(a.partidoId, { arbitroId })}
+                          disabled={bloqueado}
+                        />
+                      </div>
                       <Input
                         className="w-32 text-right"
                         placeholder="0"

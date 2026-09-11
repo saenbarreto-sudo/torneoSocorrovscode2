@@ -8,7 +8,8 @@
 import type { SavePlanillaInputJugadoresItem } from './savePlanillaInputJugadoresItem';
 
 export interface SavePlanillaInput {
-  arbitro?: string;
+  /** @nullable */
+  arbitroId?: number | null;
   mesa?: string;
   jugadores: SavePlanillaInputJugadoresItem[];
 }

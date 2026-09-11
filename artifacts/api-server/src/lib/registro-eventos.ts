@@ -5,6 +5,7 @@ import {
   eventosTable,
   usuariosTable,
   equiposTable,
+  arbitrosTable,
   jugadoresTable,
   partidosTable,
   pagosTable,
@@ -82,6 +83,13 @@ const RECURSOS: Record<string, Recurso> = {
       unaFila(await db.select().from(equiposTable).where(eq(equiposTable.id, id)), (e) => e.nombre),
     campos: { nombre: "nombre", activo: "activo", delegado: "delegado", telefono: "teléfono" },
   },
+  arbitros: {
+    entidad: "arbitro",
+    etiqueta: "al árbitro",
+    cargar: async (id) =>
+      unaFila(await db.select().from(arbitrosTable).where(eq(arbitrosTable.id, id)), (a) => a.nombre),
+    campos: { nombre: "nombre", telefono: "teléfono", activo: "activo", notas: "notas" },
+  },
   jugadores: {
     entidad: "jugador",
     etiqueta: "al jugador",
@@ -124,7 +132,7 @@ const RECURSOS: Record<string, Recurso> = {
       hora: "hora",
       semana: "fecha n°",
       fase: "fase",
-      arbitro: "árbitro",
+      arbitroId: "árbitro",
       golesLocal: "goles del local",
       golesVisitante: "goles del visitante",
       jugado: "jugado",

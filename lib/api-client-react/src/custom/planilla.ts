@@ -34,14 +34,17 @@ export interface Planilla {
   localId: number;
   visitanteId: number;
   /** @nullable */
-  arbitro?: string | null;
+  arbitroId?: number | null;
+  /** @nullable */
+  arbitroNombre?: string | null;
   /** @nullable */
   mesa?: string | null;
   jugadores: PlanillaJugador[];
 }
 
 export interface SavePlanillaInput {
-  arbitro?: string;
+  /** @nullable */
+  arbitroId?: number | null;
   mesa?: string;
   // Ya no se manda valorAmarilla/valorRoja: el backend le asigna a cada
   // tarjeta nueva el valor configurado en Ajustes, automáticamente.

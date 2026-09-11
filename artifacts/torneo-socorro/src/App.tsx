@@ -16,6 +16,8 @@ import TablasTorneo from '@/pages/tablas-torneo';
 import Equipos from '@/pages/equipos';
 import Jugadores from '@/pages/jugadores';
 import FichaJugador from '@/pages/ficha-jugador';
+import Arbitros from '@/pages/arbitros';
+import FichaArbitro from '@/pages/ficha-arbitro';
 import Partidos from '@/pages/partidos';
 import Amonestados from '@/pages/amonestados';
 import Tesoreria from '@/pages/tesoreria';
@@ -59,6 +61,8 @@ function Router() {
         <Route path="/equipos">{() => <Protected path="/equipos" component={Equipos} />}</Route>
         <Route path="/jugadores">{() => <Protected path="/jugadores" component={Jugadores} />}</Route>
         <Route path="/jugadores/:id">{() => <Protected path="/jugadores" component={FichaJugador} />}</Route>
+        <Route path="/arbitros">{() => <Protected path="/arbitros" component={Arbitros} />}</Route>
+        <Route path="/arbitros/:id">{() => <Protected path="/arbitros" component={FichaArbitro} />}</Route>
         <Route path="/partidos">{() => <Protected path="/partidos" component={Partidos} />}</Route>
         <Route path="/amonestados">{() => <Protected path="/amonestados" component={Amonestados} />}</Route>
         {/* El cronograma ahora es la primera pestaña de "/partidos"; la ruta

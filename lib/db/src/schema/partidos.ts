@@ -2,6 +2,7 @@ import { pgTable, text, serial, boolean, timestamp, integer, date } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { equiposTable } from "./equipos";
+import { arbitrosTable } from "./arbitros";
 
 export const partidosTable = pgTable("partidos", {
   id: serial("id").primaryKey(),
@@ -20,7 +21,9 @@ export const partidosTable = pgTable("partidos", {
   penalesVisitante: integer("penales_visitante"),
   jugado: boolean("jugado").notNull().default(false),
   fase: text("fase"),
-  arbitro: text("arbitro"),
+  // Quién dirige el partido. Referencia a arbitros (ver ese archivo) en vez
+  // de texto libre, para que las estadísticas por árbitro sean confiables.
+  arbitroId: integer("arbitro_id").references(() => arbitrosTable.id, { onDelete: "set null" }),
   // Oficial de mesa que llenó la planilla del partido.
   mesa: text("mesa"),
   // W.O. (Art. 23 del reglamento): el marcador oficial de un walkover es

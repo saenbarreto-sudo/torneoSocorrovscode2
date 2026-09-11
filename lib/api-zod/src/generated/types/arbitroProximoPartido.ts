@@ -5,17 +5,16 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
-import type { PlanillaJugador } from './planillaJugador';
 
-export interface Planilla {
+export interface ArbitroProximoPartido {
   partidoId: number;
-  localId: number;
-  visitanteId: number;
   /** @nullable */
-  arbitroId?: number | null;
+  fecha?: string | null;
   /** @nullable */
-  arbitroNombre?: string | null;
+  hora?: string | null;
+  semana: number;
   /** @nullable */
-  mesa?: string | null;
-  jugadores: PlanillaJugador[];
+  fase?: string | null;
+  localNombre: string;
+  visitanteNombre: string;
 }

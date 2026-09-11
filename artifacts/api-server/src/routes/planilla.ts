@@ -8,6 +8,7 @@ import {
   golesTable,
   tarjetasTable,
   ajustesTable,
+  arbitrosTable,
 } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { GetPlanillaResponse, SavePlanillaBody, GetPlanillaParams } from "@workspace/api-zod";
@@ -92,6 +93,9 @@ router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Partido not found" });
     return;
   }
+  const arbitroNombre = partido.arbitroId
+    ? (await db.select({ nombre: arbitrosTable.nombre }).from(arbitrosTable).where(eq(arbitrosTable.id, partido.arbitroId)))[0]?.nombre ?? null
+    : null;
 
   const rows = await db.execute(sql`
     SELECT
@@ -147,7 +151,8 @@ router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
       partidoId,
       localId: partido.localId,
       visitanteId: partido.visitanteId,
-      arbitro: partido.arbitro,
+      arbitroId: partido.arbitroId,
+      arbitroNombre,
       mesa: partido.mesa,
       jugadores,
     }),
@@ -342,7 +347,7 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
         jugado: true,
         // Solo se sobreescriben si vienen en la petición, para no borrar
         // el árbitro asignado al programar el partido.
-        ...(parsed.data.arbitro !== undefined ? { arbitro: parsed.data.arbitro || null } : {}),
+        ...(parsed.data.arbitroId !== undefined ? { arbitroId: parsed.data.arbitroId } : {}),
         ...(parsed.data.mesa !== undefined ? { mesa: parsed.data.mesa || null } : {}),
       })
       .where(eq(partidosTable.id, partidoId));

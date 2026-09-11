@@ -355,6 +355,151 @@ export const GetJugadorHistorialResponse = zod.array(GetJugadorHistorialResponse
 
 
 /**
+ * @summary List referees (roster)
+ */
+export const GetArbitrosQueryParams = zod.object({
+  "activo": zod.coerce.boolean().optional(),
+  "buscar": zod.coerce.string().optional()
+})
+
+export const GetArbitrosResponseItem = zod.object({
+  "id": zod.number(),
+  "nombre": zod.string(),
+  "telefono": zod.string().nullish(),
+  "activo": zod.boolean(),
+  "notas": zod.string().nullish(),
+  "partidosDirigidos": zod.number().optional(),
+  "createdAt": zod.string()
+})
+export const GetArbitrosResponse = zod.array(GetArbitrosResponseItem)
+
+
+/**
+ * @summary Register a new referee
+ */
+export const CrearArbitroBody = zod.object({
+  "nombre": zod.string(),
+  "telefono": zod.string().optional(),
+  "activo": zod.boolean().optional(),
+  "notas": zod.string().optional()
+})
+
+export const CrearArbitroResponse = zod.object({
+  "id": zod.number(),
+  "nombre": zod.string(),
+  "telefono": zod.string().nullish(),
+  "activo": zod.boolean(),
+  "notas": zod.string().nullish(),
+  "partidosDirigidos": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Comparativa entre todos los árbitros (partidos, tarjetas, lo pagado)
+ */
+export const GetEstadisticasArbitrosResponse = zod.object({
+  "arbitros": zod.array(zod.object({
+  "arbitroId": zod.number(),
+  "arbitroNombre": zod.string(),
+  "activo": zod.boolean(),
+  "partidosDirigidos": zod.number(),
+  "amarillas": zod.number(),
+  "rojas": zod.number(),
+  "totalPagado": zod.number()
+})),
+  "totalPartidos": zod.number(),
+  "totalPagado": zod.number()
+})
+
+
+/**
+ * @summary Edit a referee, or deactivate them
+ */
+export const ActualizarArbitroParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ActualizarArbitroBody = zod.object({
+  "nombre": zod.string(),
+  "telefono": zod.string().optional(),
+  "activo": zod.boolean().optional(),
+  "notas": zod.string().optional()
+})
+
+export const ActualizarArbitroResponse = zod.object({
+  "id": zod.number(),
+  "nombre": zod.string(),
+  "telefono": zod.string().nullish(),
+  "activo": zod.boolean(),
+  "notas": zod.string().nullish(),
+  "partidosDirigidos": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Full referee profile — totals, breakdowns, full match history, upcoming assignments
+ */
+export const GetFichaArbitroParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetFichaArbitroResponse = zod.object({
+  "arbitro": zod.object({
+  "id": zod.number(),
+  "nombre": zod.string(),
+  "telefono": zod.string().nullish(),
+  "activo": zod.boolean(),
+  "notas": zod.string().nullish(),
+  "partidosDirigidos": zod.number().optional(),
+  "createdAt": zod.string()
+}),
+  "resumen": zod.object({
+  "partidosDirigidos": zod.number(),
+  "amarillas": zod.number(),
+  "rojas": zod.number(),
+  "totalPagado": zod.number()
+}),
+  "porEquipo": zod.array(zod.object({
+  "equipoId": zod.number(),
+  "equipoNombre": zod.string(),
+  "partidos": zod.number()
+})),
+  "porFase": zod.array(zod.object({
+  "fase": zod.string(),
+  "partidos": zod.number()
+})),
+  "partidosPorFecha": zod.array(zod.object({
+  "fecha": zod.string(),
+  "partidos": zod.number()
+})),
+  "historial": zod.array(zod.object({
+  "partidoId": zod.number(),
+  "fecha": zod.string().nullish(),
+  "semana": zod.number(),
+  "fase": zod.string().nullish(),
+  "localNombre": zod.string(),
+  "visitanteNombre": zod.string(),
+  "golesLocal": zod.number().nullish(),
+  "golesVisitante": zod.number().nullish(),
+  "amarillas": zod.number(),
+  "rojas": zod.number(),
+  "pagado": zod.number().nullish()
+})),
+  "proximos": zod.array(zod.object({
+  "partidoId": zod.number(),
+  "fecha": zod.string().nullish(),
+  "hora": zod.string().nullish(),
+  "semana": zod.number(),
+  "fase": zod.string().nullish(),
+  "localNombre": zod.string(),
+  "visitanteNombre": zod.string()
+}))
+})
+
+
+/**
  * @summary List matches
  */
 export const GetPartidosQueryParams = zod.object({
@@ -380,7 +525,8 @@ export const GetPartidosResponseItem = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean(),
   "fase": zod.string().nullish(),
-  "arbitro": zod.string().nullish(),
+  "arbitroId": zod.number().nullish(),
+  "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().nullish(),
@@ -404,7 +550,7 @@ export const CreatePartidoBody = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean().optional(),
   "fase": zod.string(),
-  "arbitro": zod.string().optional(),
+  "arbitroId": zod.number().nullish(),
   "mesa": zod.string().optional(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().optional()
@@ -425,7 +571,8 @@ export const CreatePartidoResponse = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean(),
   "fase": zod.string().nullish(),
-  "arbitro": zod.string().nullish(),
+  "arbitroId": zod.number().nullish(),
+  "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().nullish(),
@@ -452,7 +599,7 @@ export const CreatePartidosLoteBody = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean().optional(),
   "fase": zod.string(),
-  "arbitro": zod.string().optional(),
+  "arbitroId": zod.number().nullish(),
   "mesa": zod.string().optional(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().optional()
@@ -487,7 +634,8 @@ export const GetPartidoResponse = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean(),
   "fase": zod.string().nullish(),
-  "arbitro": zod.string().nullish(),
+  "arbitroId": zod.number().nullish(),
+  "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().nullish(),
@@ -514,7 +662,7 @@ export const UpdatePartidoBody = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean().optional(),
   "fase": zod.string().optional(),
-  "arbitro": zod.string().optional(),
+  "arbitroId": zod.number().nullish(),
   "mesa": zod.string().optional(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().optional()
@@ -535,7 +683,8 @@ export const UpdatePartidoResponse = zod.object({
   "penalesVisitante": zod.number().nullish(),
   "jugado": zod.boolean(),
   "fase": zod.string().nullish(),
-  "arbitro": zod.string().nullish(),
+  "arbitroId": zod.number().nullish(),
+  "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
   "walkover": zod.boolean().optional(),
   "walkoverGanadorId": zod.number().nullish(),
@@ -1508,7 +1657,8 @@ export const GetPlanillaResponse = zod.object({
   "partidoId": zod.number(),
   "localId": zod.number(),
   "visitanteId": zod.number(),
-  "arbitro": zod.string().nullish(),
+  "arbitroId": zod.number().nullish(),
+  "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
   "jugadores": zod.array(zod.object({
   "jugadorId": zod.number(),
@@ -1548,7 +1698,7 @@ export const savePlanillaBodyJugadoresItemFechasSancionMax = 20;
 
 
 export const SavePlanillaBody = zod.object({
-  "arbitro": zod.string().optional(),
+  "arbitroId": zod.number().nullish(),
   "mesa": zod.string().optional(),
   "jugadores": zod.array(zod.object({
   "jugadorId": zod.number(),

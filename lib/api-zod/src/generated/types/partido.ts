@@ -29,7 +29,9 @@ export interface Partido {
   /** @nullable */
   fase?: string | null;
   /** @nullable */
-  arbitro?: string | null;
+  arbitroId?: number | null;
+  /** @nullable */
+  arbitroNombre?: string | null;
   /** @nullable */
   mesa?: string | null;
   walkover?: boolean;

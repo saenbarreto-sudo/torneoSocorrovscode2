@@ -23,6 +23,10 @@ import type {
   Ajustes,
   AjustesUpdate,
   AmonestadoResumen,
+  Arbitro,
+  ArbitroFicha,
+  ArbitroInput,
+  ArbitrosComparativa,
   CerrarTemporadaInput,
   CierreResultado,
   DashboardResumen,
@@ -35,6 +39,7 @@ import type {
   FasesLoteInput,
   FasesLoteResult,
   GetAmonestadosParams,
+  GetArbitrosParams,
   GetDashboardResumenParams,
   GetEventosParams,
   GetFasesParams,
@@ -1076,6 +1081,387 @@ export function useGetJugadorHistorial<TData = Awaited<ReturnType<typeof getJuga
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetJugadorHistorialQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetArbitrosUrl = (params?: GetArbitrosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/arbitros?${stringifiedParams}` : `/api/arbitros`
+}
+
+/**
+ * @summary List referees (roster)
+ */
+export const getArbitros = async (params?: GetArbitrosParams, options?: Parameters<typeof customFetch>[1]): Promise<Arbitro[]> => {
+
+  return customFetch<Arbitro[]>(getGetArbitrosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArbitrosQueryKey = (params?: GetArbitrosParams,) => {
+    return [
+    `/api/arbitros`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetArbitrosQueryOptions = <TData = Awaited<ReturnType<typeof getArbitros>>, TError = ErrorType<unknown>>(params?: GetArbitrosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArbitros>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArbitrosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArbitros>>> = ({ signal }) => getArbitros(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArbitros>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArbitrosQueryResult = NonNullable<Awaited<ReturnType<typeof getArbitros>>>
+export type GetArbitrosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List referees (roster)
+ */
+
+export function useGetArbitros<TData = Awaited<ReturnType<typeof getArbitros>>, TError = ErrorType<unknown>>(
+ params?: GetArbitrosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArbitros>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArbitrosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCrearArbitroUrl = () => {
+
+
+
+
+  return `/api/arbitros`
+}
+
+/**
+ * @summary Register a new referee
+ */
+export const crearArbitro = async (arbitroInput: ArbitroInput, options?: Parameters<typeof customFetch>[1]): Promise<Arbitro> => {
+
+  return customFetch<Arbitro>(getCrearArbitroUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(arbitroInput)
+  }
+);}
+
+
+
+
+
+export const getCrearArbitroMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearArbitro>>, TError,{data: BodyType<ArbitroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof crearArbitro>>, TError,{data: BodyType<ArbitroInput>}, TContext> => {
+
+const mutationKey = ['crearArbitro'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof crearArbitro>>, {data: BodyType<ArbitroInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  crearArbitro(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CrearArbitroMutationResult = NonNullable<Awaited<ReturnType<typeof crearArbitro>>>
+    export type CrearArbitroMutationBody = BodyType<ArbitroInput>
+    export type CrearArbitroMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a new referee
+ */
+export const useCrearArbitro = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearArbitro>>, TError,{data: BodyType<ArbitroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof crearArbitro>>,
+        TError,
+        {data: BodyType<ArbitroInput>},
+        TContext
+      > => {
+      return useMutation(getCrearArbitroMutationOptions(options));
+    }
+
+export const getGetEstadisticasArbitrosUrl = () => {
+
+
+
+
+  return `/api/arbitros/estadisticas`
+}
+
+/**
+ * @summary Comparativa entre todos los árbitros (partidos, tarjetas, lo pagado)
+ */
+export const getEstadisticasArbitros = async ( options?: Parameters<typeof customFetch>[1]): Promise<ArbitrosComparativa> => {
+
+  return customFetch<ArbitrosComparativa>(getGetEstadisticasArbitrosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEstadisticasArbitrosQueryKey = () => {
+    return [
+    `/api/arbitros/estadisticas`
+    ] as const;
+    }
+
+
+export const getGetEstadisticasArbitrosQueryOptions = <TData = Awaited<ReturnType<typeof getEstadisticasArbitros>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEstadisticasArbitros>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEstadisticasArbitrosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEstadisticasArbitros>>> = ({ signal }) => getEstadisticasArbitros({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEstadisticasArbitros>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEstadisticasArbitrosQueryResult = NonNullable<Awaited<ReturnType<typeof getEstadisticasArbitros>>>
+export type GetEstadisticasArbitrosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Comparativa entre todos los árbitros (partidos, tarjetas, lo pagado)
+ */
+
+export function useGetEstadisticasArbitros<TData = Awaited<ReturnType<typeof getEstadisticasArbitros>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEstadisticasArbitros>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEstadisticasArbitrosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getActualizarArbitroUrl = (id: number,) => {
+
+
+
+
+  return `/api/arbitros/${id}`
+}
+
+/**
+ * @summary Edit a referee, or deactivate them
+ */
+export const actualizarArbitro = async (id: number,
+    arbitroInput: ArbitroInput, options?: Parameters<typeof customFetch>[1]): Promise<Arbitro> => {
+
+  return customFetch<Arbitro>(getActualizarArbitroUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(arbitroInput)
+  }
+);}
+
+
+
+
+
+export const getActualizarArbitroMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarArbitro>>, TError,{id: number;data: BodyType<ArbitroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarArbitro>>, TError,{id: number;data: BodyType<ArbitroInput>}, TContext> => {
+
+const mutationKey = ['actualizarArbitro'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarArbitro>>, {id: number;data: BodyType<ArbitroInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actualizarArbitro(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarArbitroMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarArbitro>>>
+    export type ActualizarArbitroMutationBody = BodyType<ArbitroInput>
+    export type ActualizarArbitroMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a referee, or deactivate them
+ */
+export const useActualizarArbitro = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarArbitro>>, TError,{id: number;data: BodyType<ArbitroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarArbitro>>,
+        TError,
+        {id: number;data: BodyType<ArbitroInput>},
+        TContext
+      > => {
+      return useMutation(getActualizarArbitroMutationOptions(options));
+    }
+
+export const getGetFichaArbitroUrl = (id: number,) => {
+
+
+
+
+  return `/api/arbitros/${id}/estadisticas`
+}
+
+/**
+ * @summary Full referee profile — totals, breakdowns, full match history, upcoming assignments
+ */
+export const getFichaArbitro = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ArbitroFicha> => {
+
+  return customFetch<ArbitroFicha>(getGetFichaArbitroUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFichaArbitroQueryKey = (id: number,) => {
+    return [
+    `/api/arbitros/${id}/estadisticas`
+    ] as const;
+    }
+
+
+export const getGetFichaArbitroQueryOptions = <TData = Awaited<ReturnType<typeof getFichaArbitro>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFichaArbitro>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFichaArbitroQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFichaArbitro>>> = ({ signal }) => getFichaArbitro(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFichaArbitro>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFichaArbitroQueryResult = NonNullable<Awaited<ReturnType<typeof getFichaArbitro>>>
+export type GetFichaArbitroQueryError = ErrorType<void>
+
+
+/**
+ * @summary Full referee profile — totals, breakdowns, full match history, upcoming assignments
+ */
+
+export function useGetFichaArbitro<TData = Awaited<ReturnType<typeof getFichaArbitro>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFichaArbitro>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFichaArbitroQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

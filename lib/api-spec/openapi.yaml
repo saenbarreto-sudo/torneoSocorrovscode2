@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: equipos
     description: Team operations
+  - name: arbitros
+    description: Referee roster and statistics
   - name: jugadores
     description: Player operations
   - name: partidos
@@ -285,6 +287,111 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/JugadorHistorialEquipo"
+
+  # ── ARBITROS ───────────────────────────────────────────────────────────────
+  /arbitros:
+    get:
+      operationId: getArbitros
+      tags: [arbitros]
+      summary: List referees (roster)
+      parameters:
+        - name: activo
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: buscar
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Referees, most active (by matches worked) first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Arbitro"
+    post:
+      operationId: crearArbitro
+      tags: [arbitros]
+      summary: Register a new referee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArbitroInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbitro"
+
+  /arbitros/estadisticas:
+    get:
+      operationId: getEstadisticasArbitros
+      tags: [arbitros]
+      summary: Comparativa entre todos los árbitros (partidos, tarjetas, lo pagado)
+      responses:
+        "200":
+          description: One row per referee, plus totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArbitrosComparativa"
+
+  /arbitros/{id}:
+    patch:
+      operationId: actualizarArbitro
+      tags: [arbitros]
+      summary: Edit a referee, or deactivate them
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArbitroInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbitro"
+        "404":
+          description: Not found
+
+  /arbitros/{id}/estadisticas:
+    get:
+      operationId: getFichaArbitro
+      tags: [arbitros]
+      summary: Full referee profile — totals, breakdowns, full match history, upcoming assignments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Referee profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArbitroFicha"
+        "404":
+          description: Not found
 
   # ── PARTIDOS ───────────────────────────────────────────────────────────────
   /partidos:
@@ -1746,7 +1853,11 @@ components:
           type: boolean
         fase:
           type: ["string", "null"]
-        arbitro:
+        arbitroId:
+          type: ["number", "null"]
+        # De solo lectura: se arma con un join a arbitros, para no obligar
+        # a la pantalla a pedirlo aparte solo para mostrar el nombre.
+        arbitroNombre:
           type: ["string", "null"]
         # Oficial de mesa que llenó la planilla del partido.
         mesa:
@@ -1788,8 +1899,8 @@ components:
           type: boolean
         fase:
           type: string
-        arbitro:
-          type: string
+        arbitroId:
+          type: ["number", "null"]
         mesa:
           type: string
         walkover:
@@ -1825,8 +1936,8 @@ components:
           type: boolean
         fase:
           type: string
-        arbitro:
-          type: string
+        arbitroId:
+          type: ["number", "null"]
         mesa:
           type: string
         walkover:
@@ -1853,6 +1964,191 @@ components:
         omitidos:
           type: number
           description: Partidos que ya existían con la misma semana y los mismos equipos.
+
+    # ── ARBITROS ─────────────────────────────────────────────────────────────
+    Arbitro:
+      type: object
+      required: [id, nombre, activo, createdAt]
+      properties:
+        id:
+          type: number
+        nombre:
+          type: string
+        telefono:
+          type: ["string", "null"]
+        activo:
+          type: boolean
+        notas:
+          type: ["string", "null"]
+        # De solo lectura: cuántos partidos lleva dirigidos en el torneo que
+        # se está consultando. Se manda ya calculado para que el listado no
+        # tenga que pedir la ficha de cada uno solo para mostrar esto.
+        partidosDirigidos:
+          type: number
+        createdAt:
+          type: string
+
+    ArbitroInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+        telefono:
+          type: string
+        activo:
+          type: boolean
+        notas:
+          type: string
+
+    ArbitroEquipo:
+      type: object
+      required: [equipoId, equipoNombre, partidos]
+      properties:
+        equipoId:
+          type: number
+        equipoNombre:
+          type: string
+        partidos:
+          type: number
+
+    ArbitroFecha:
+      type: object
+      required: [fecha, partidos]
+      properties:
+        fecha:
+          type: string
+        partidos:
+          type: number
+
+    ArbitroFase:
+      type: object
+      required: [fase, partidos]
+      properties:
+        fase:
+          type: string
+        partidos:
+          type: number
+
+    ArbitroPartidoHistorial:
+      type: object
+      required: [partidoId, semana, localNombre, visitanteNombre, amarillas, rojas]
+      properties:
+        partidoId:
+          type: number
+        fecha:
+          type: ["string", "null"]
+        semana:
+          type: number
+        fase:
+          type: ["string", "null"]
+        localNombre:
+          type: string
+        visitanteNombre:
+          type: string
+        golesLocal:
+          type: ["number", "null"]
+        golesVisitante:
+          type: ["number", "null"]
+        amarillas:
+          type: number
+        rojas:
+          type: number
+        pagado:
+          type: ["number", "null"]
+
+    ArbitroProximoPartido:
+      type: object
+      required: [partidoId, semana, localNombre, visitanteNombre]
+      properties:
+        partidoId:
+          type: number
+        fecha:
+          type: ["string", "null"]
+        hora:
+          type: ["string", "null"]
+        semana:
+          type: number
+        fase:
+          type: ["string", "null"]
+        localNombre:
+          type: string
+        visitanteNombre:
+          type: string
+
+    ArbitroResumen:
+      type: object
+      required: [partidosDirigidos, amarillas, rojas, totalPagado]
+      properties:
+        partidosDirigidos:
+          type: number
+        amarillas:
+          type: number
+        rojas:
+          type: number
+        totalPagado:
+          type: number
+
+    ArbitroFicha:
+      type: object
+      required: [arbitro, resumen, porEquipo, porFase, partidosPorFecha, historial, proximos]
+      properties:
+        arbitro:
+          $ref: "#/components/schemas/Arbitro"
+        resumen:
+          $ref: "#/components/schemas/ArbitroResumen"
+        porEquipo:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroEquipo"
+        porFase:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroFase"
+        partidosPorFecha:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroFecha"
+        historial:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroPartidoHistorial"
+        proximos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroProximoPartido"
+
+    ArbitroComparativaLinea:
+      type: object
+      required: [arbitroId, arbitroNombre, activo, partidosDirigidos, amarillas, rojas, totalPagado]
+      properties:
+        arbitroId:
+          type: number
+        arbitroNombre:
+          type: string
+        activo:
+          type: boolean
+        partidosDirigidos:
+          type: number
+        amarillas:
+          type: number
+        rojas:
+          type: number
+        totalPagado:
+          type: number
+
+    ArbitrosComparativa:
+      type: object
+      required: [arbitros, totalPartidos, totalPagado]
+      properties:
+        arbitros:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArbitroComparativaLinea"
+        totalPartidos:
+          type: number
+        totalPagado:
+          type: number
 
     # ── POSICIONES ───────────────────────────────────────────────────────────
     PosicionEquipo:
@@ -2821,7 +3117,9 @@ components:
           type: number
         visitanteId:
           type: number
-        arbitro:
+        arbitroId:
+          type: ["number", "null"]
+        arbitroNombre:
           type: ["string", "null"]
         mesa:
           type: ["string", "null"]
@@ -2834,8 +3132,8 @@ components:
       type: object
       required: [jugadores]
       properties:
-        arbitro:
-          type: string
+        arbitroId:
+          type: ["number", "null"]
         mesa:
           type: string
         # Ya no se manda valorAmarilla/valorRoja desde acá: el valor de cada

@@ -26,10 +26,11 @@ async function fetchPartidoWithTeams(id: number) {
   const visitante = db.$with("visitante").as(db.select().from(equiposTable));
 
   const result = await db.execute(sql`
-    SELECT p.*, l.nombre as local_nombre, v.nombre as visitante_nombre
+    SELECT p.*, l.nombre as local_nombre, v.nombre as visitante_nombre, a.nombre as arbitro_nombre
     FROM partidos p
     JOIN equipos l ON l.id = p.local_id
     JOIN equipos v ON v.id = p.visitante_id
+    LEFT JOIN arbitros a ON a.id = p.arbitro_id
     WHERE p.id = ${id}
   `);
   const row = result.rows[0];
@@ -52,6 +53,8 @@ function mapPartido(row: Record<string, unknown>) {
     penalesVisitante: row.penales_visitante ?? null,
     jugado: row.jugado,
     fase: row.fase ?? null,
+    arbitroId: row.arbitro_id ?? null,
+    arbitroNombre: row.arbitro_nombre ?? null,
     walkover: row.walkover ?? false,
     walkoverGanadorId: row.walkover_ganador_id ?? null,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
@@ -121,10 +124,11 @@ router.get("/partidos", async (req, res): Promise<void> => {
   // cerrado (ver lib/temporada.ts).
   const temporada = temporadaPedida(req);
   const rows = await db.execute(sql`
-    SELECT p.*, l.nombre as local_nombre, v.nombre as visitante_nombre
+    SELECT p.*, l.nombre as local_nombre, v.nombre as visitante_nombre, a.nombre as arbitro_nombre
     FROM partidos p
     JOIN equipos l ON l.id = p.local_id
     JOIN equipos v ON v.id = p.visitante_id
+    LEFT JOIN arbitros a ON a.id = p.arbitro_id
     WHERE ${filtroTemporadaSql("p.temporada", temporada)}
     ${whereClause}
     ORDER BY p.semana, p.fecha, p.hora

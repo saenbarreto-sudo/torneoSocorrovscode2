@@ -45,6 +45,7 @@ import { useAuth, canWrite } from '@/lib/auth';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { formatHora12 } from '@/lib/utils';
 import { PlanillaPartido } from '@/components/planilla-partido';
+import { SelectorArbitro } from '@/components/selector-arbitro';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
@@ -77,7 +78,7 @@ const partidoSchema = z.object({
   localId: z.coerce.number().min(1),
   visitanteId: z.coerce.number().min(1),
   fase: z.string().min(1, 'Selecciona la fase de este partido'),
-  arbitro: z.string().optional(),
+  arbitroId: z.number().nullish(),
 });
 
 const resultadoSchema = z.object({
@@ -161,7 +162,7 @@ export default function Partidos({
 
   const openNew = () => {
     setEditingId(null);
-    form.reset({ semana: 1, localId: 0, visitanteId: 0, fecha: '', hora: '', fase: '', arbitro: '' });
+    form.reset({ semana: 1, localId: 0, visitanteId: 0, fecha: '', hora: '', fase: '', arbitroId: null });
     setOpen(true);
   };
 
@@ -174,7 +175,7 @@ export default function Partidos({
       localId: partido.localId,
       visitanteId: partido.visitanteId,
       fase: partido.fase ?? '',
-      arbitro: partido.arbitro ?? '',
+      arbitroId: partido.arbitroId ?? null,
     });
     setOpen(true);
   };
@@ -372,10 +373,12 @@ export default function Partidos({
                         </FormItem>
                       )} />
                     </div>
-                    <FormField control={form.control} name="arbitro" render={({ field }) => (
+                    <FormField control={form.control} name="arbitroId" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Árbitro</FormLabel>
-                        <FormControl><Input placeholder="Nombre del árbitro asignado" {...field} /></FormControl>
+                        <FormControl>
+                          <SelectorArbitro value={field.value} onChange={field.onChange} />
+                        </FormControl>
                       </FormItem>
                     )} />
                     <div className="space-y-4 p-4 border rounded-md bg-muted/20">

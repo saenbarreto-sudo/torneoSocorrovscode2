@@ -1,4 +1,5 @@
 export * from "./equipos";
+export * from "./arbitros";
 export * from "./jugadores";
 export * from "./jugador-equipo-historial";
 export * from "./jugador-equipo-temporada";
