@@ -285,4 +285,46 @@ router.patch("/mesas/:id/estado", requireAuth, writeAccess.pagos, async (req, re
   res.json(mapMesa(mesa, { totalIngresos, totalEgresos, saldo }));
 });
 
+/**
+ * Borrar un día de mesa completo: la carátula y TODA su plata — los recibos
+ * que entraron ese día y los gastos que salieron.
+ *
+ * Se borra todo junto a propósito. La mesa por sí sola es solo el
+ * encabezado del día; si se borrara únicamente esa fila, los pagos y gastos
+ * quedarían sueltos en Tesorería (mesa_id se pone en NULL), sumando al
+ * saldo pero sin pertenecer a ningún día — justo lo contrario de lo que se
+ * busca al borrar una mesa que se creó por error.
+ *
+ * Va en una transacción: o se borra el día entero, o no se borra nada.
+ */
+router.delete("/mesas/:id", requireAuth, writeAccess.pagos, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "id inválido" });
+    return;
+  }
+
+  const [mesa] = await db.select().from(mesasTable).where(eq(mesasTable.id, id));
+  if (!mesa) {
+    res.status(404).json({ error: "Mesa no encontrada" });
+    return;
+  }
+  // Una mesa de un torneo ya cerrado es historia: no se toca.
+  if (mesa.temporada !== null) {
+    res.status(409).json({
+      error: `Esta mesa es del torneo ${mesa.temporada}, que ya está cerrado. No se puede borrar.`,
+    });
+    return;
+  }
+
+  const borrado = await db.transaction(async (tx) => {
+    const pagos = await tx.delete(pagosTable).where(eq(pagosTable.mesaId, id)).returning({ id: pagosTable.id });
+    const egresos = await tx.delete(egresosTable).where(eq(egresosTable.mesaId, id)).returning({ id: egresosTable.id });
+    await tx.delete(mesasTable).where(eq(mesasTable.id, id));
+    return { pagos: pagos.length, egresos: egresos.length };
+  });
+
+  res.json({ fecha: mesa.fecha, pagosBorrados: borrado.pagos, egresosBorrados: borrado.egresos });
+});
+
 export default router;

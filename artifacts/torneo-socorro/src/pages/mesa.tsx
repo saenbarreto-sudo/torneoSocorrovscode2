@@ -7,8 +7,11 @@ import {
   useCambiarEstadoMesa,
   useGetMesas,
   useGetResumenMesas,
+  useBorrarMesa,
   getGetMesaPorFechaQueryOptions,
   getGetMesaPorFechaQueryKey,
+  getGetMesasQueryKey,
+  getGetResumenMesasQueryKey,
   type Ajustes,
   type MesaDetalle,
   type Partido,
@@ -21,6 +24,17 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { useImprimir } from '@/hooks/use-imprimir';
@@ -820,6 +834,36 @@ function HistorialMesas({
   const { data: mesas } = useGetMesas();
   const { data: resumen } = useGetResumenMesas();
   const { imprimiendo, imprimir } = useImprimir();
+  const borrarMesa = useBorrarMesa();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  /**
+   * Borrar un día del historial se lleva TODA la plata de ese día: los
+   * recibos que entraron y los gastos que salieron. La fila de la mesa sola
+   * es apenas el encabezado — si se borrara solo ella, esos recibos y gastos
+   * quedarían sueltos en Tesorería sumando al saldo sin pertenecer a ningún
+   * día, que es justo lo que no se quiere.
+   */
+  async function onBorrar(mesa: { id: number; fecha: string }) {
+    try {
+      const borrado = await borrarMesa.mutateAsync({ id: mesa.id });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getGetMesasQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetResumenMesasQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetMesaPorFechaQueryKey(mesa.fecha) }),
+        queryClient.invalidateQueries({ queryKey: ['/api/pagos'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/egresos'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/equipos'] }),
+      ]);
+      toast({
+        title: `Se borró la mesa del ${formatFecha(mesa.fecha)}`,
+        description: `Con ella se fueron ${borrado.pagosBorrados} recibo(s) y ${borrado.egresosBorrados} gasto(s).`,
+      });
+    } catch (err) {
+      toast({ title: 'No se pudo borrar', description: extractErrorMessage(err), variant: 'destructive' });
+    }
+  }
 
   const filas = mesas ?? [];
   const totales = filas.reduce(
@@ -914,6 +958,43 @@ function HistorialMesas({
                           <Unlock className="h-3.5 w-3.5 mr-1" />
                           Corregir
                         </Button>
+                      )}
+                      {puedeEscribir && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Borrar este día del historial"
+                              aria-label={`Borrar la mesa del ${formatFecha(m.fecha)}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                ¿Borrar la mesa del {formatFecha(m.fecha)}?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se borra el día completo:{' '}
+                                <span className="font-semibold text-destructive">
+                                  los {formatMoney(m.totalIngresos)} que entraron y los{' '}
+                                  {formatMoney(m.totalEgresos)} que salieron
+                                </span>{' '}
+                                desaparecen también de Recibos y de Egresos, como si ese día nunca se
+                                hubiera cuadrado. Esto no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onBorrar(m)}>
+                                Borrar el día completo
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </TableCell>
                   </TableRow>

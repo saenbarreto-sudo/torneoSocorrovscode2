@@ -704,6 +704,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/MesaResumen"
 
+  /mesas/{id}:
+    delete:
+      operationId: borrarMesa
+      tags: [mesas]
+      summary: Delete a whole match day sheet, including its money
+      description: >
+        Borra la mesa y TODA su plata: los recibos que entraron ese día y los
+        gastos que salieron. Se borra todo junto porque la mesa por sí sola es
+        solo el encabezado del día — borrar únicamente esa fila dejaría los
+        pagos y gastos sueltos en Tesorería, sumando al saldo sin pertenecer a
+        ningún día.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: What was deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MesaBorrada"
+        "404":
+          description: Not found
+        "409":
+          description: The mesa belongs to a closed tournament
+
   # ── GOLEADORES ─────────────────────────────────────────────────────────────
   /goleadores:
     get:
@@ -2404,6 +2433,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResumenMesaLinea"
+
+    MesaBorrada:
+      type: object
+      required: [fecha, pagosBorrados, egresosBorrados]
+      properties:
+        fecha:
+          type: string
+        pagosBorrados:
+          type: number
+        egresosBorrados:
+          type: number
 
     MesaEstadoInput:
       type: object

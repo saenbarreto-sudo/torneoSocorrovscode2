@@ -467,6 +467,12 @@ export interface MesaEstadoInput {
   estado: MesaEstadoInputEstado;
 }
 
+export interface MesaBorrada {
+  fecha: string;
+  pagosBorrados: number;
+  egresosBorrados: number;
+}
+
 export type TarjetaTipo = typeof TarjetaTipo[keyof typeof TarjetaTipo];
 
 

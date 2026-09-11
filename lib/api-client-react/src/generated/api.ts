@@ -54,6 +54,7 @@ import type {
   JugadorHistorialEquipo,
   JugadorInput,
   JugadorUpdate,
+  MesaBorrada,
   MesaDetalle,
   MesaEstadoInput,
   MesaGuardarInput,
@@ -2474,6 +2475,78 @@ export const useCambiarEstadoMesa = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCambiarEstadoMesaMutationOptions(options));
+    }
+
+export const getBorrarMesaUrl = (id: number,) => {
+
+
+
+
+  return `/api/mesas/${id}`
+}
+
+/**
+ * Borra la mesa y TODA su plata: los recibos que entraron ese día y los gastos que salieron. Se borra todo junto porque la mesa por sí sola es solo el encabezado del día — borrar únicamente esa fila dejaría los pagos y gastos sueltos en Tesorería, sumando al saldo sin pertenecer a ningún día.
+ * @summary Delete a whole match day sheet, including its money
+ */
+export const borrarMesa = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<MesaBorrada> => {
+
+  return customFetch<MesaBorrada>(getBorrarMesaUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getBorrarMesaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof borrarMesa>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof borrarMesa>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['borrarMesa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof borrarMesa>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  borrarMesa(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BorrarMesaMutationResult = NonNullable<Awaited<ReturnType<typeof borrarMesa>>>
+
+    export type BorrarMesaMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a whole match day sheet, including its money
+ */
+export const useBorrarMesa = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof borrarMesa>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof borrarMesa>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getBorrarMesaMutationOptions(options));
     }
 
 export const getGetGoleadoresUrl = (params?: GetGoleadoresParams,) => {

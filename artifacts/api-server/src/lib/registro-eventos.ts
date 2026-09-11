@@ -331,6 +331,16 @@ function armarDescripcion(opciones: {
     const estado = String(cuerpo.estado ?? "");
     return `${estado === "cerrada" ? "Cerró" : "Reabrió"} la mesa de ${nombreAntes ?? "un día"}`;
   }
+  if (ruta.recurso === "mesas" && accion === "borrar") {
+    // Borrar una mesa se lleva la plata del día: eso es lo que hay que dejar
+    // anotado, no solo que "borró una fila".
+    const r = respuesta as { pagosBorrados?: number; egresosBorrados?: number } | undefined;
+    const movimientos = (r?.pagosBorrados ?? 0) + (r?.egresosBorrados ?? 0);
+    const dia = nombreAntes ?? "un día";
+    return movimientos > 0
+      ? `Borró la mesa de ${dia} y con ella ${movimientos} movimiento(s) de plata`
+      : `Borró la mesa de ${dia}`;
+  }
   if (ruta.recurso === "mesas") {
     return `Guardó la mesa del ${formatearFecha(ruta.segundo)}`;
   }

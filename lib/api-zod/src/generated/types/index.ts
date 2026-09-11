@@ -58,6 +58,7 @@ export * from './jugadorInput';
 export * from './jugadorUpdate';
 export * from './loginInput';
 export * from './loginResult';
+export * from './mesaBorrada';
 export * from './mesaDetalle';
 export * from './mesaEgreso';
 export * from './mesaEstadoInput';

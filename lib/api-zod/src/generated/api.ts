@@ -863,6 +863,21 @@ export const CambiarEstadoMesaResponse = zod.object({
 
 
 /**
+ * Borra la mesa y TODA su plata: los recibos que entraron ese día y los gastos que salieron. Se borra todo junto porque la mesa por sí sola es solo el encabezado del día — borrar únicamente esa fila dejaría los pagos y gastos sueltos en Tesorería, sumando al saldo sin pertenecer a ningún día.
+ * @summary Delete a whole match day sheet, including its money
+ */
+export const BorrarMesaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BorrarMesaResponse = zod.object({
+  "fecha": zod.string(),
+  "pagosBorrados": zod.number(),
+  "egresosBorrados": zod.number()
+})
+
+
+/**
  * @summary Top scorers list
  */
 export const GetGoleadoresQueryParams = zod.object({
