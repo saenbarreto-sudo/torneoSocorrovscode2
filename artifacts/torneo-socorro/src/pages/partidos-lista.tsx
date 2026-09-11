@@ -259,6 +259,9 @@ export default function Partidos({
   };
 
   const openRegisterResult = (partido: any) => {
+    // La planilla lleva la nómina de los dos equipos: solo la abre el
+    // comité. Quien está de consulta ve el marcador en la tabla y ya.
+    if (readOnly) return;
     setActivePartido(partido);
     resForm.reset({
       golesLocal: partido.golesLocal ?? 0,

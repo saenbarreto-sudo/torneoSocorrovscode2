@@ -46,6 +46,7 @@ import type {
   GetGoleadoresParams,
   GetJugadoresParams,
   GetMesasParams,
+  GetMiEquipoParams,
   GetPagosParams,
   GetPagosResumenEquiposParams,
   GetPartidosParams,
@@ -64,6 +65,7 @@ import type {
   MesaEstadoInput,
   MesaGuardarInput,
   MesaResumen,
+  MiEquipo,
   Pago,
   PagoEquipoResumen,
   PagoInput,
@@ -1081,6 +1083,91 @@ export function useGetJugadorHistorial<TData = Awaited<ReturnType<typeof getJuga
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetJugadorHistorialQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMiEquipoUrl = (params?: GetMiEquipoParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mi-equipo?${stringifiedParams}` : `/api/mi-equipo`
+}
+
+/**
+ * La pantalla de inicio del delegado: su plantilla con lo de cada jugador, su cuenta con el torneo y su próximo partido. El equipo sale del usuario de la sesión, así que un delegado nunca puede pedir el de otro. El comité puede pasar ?equipoId= para ver lo mismo que ve un delegado.
+ * @summary Everything a team delegate needs about their own team
+ */
+export const getMiEquipo = async (params?: GetMiEquipoParams, options?: Parameters<typeof customFetch>[1]): Promise<MiEquipo> => {
+
+  return customFetch<MiEquipo>(getGetMiEquipoUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMiEquipoQueryKey = (params?: GetMiEquipoParams,) => {
+    return [
+    `/api/mi-equipo`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMiEquipoQueryOptions = <TData = Awaited<ReturnType<typeof getMiEquipo>>, TError = ErrorType<void>>(params?: GetMiEquipoParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMiEquipo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMiEquipoQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMiEquipo>>> = ({ signal }) => getMiEquipo(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMiEquipo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMiEquipoQueryResult = NonNullable<Awaited<ReturnType<typeof getMiEquipo>>>
+export type GetMiEquipoQueryError = ErrorType<void>
+
+
+/**
+ * @summary Everything a team delegate needs about their own team
+ */
+
+export function useGetMiEquipo<TData = Awaited<ReturnType<typeof getMiEquipo>>, TError = ErrorType<void>>(
+ params?: GetMiEquipoParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMiEquipo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMiEquipoQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

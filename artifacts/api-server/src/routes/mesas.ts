@@ -4,6 +4,7 @@ import { db, mesasTable, pagosTable, egresosTable, equiposTable, ESTADOS_MESA } 
 import type { EstadoMesa } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { filtroTemporada, filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
+import { soloComite } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -87,7 +88,7 @@ async function detalleDeFecha(fecha: string) {
   };
 }
 
-router.get("/mesas", requireAuth, async (req, res): Promise<void> => {
+router.get("/mesas", soloComite, async (req, res): Promise<void> => {
   const mesas = await db
     .select()
     .from(mesasTable)
@@ -112,7 +113,7 @@ router.get("/mesas", requireAuth, async (req, res): Promise<void> => {
  * OJO con el orden: esta ruta va ANTES de "/mesas/:fecha", si no "resumen"
  * se tomaría como si fuera una fecha.
  */
-router.get("/mesas/resumen", requireAuth, async (req, res): Promise<void> => {
+router.get("/mesas/resumen", soloComite, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   const filas = await db.execute<{ tipo: string; nombre: string; total: number }>(sql`
     SELECT 'ingreso' AS tipo, p.concepto AS nombre, SUM(p.monto)::int AS total
@@ -138,7 +139,7 @@ router.get("/mesas/resumen", requireAuth, async (req, res): Promise<void> => {
   res.json({ ingresos: porTipo("ingreso"), egresos: porTipo("egreso") });
 });
 
-router.get("/mesas/:fecha", requireAuth, async (req, res): Promise<void> => {
+router.get("/mesas/:fecha", soloComite, async (req, res): Promise<void> => {
   const fecha = String(req.params.fecha);
   if (!esFechaValida(fecha)) {
     res.status(400).json({ error: "Fecha inválida, se espera AAAA-MM-DD" });

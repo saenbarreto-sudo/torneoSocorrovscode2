@@ -12,6 +12,7 @@ import {
   UpdateEgresoBody,
   UpdateEgresoResponse,
 } from "@workspace/api-zod";
+import { soloComite } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -22,7 +23,7 @@ function mapEgreso(row: typeof egresosTable.$inferSelect) {
   };
 }
 
-router.get("/egresos", async (req, res): Promise<void> => {
+router.get("/egresos", soloComite, async (req, res): Promise<void> => {
   const { categoria, desde, hasta } = req.query as Record<string, string | undefined>;
 
   const condiciones: SQL[] = [filtroTemporada(egresosTable.temporada, temporadaPedida(req))];

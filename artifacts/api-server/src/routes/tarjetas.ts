@@ -16,6 +16,7 @@ import {
   GetAmonestadosResponse,
   GetSancionesResponse,
 } from "@workspace/api-zod";
+import { requiereSesion, equipoAConsultar } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -37,7 +38,7 @@ function mapTarjeta(row: Record<string, unknown>) {
   };
 }
 
-router.get("/tarjetas", async (req, res): Promise<void> => {
+router.get("/tarjetas", requiereSesion, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   const query = GetTarjetasQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -54,6 +55,13 @@ router.get("/tarjetas", async (req, res): Promise<void> => {
   }
   if (query.data.partidoId != null) {
     conditions.push(sql`t.partido_id = ${query.data.partidoId}`);
+  }
+  // El delegado solo ve las tarjetas de su equipo: se filtra por el equipo
+  // al que pertenecía el jugador el día de la tarjeta, igual que el resto
+  // de este archivo.
+  const equipoAcotado = equipoAConsultar(req.quien!, null);
+  if (equipoAcotado != null) {
+    conditions.push(sql`COALESCE(heq.equipo_id, j.equipo_id) = ${equipoAcotado}`);
   }
   const whereClause =
     conditions.length > 0 ? sql`AND ${sql.join(conditions, sql` AND `)}` : sql``;
@@ -193,7 +201,7 @@ router.delete("/tarjetas/:id", requireAuth, writeAccess.tarjetas, async (req, re
   }
 });
 
-router.get("/amonestados", async (req, res): Promise<void> => {
+router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
   //
@@ -202,6 +210,7 @@ router.get("/amonestados", async (req, res): Promise<void> => {
   // equipo actual: si se transfiere a mitad de torneo, sus tarjetas
   // anteriores se quedan con el equipo viejo (mismo criterio que goleadores
   // y la ficha individual del jugador).
+  const equipoAcotado = equipoAConsultar(req.quien!, null);
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
@@ -231,6 +240,7 @@ router.get("/amonestados", async (req, res): Promise<void> => {
     ) heq ON true
     JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
     WHERE ${filtroTemporadaSql("t.temporada", temporada)}
+      ${equipoAcotado != null ? sql`AND COALESCE(heq.equipo_id, j.equipo_id) = ${equipoAcotado}` : sql``}
     GROUP BY j.id, j.nombre, j.n_carnet, e.id, e.nombre
     HAVING COUNT(CASE WHEN t.tipo = 'roja' OR (t.tipo = 'amarilla' AND t.pagada = false) THEN 1 END) > 0
     ORDER BY rojas DESC, amarillas DESC
@@ -256,8 +266,9 @@ router.get("/amonestados", async (req, res): Promise<void> => {
  * planilla de ese partido. Así, si su equipo juega el fin de semana
  * siguiente y él no está en la planilla, la sanción baja sola de 2 a 1.
  */
-router.get("/sanciones", async (req, res): Promise<void> => {
+router.get("/sanciones", requiereSesion, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
+  const equipoAcotadoSanciones = equipoAConsultar(req.quien!, null);
   // "temporada IS NULL" en ambos puntos = solo el torneo actual: la tarjeta
   // que origina la sanción, y los partidos posteriores que van cumpliendo
   // las fechas. Sin lo segundo, un partido histórico importado se contaría
@@ -280,6 +291,7 @@ router.get("/sanciones", async (req, res): Promise<void> => {
       JOIN equipos   e ON e.id = j.equipo_id
       LEFT JOIN partidos p ON p.id = t.partido_id
       WHERE t.fechas_sancion > 0 AND ${filtroTemporadaSql("t.temporada", temporada)}
+        ${equipoAcotadoSanciones != null ? sql`AND j.equipo_id = ${equipoAcotadoSanciones}` : sql``}
     )
     SELECT
       s.*,

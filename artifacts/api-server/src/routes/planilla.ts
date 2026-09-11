@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { GetPlanillaResponse, SavePlanillaBody, GetPlanillaParams } from "@workspace/api-zod";
+import { requiereSesion } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -80,7 +81,7 @@ async function fechasPendientesPorJugador(
  * Se listan TODOS los jugadores de ambos equipos (no solo los que jugaron),
  * porque la mesa marca sobre la nómina completa.
  */
-router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
+router.get("/partidos/:id/planilla", requiereSesion, async (req, res): Promise<void> => {
   const params = GetPlanillaParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -91,6 +92,13 @@ router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
   const [partido] = await db.select().from(partidosTable).where(eq(partidosTable.id, partidoId));
   if (!partido) {
     res.status(404).json({ error: "Partido not found" });
+    return;
+  }
+  // La planilla lleva la nómina completa de los dos equipos: el delegado
+  // solo puede abrir la de los partidos en los que juega el suyo.
+  const quien = req.quien!;
+  if (!quien.esAdmin && quien.equipoId !== partido.localId && quien.equipoId !== partido.visitanteId) {
+    res.status(404).json({ error: "No encontrado" });
     return;
   }
   const arbitroNombre = partido.arbitroId

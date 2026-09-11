@@ -171,6 +171,64 @@ export interface JugadorHistorialEquipo {
   rojas: number;
 }
 
+export type MiEquipoEquipo = {
+  id: number;
+  nombre: string;
+  /** @nullable */
+  color?: string | null;
+  /** @nullable */
+  delegado?: string | null;
+  /** @nullable */
+  telefono?: string | null;
+};
+
+export interface MiEquipoCuenta {
+  deudaInscripcion: number;
+  pagadoInscripcion: number;
+  saldoInscripcion: number;
+  amarillasSinPagar: number;
+  valorAmarillasSinPagar: number;
+  carnetsSinPagar: number;
+  valorCarnetsSinPagar: number;
+  pagadoTotal: number;
+}
+
+export interface MiEquipoJugador {
+  jugadorId: number;
+  nombre: string;
+  /** @nullable */
+  nCarnet?: number | null;
+  carnetPagado: boolean;
+  partidosJugados: number;
+  goles: number;
+  amarillas: number;
+  rojas: number;
+  amarillasSinPagar: number;
+  fechasPendientes: number;
+}
+
+export interface MiEquipoProximoPartido {
+  partidoId: number;
+  /** @nullable */
+  fecha?: string | null;
+  /** @nullable */
+  hora?: string | null;
+  semana: number;
+  /** @nullable */
+  fase?: string | null;
+  rivalNombre: string;
+  deLocal: boolean;
+  /** @nullable */
+  arbitroNombre?: string | null;
+}
+
+export interface MiEquipo {
+  equipo: MiEquipoEquipo;
+  cuenta: MiEquipoCuenta;
+  plantilla: MiEquipoJugador[];
+  proximoPartido?: MiEquipoProximoPartido | null;
+}
+
 export interface Arbitro {
   id: number;
   nombre: string;
@@ -809,6 +867,13 @@ temporada?: TemporadaParameter;
 };
 
 export type GetJugadoresParams = {
+equipoId?: number;
+};
+
+export type GetMiEquipoParams = {
+/**
+ * Solo para el comité; un delegado siempre ve el suyo.
+ */
 equipoId?: number;
 };
 

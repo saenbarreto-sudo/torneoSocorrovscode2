@@ -355,6 +355,57 @@ export const GetJugadorHistorialResponse = zod.array(GetJugadorHistorialResponse
 
 
 /**
+ * La pantalla de inicio del delegado: su plantilla con lo de cada jugador, su cuenta con el torneo y su próximo partido. El equipo sale del usuario de la sesión, así que un delegado nunca puede pedir el de otro. El comité puede pasar ?equipoId= para ver lo mismo que ve un delegado.
+ * @summary Everything a team delegate needs about their own team
+ */
+export const GetMiEquipoQueryParams = zod.object({
+  "equipoId": zod.coerce.number().optional().describe('Solo para el comité; un delegado siempre ve el suyo.')
+})
+
+export const GetMiEquipoResponse = zod.object({
+  "equipo": zod.object({
+  "id": zod.number(),
+  "nombre": zod.string(),
+  "color": zod.string().nullish(),
+  "delegado": zod.string().nullish(),
+  "telefono": zod.string().nullish()
+}),
+  "cuenta": zod.object({
+  "deudaInscripcion": zod.number(),
+  "pagadoInscripcion": zod.number(),
+  "saldoInscripcion": zod.number(),
+  "amarillasSinPagar": zod.number(),
+  "valorAmarillasSinPagar": zod.number(),
+  "carnetsSinPagar": zod.number(),
+  "valorCarnetsSinPagar": zod.number(),
+  "pagadoTotal": zod.number()
+}),
+  "plantilla": zod.array(zod.object({
+  "jugadorId": zod.number(),
+  "nombre": zod.string(),
+  "nCarnet": zod.number().nullish(),
+  "carnetPagado": zod.boolean(),
+  "partidosJugados": zod.number(),
+  "goles": zod.number(),
+  "amarillas": zod.number(),
+  "rojas": zod.number(),
+  "amarillasSinPagar": zod.number(),
+  "fechasPendientes": zod.number()
+})),
+  "proximoPartido": zod.union([zod.object({
+  "partidoId": zod.number(),
+  "fecha": zod.string().nullish(),
+  "hora": zod.string().nullish(),
+  "semana": zod.number(),
+  "fase": zod.string().nullish(),
+  "rivalNombre": zod.string(),
+  "deLocal": zod.boolean(),
+  "arbitroNombre": zod.string().nullish()
+}),zod.null()]).optional()
+})
+
+
+/**
  * @summary List referees (roster)
  */
 export const GetArbitrosQueryParams = zod.object({

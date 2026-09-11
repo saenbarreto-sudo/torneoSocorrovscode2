@@ -14,6 +14,8 @@ tags:
     description: Team operations
   - name: arbitros
     description: Referee roster and statistics
+  - name: mi-equipo
+    description: A delegate's own team view
   - name: jugadores
     description: Player operations
   - name: partidos
@@ -287,6 +289,37 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/JugadorHistorialEquipo"
+
+  # ── MI EQUIPO ──────────────────────────────────────────────────────────────
+  /mi-equipo:
+    get:
+      operationId: getMiEquipo
+      tags: [mi-equipo]
+      summary: Everything a team delegate needs about their own team
+      description: >
+        La pantalla de inicio del delegado: su plantilla con lo de cada
+        jugador, su cuenta con el torneo y su próximo partido. El equipo sale
+        del usuario de la sesión, así que un delegado nunca puede pedir el de
+        otro. El comité puede pasar ?equipoId= para ver lo mismo que ve un
+        delegado.
+      parameters:
+        - name: equipoId
+          in: query
+          required: false
+          description: Solo para el comité; un delegado siempre ve el suyo.
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Team summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MiEquipo"
+        "403":
+          description: The delegate has no team assigned
+        "404":
+          description: Not found
 
   # ── ARBITROS ───────────────────────────────────────────────────────────────
   /arbitros:
@@ -1986,6 +2019,107 @@ components:
         omitidos:
           type: number
           description: Partidos que ya existían con la misma semana y los mismos equipos.
+
+    # ── MI EQUIPO ────────────────────────────────────────────────────────────
+    MiEquipoJugador:
+      type: object
+      required: [jugadorId, nombre, carnetPagado, partidosJugados, goles, amarillas, rojas, amarillasSinPagar, fechasPendientes]
+      properties:
+        jugadorId:
+          type: number
+        nombre:
+          type: string
+        nCarnet:
+          type: ["number", "null"]
+        carnetPagado:
+          type: boolean
+        partidosJugados:
+          type: number
+        goles:
+          type: number
+        amarillas:
+          type: number
+        rojas:
+          type: number
+        amarillasSinPagar:
+          type: number
+        # Fechas de sanción que todavía no cumple. Mayor que cero = no se
+        # puede alinear en el próximo partido.
+        fechasPendientes:
+          type: number
+
+    MiEquipoCuenta:
+      type: object
+      required:
+        [deudaInscripcion, pagadoInscripcion, saldoInscripcion, amarillasSinPagar,
+         valorAmarillasSinPagar, carnetsSinPagar, valorCarnetsSinPagar, pagadoTotal]
+      properties:
+        deudaInscripcion:
+          type: number
+        pagadoInscripcion:
+          type: number
+        saldoInscripcion:
+          type: number
+        amarillasSinPagar:
+          type: number
+        valorAmarillasSinPagar:
+          type: number
+        carnetsSinPagar:
+          type: number
+        valorCarnetsSinPagar:
+          type: number
+        pagadoTotal:
+          type: number
+
+    MiEquipoProximoPartido:
+      type: object
+      required: [partidoId, semana, rivalNombre, deLocal]
+      properties:
+        partidoId:
+          type: number
+        fecha:
+          type: ["string", "null"]
+        hora:
+          type: ["string", "null"]
+        semana:
+          type: number
+        fase:
+          type: ["string", "null"]
+        rivalNombre:
+          type: string
+        deLocal:
+          type: boolean
+        arbitroNombre:
+          type: ["string", "null"]
+
+    MiEquipo:
+      type: object
+      required: [equipo, cuenta, plantilla]
+      properties:
+        equipo:
+          type: object
+          required: [id, nombre]
+          properties:
+            id:
+              type: number
+            nombre:
+              type: string
+            color:
+              type: ["string", "null"]
+            delegado:
+              type: ["string", "null"]
+            telefono:
+              type: ["string", "null"]
+        cuenta:
+          $ref: "#/components/schemas/MiEquipoCuenta"
+        plantilla:
+          type: array
+          items:
+            $ref: "#/components/schemas/MiEquipoJugador"
+        proximoPartido:
+          oneOf:
+            - $ref: "#/components/schemas/MiEquipoProximoPartido"
+            - type: "null"
 
     # ── ARBITROS ─────────────────────────────────────────────────────────────
     Arbitro:

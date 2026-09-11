@@ -18,6 +18,9 @@ import Jugadores from '@/pages/jugadores';
 import FichaJugador from '@/pages/ficha-jugador';
 import Arbitros from '@/pages/arbitros';
 import FichaArbitro from '@/pages/ficha-arbitro';
+import MiEquipo from '@/pages/mi-equipo';
+import MisPartidos from '@/pages/mis-partidos';
+import MiCuenta from '@/pages/mi-cuenta';
 import Partidos from '@/pages/partidos';
 import Amonestados from '@/pages/amonestados';
 import Tesoreria from '@/pages/tesoreria';
@@ -47,10 +50,15 @@ function Protected({ path, component: Component }: { path: string; component: Co
 }
 
 function Router() {
+  const { role } = useAuth();
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        {/* El delegado arranca en su equipo, no en el tablero del torneo. */}
+        <Route path="/">{() => (role === 'delegado' ? <Redirect to="/mi-equipo" replace /> : <Dashboard />)}</Route>
+        <Route path="/mi-equipo">{() => <Protected path="/mi-equipo" component={MiEquipo} />}</Route>
+        <Route path="/mis-partidos">{() => <Protected path="/mis-partidos" component={MisPartidos} />}</Route>
+        <Route path="/mi-cuenta">{() => <Protected path="/mi-cuenta" component={MiCuenta} />}</Route>
         <Route path="/tablas">{() => <Protected path="/tablas" component={TablasTorneo} />}</Route>
         {/* Posiciones, Goleadores y Valla eran tres páginas sueltas: ahora
             se ven juntas en "/tablas", pero se dejan redirigiendo para no

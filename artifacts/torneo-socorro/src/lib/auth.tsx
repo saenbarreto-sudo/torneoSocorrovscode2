@@ -24,15 +24,23 @@ export interface AuthUser {
 /**
  * Rutas visibles/permitidas por rol. "*" = todas.
  *
- * "/pagos", "/pagos/resumen" y "/egresos" ya no son páginas propias (son
- * las tres pestañas de "/tesoreria"), pero se mantienen acá porque siguen
- * siendo el permiso de cada pestaña: el delegado entra a Tesorería y solo
- * ve el estado de cuenta, no los recibos ni los egresos del torneo.
+ * El delegado tiene sus propias páginas ("/mi-equipo", "/mis-partidos",
+ * "/mi-cuenta"), no una versión recortada de las del comité: todo lo que ve
+ * es de su equipo. Lo único que comparte con el resto es "/tablas", que es
+ * lo mismo que está en la cartelera.
+ *
+ * El invitado ve solo la cartelera. Ni la base de jugadores (que lleva las
+ * cédulas de todo el torneo) ni nada de plata.
+ *
+ * Ojo: esto decide qué se MUESTRA. Lo que de verdad protege la información
+ * está en el servidor (artifacts/api-server/src/lib/alcance.ts): aunque
+ * alguien escriba la dirección a mano, la API no le entrega lo que no le
+ * corresponde.
  */
 const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
   admin: "*",
-  delegado: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/arbitros", "/goleadores", "/vallas", "/amonestados", "/tesoreria", "/pagos/resumen"],
-  publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/jugadores", "/arbitros", "/goleadores", "/vallas", "/amonestados"],
+  delegado: ["/", "/mi-equipo", "/mis-partidos", "/mi-cuenta", "/tablas", "/posiciones", "/goleadores", "/vallas"],
+  publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/goleadores", "/vallas"],
 }
 
 export function canAccessRoute(role: Role | null, path: string): boolean {

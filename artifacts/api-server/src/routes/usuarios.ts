@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, usuariosTable, ROLES_USUARIO } from "@workspace/db";
 import { hashPassword } from "../lib/password";
 import { requireAuth, requireRole } from "../lib/require-auth";
+import { soloComite } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -22,7 +23,7 @@ function toPublic(u: typeof usuariosTable.$inferSelect) {
 // Comité Organizador (admin). Solo esa cuenta puede crear/editar usuarios.
 router.use("/usuarios", requireAuth, requireRole("admin"));
 
-router.get("/usuarios", async (_req, res): Promise<void> => {
+router.get("/usuarios", soloComite, async (_req, res): Promise<void> => {
   const usuarios = await db.select().from(usuariosTable).orderBy(usuariosTable.nombre);
   res.json(usuarios.map(toPublic));
 });

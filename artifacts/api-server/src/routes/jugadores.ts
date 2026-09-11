@@ -3,6 +3,7 @@ import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import { db, jugadoresTable, equiposTable, jugadorEquipoHistorialTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
+import { requiereSesion, equipoAConsultar, esDeOtroEquipo } from "../lib/alcance";
 import {
   CreateJugadorBody,
   CreateJugadorResponse,
@@ -144,12 +145,15 @@ function formatJugador(j: typeof jugadoresTable.$inferSelect & { equipoNombre: s
   };
 }
 
-router.get("/jugadores", async (req, res): Promise<void> => {
+router.get("/jugadores", requiereSesion, async (req, res): Promise<void> => {
   const query = GetJugadoresQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
     return;
   }
+  // Un delegado solo ve su plantilla: el equipo sale de su usuario, no de
+  // la URL, así que cambiar el ?equipoId= no lo saca de su equipo.
+  const equipoId = equipoAConsultar(req.quien!, query.data.equipoId);
 
   const rows = await db
     .select({
@@ -174,7 +178,7 @@ router.get("/jugadores", async (req, res): Promise<void> => {
     })
     .from(jugadoresTable)
     .innerJoin(equiposTable, eq(jugadoresTable.equipoId, equiposTable.id))
-    .where(query.data.equipoId != null ? eq(jugadoresTable.equipoId, query.data.equipoId) : undefined)
+    .where(equipoId != null ? eq(jugadoresTable.equipoId, equipoId) : undefined)
     // Por número de carné, que es el orden en el que se lleva la base del
     // torneo. Los que todavía no tienen carné van al final, y entre iguales
     // se desempata por nombre.
@@ -216,7 +220,7 @@ router.post("/jugadores", requireAuth, writeAccess.jugadores, async (req, res): 
   }));
 });
 
-router.get("/jugadores/:id", async (req, res): Promise<void> => {
+router.get("/jugadores/:id", requiereSesion, async (req, res): Promise<void> => {
   const params = GetJugadorParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -248,6 +252,9 @@ router.get("/jugadores/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Jugador not found" });
     return;
   }
+  // La ficha lleva cédula, foto, fecha de nacimiento y carnetización: un
+  // delegado solo puede abrir la de los jugadores de su propio equipo.
+  if (esDeOtroEquipo(req.quien!, row.equipoId, res)) return;
   const ultimoEquipo = await obtenerUltimoEquipo(row.id);
   res.json(
     GetJugadorResponse.parse({
@@ -315,7 +322,7 @@ router.delete("/jugadores/:id", requireAuth, writeAccess.jugadores, async (req, 
   }
 });
 
-router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
+router.get("/jugadores/:id/historial", requiereSesion, async (req, res): Promise<void> => {
   const params = GetJugadorHistorialParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -328,6 +335,7 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Jugador not found" });
     return;
   }
+  if (esDeOtroEquipo(req.quien!, jugador.equipoId, res)) return;
 
   let stints = await db
     .select({

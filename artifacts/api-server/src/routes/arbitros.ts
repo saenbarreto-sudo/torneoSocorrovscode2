@@ -16,6 +16,7 @@ import {
   GetFichaArbitroResponse,
   GetEstadisticasArbitrosResponse,
 } from "@workspace/api-zod";
+import { soloComite } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -26,7 +27,7 @@ const router: IRouter = Router();
  * (egresos.partido_id) — así no hay que duplicar el id del árbitro ahí.
  */
 
-router.get("/arbitros", async (req, res): Promise<void> => {
+router.get("/arbitros", soloComite, async (req, res): Promise<void> => {
   const query = GetArbitrosQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -81,7 +82,7 @@ router.post("/arbitros", requireAuth, writeAccess.arbitros, async (req, res): Pr
  * "estadisticas" como si fuera un id numérico y nunca llegaría acá (mismo
  * problema que ya se resolvió con /mesas/resumen).
  */
-router.get("/arbitros/estadisticas", async (req, res): Promise<void> => {
+router.get("/arbitros/estadisticas", soloComite, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
 
   const rows = await db.execute(sql`
@@ -197,7 +198,7 @@ router.delete("/arbitros/:id", requireAuth, writeAccess.arbitros, async (req, re
   res.sendStatus(204);
 });
 
-router.get("/arbitros/:id/estadisticas", async (req, res): Promise<void> => {
+router.get("/arbitros/:id/estadisticas", soloComite, async (req, res): Promise<void> => {
   const params = GetFichaArbitroParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

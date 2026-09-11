@@ -15,6 +15,7 @@ import {
   GetPagosResumenEquiposResponse,
   GetPagosResumenEquiposQueryParams,
 } from "@workspace/api-zod";
+import { requiereSesion, equipoAConsultar } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -64,7 +65,7 @@ function mapPago(row: Record<string, unknown>) {
   };
 }
 
-router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
+router.get("/pagos/resumen-equipos", requiereSesion, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   const query = GetPagosResumenEquiposQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -79,6 +80,9 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
   // tarjetas, FOFI) no hay una meta contra la cual comparar: solo se puede
   // mostrar cuánto se ha pagado, y deuda/saldo/porcentaje quedan en 0.
   const esInscripcion = concepto === "Inscripcion";
+  // El delegado ve su renglón y nada más: lo que deben los otros equipos no
+  // es asunto suyo.
+  const equipoAcotado = equipoAConsultar(req.quien!, null);
 
   const rows = await db.execute(sql`
     SELECT
@@ -100,6 +104,7 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
     FROM equipos e
     LEFT JOIN pagos p ON p.equipo_id = e.id AND ${filtroTemporadaSql("p.temporada", temporada)}
     WHERE e.activo = true
+      ${equipoAcotado != null ? sql`AND e.id = ${equipoAcotado}` : sql``}
     GROUP BY e.id, e.nombre, e.deuda_inscripcion
     ORDER BY pagado DESC
   `);
@@ -114,7 +119,7 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
   res.json(GetPagosResumenEquiposResponse.parse(data));
 });
 
-router.get("/pagos", async (req, res): Promise<void> => {
+router.get("/pagos", requiereSesion, async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   const query = GetPagosQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -123,8 +128,11 @@ router.get("/pagos", async (req, res): Promise<void> => {
   }
 
   const conditions: SQL[] = [];
-  if (query.data.equipoId != null) {
-    conditions.push(sql`p.equipo_id = ${query.data.equipoId}`);
+  // Igual que en jugadores: para el delegado el equipo sale de su usuario,
+  // así que tocar el ?equipoId= de la URL no lo saca de su equipo.
+  const equipoDeLosRecibos = equipoAConsultar(req.quien!, query.data.equipoId);
+  if (equipoDeLosRecibos != null) {
+    conditions.push(sql`p.equipo_id = ${equipoDeLosRecibos}`);
   }
   if (query.data.concepto) {
     conditions.push(sql`p.concepto = ${query.data.concepto}`);

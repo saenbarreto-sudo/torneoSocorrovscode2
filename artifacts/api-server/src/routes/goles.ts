@@ -9,6 +9,7 @@ import {
   GetGolesQueryParams,
   DeleteGolParams,
 } from "@workspace/api-zod";
+import { requiereSesion } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ function mapGol(row: Record<string, unknown>) {
 
 // Lista goles, opcionalmente filtrados por partido (se usa para mostrar y
 // editar los goleadores de un partido puntual desde "Partidos y Resultados").
-router.get("/goles", async (req, res): Promise<void> => {
+router.get("/goles", requiereSesion, async (req, res): Promise<void> => {
   const query = GetGolesQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });

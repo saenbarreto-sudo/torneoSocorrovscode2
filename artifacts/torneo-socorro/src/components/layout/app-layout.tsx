@@ -41,6 +41,26 @@ const navItems = [
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ]
 
+/**
+ * El delegado no entra al menú del comité con botones escondidos: entra a
+ * su propio menú, donde todo gira alrededor de su equipo. Lo único que ve
+ * del resto del torneo es lo que igual está en la cartelera (posiciones,
+ * goleadores, resultados).
+ */
+const navDelegado = [
+  { href: "/mi-equipo", label: "Mi equipo", icon: ShieldAlert },
+  { href: "/mis-partidos", label: "Mis partidos", icon: Swords },
+  { href: "/mi-cuenta", label: "Mi cuenta", icon: Landmark },
+  { href: "/tablas", label: "Torneo", icon: Trophy },
+]
+
+/** El invitado solo ve la cartelera: nada de personas ni de plata. */
+const navPublico = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/tablas", label: "Tablas del torneo", icon: Trophy },
+  { href: "/partidos", label: "Partidos", icon: Swords },
+]
+
 function NavLinks({
   items,
   location,
@@ -80,7 +100,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { role, logout } = useAuth()
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
 
-  const visibleNavItems = navItems.filter((item) => canAccessRoute(role, item.href))
+  const menuDelRol = role === "delegado" ? navDelegado : role === "publico" ? navPublico : navItems
+  const visibleNavItems = menuDelRol.filter((item) => canAccessRoute(role, item.href))
 
   // Cierra el menú móvil automáticamente al cambiar de página
   React.useEffect(() => {
