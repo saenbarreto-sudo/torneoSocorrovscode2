@@ -54,7 +54,7 @@ function CajaCruce({ partido, numero }: { partido: Partido; numero: number }) {
     gana: boolean,
   ) => (
     <div className="flex items-stretch border-t border-[hsl(273_20%_88%)] first:border-t-0">
-      <div className={`flex-1 px-2 py-1 text-[11px] leading-tight truncate ${gana ? 'font-bold' : ''}`}>{nombre}</div>
+      <div className={`flex-1 min-w-0 px-2 py-1 text-[11px] leading-tight wrap-break-word ${gana ? 'font-bold' : ''}`}>{nombre}</div>
       <div className="w-7 shrink-0 text-center text-[11px] font-mono border-l border-[hsl(273_20%_88%)] py-1">
         {partido.jugado ? (goles ?? 0) : ''}
       </div>
@@ -108,7 +108,7 @@ export function CuadroFinal({
                 {grupos.map((g, i) => {
                   const color = COLORES_GRUPO[i % COLORES_GRUPO.length];
                   return (
-                    <div key={g.nombre} className="border border-[hsl(273_20%_75%)] rounded overflow-hidden w-32">
+                    <div key={g.nombre} className="border border-[hsl(273_20%_75%)] rounded overflow-hidden w-40">
                       <div
                         className="px-2 py-1 text-[11px] font-bold text-center text-white"
                         style={{ background: color.barra }}
@@ -118,11 +118,11 @@ export function CuadroFinal({
                       {g.equipos.map((e) => (
                         <div
                           key={e.equipoId}
-                          className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] border-t border-[hsl(273_20%_88%)]"
+                          className="flex items-start gap-1 px-1.5 py-0.5 text-[10px] leading-tight border-t border-[hsl(273_20%_88%)]"
                           style={{ background: color.fondo }}
                         >
                           <span className="w-3 shrink-0 font-mono text-[hsl(273_15%_40%)]">{e.posicion}</span>
-                          <span className="truncate">{e.equipoNombre}</span>
+                          <span className="min-w-0 wrap-break-word">{e.equipoNombre}</span>
                         </div>
                       ))}
                       {g.equipos.length === 0 && (
