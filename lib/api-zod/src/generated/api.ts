@@ -615,6 +615,56 @@ export const CreateFasesLoteResponse = zod.object({
 
 
 /**
+ * @summary Closed tournaments, newest first
+ */
+export const GetTemporadasResponseItem = zod.object({
+  "nombre": zod.string(),
+  "cerradaAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetTemporadasResponse = zod.array(GetTemporadasResponseItem)
+
+
+/**
+ * Se consulta ANTES de cerrar, para poder mostrarle al usuario exactamente qué se va a sellar en vez de pedirle que confíe a ciegas en un botón que toca todo el torneo.
+ * @summary What closing the current tournament would stamp (admin only)
+ */
+export const GetResumenCierreResponse = zod.object({
+  "nombreSugerido": zod.string(),
+  "partidos": zod.number(),
+  "goles": zod.number(),
+  "tarjetas": zod.number(),
+  "pagos": zod.number(),
+  "egresos": zod.number(),
+  "mesas": zod.number(),
+  "programacion": zod.number(),
+  "fases": zod.number(),
+  "jugadores": zod.number()
+})
+
+
+/**
+ * @summary Close the current tournament, stamping everything with its season (admin only)
+ */
+export const CerrarTemporadaBody = zod.object({
+  "nombre": zod.string().describe('Nombre del torneo que se cierra, con la forma \"2026-2027\".')
+})
+
+export const CerrarTemporadaResponse = zod.object({
+  "nombre": zod.string(),
+  "partidos": zod.number().optional(),
+  "goles": zod.number().optional(),
+  "tarjetas": zod.number().optional(),
+  "pagos": zod.number().optional(),
+  "egresos": zod.number().optional(),
+  "mesas": zod.number().optional(),
+  "programacion": zod.number().optional(),
+  "fases": zod.number().optional(),
+  "jugadoresConFoto": zod.number().optional()
+})
+
+
+/**
  * @summary Activity log — who created, edited, deleted or signed in (admin only)
  */
 export const GetEventosQueryParams = zod.object({

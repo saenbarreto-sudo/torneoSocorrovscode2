@@ -9,6 +9,11 @@ export const programacionTable = pgTable("programacion", {
   fechaDesde: date("fecha_desde", { mode: "string" }),
   fechaHasta: date("fecha_hasta", { mode: "string" }),
   esFestivo: boolean("es_festivo").notNull().default(false),
+  // Sello del torneo al que pertenece: NULL = torneo en curso, un valor
+  // tipo "2026-2027" = torneo ya cerrado (ver schema/temporadas.ts). Sin
+  // esto, las jornadas del torneo pasado seguirían saliendo en el
+  // cronograma del nuevo.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

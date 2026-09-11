@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Settings } from 'lucide-react';
+import { CerrarTorneo } from '@/components/cerrar-torneo';
 import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -350,6 +351,8 @@ export default function Ajustes() {
         registradas conservan el valor con el que se crearon. Solo se usa el valor nuevo desde ese
         momento en adelante.
       </p>
+
+      <CerrarTorneo />
     </div>
   );
 }

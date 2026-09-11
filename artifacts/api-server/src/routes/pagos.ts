@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { db, pagosTable, equiposTable, tarjetasTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import {
@@ -39,7 +39,9 @@ async function siguienteCodigoRecibo(concepto: string): Promise<string> {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(pagosTable)
-    .where(eq(pagosTable.concepto, concepto));
+    // Solo el torneo en curso: la numeración de recibos arranca de nuevo
+    // en cada torneo (ver schema/temporadas.ts).
+    .where(and(eq(pagosTable.concepto, concepto), isNull(pagosTable.temporada)));
   const siguiente = Number(count ?? 0) + 1;
   return `${prefijo}${String(siguiente).padStart(3, "0")}`;
 }
@@ -94,7 +96,7 @@ router.get("/pagos/resumen-equipos", async (req, res): Promise<void> => {
         : sql`0`
       } as porcentaje_pagado
     FROM equipos e
-    LEFT JOIN pagos p ON p.equipo_id = e.id
+    LEFT JOIN pagos p ON p.equipo_id = e.id AND p.temporada IS NULL
     WHERE e.activo = true
     GROUP BY e.id, e.nombre, e.deuda_inscripcion
     ORDER BY pagado DESC
@@ -131,7 +133,7 @@ router.get("/pagos", async (req, res): Promise<void> => {
     SELECT p.*, e.nombre as equipo_nombre
     FROM pagos p
     JOIN equipos e ON e.id = p.equipo_id
-    WHERE 1=1
+    WHERE p.temporada IS NULL
     ${whereClause}
     ORDER BY p.created_at DESC
   `);

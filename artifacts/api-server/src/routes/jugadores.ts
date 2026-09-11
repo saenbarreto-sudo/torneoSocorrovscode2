@@ -375,16 +375,18 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
   // Partidos jugados, goles y tarjetas, atribuidos al equipo Y a la
   // temporada de ese partido/gol/tarjeta (NULL = torneo actual, ver
   // schema/partidos.ts). El equipo se resuelve así:
-  //  - Temporada pasada (importada): jugador_equipo_temporada, un mapeo
-  //    directo (jugador, temporada) → equipo sin fechas de por medio. Hace
-  //    falta porque las fechas reales de una temporada y la siguiente a
-  //    veces se traslapan un poco en los Excel de origen (ej. la 2022-2023
-  //    sigue hasta julio 2023 mientras la 2023-2024 ya arrancó en
-  //    febrero), y con un rango de fechas un partido podía quedar
-  //    atribuido al equipo equivocado.
-  //  - Torneo actual (temporada NULL): jugador_equipo_historial por rango
-  //    de fecha, como antes — ahí sí puede haber un traspaso a mitad de
-  //    temporada que solo una fecha exacta puede resolver.
+  //  - Si hay foto de la temporada (jugador_equipo_temporada), manda esa:
+  //    es un mapeo directo (jugador, temporada) → equipo, sin fechas de por
+  //    medio. Hace falta porque las fechas reales de una temporada y la
+  //    siguiente a veces se traslapan en los Excel de origen (ej. la
+  //    2022-2023 sigue hasta julio 2023 mientras la 2023-2024 ya arrancó en
+  //    febrero), y ahí un rango de fechas atribuía mal.
+  //  - Si no hay foto, se resuelve por rango de fecha con
+  //    jugador_equipo_historial. Ese es el caso del torneo en curso y
+  //    TAMBIÉN el de un jugador traspasado a mitad de un torneo ya cerrado:
+  //    al cerrar se le deja a propósito sin foto (ver routes/temporadas.ts),
+  //    justamente para que cada partido caiga en el equipo que le
+  //    corresponde por fecha en vez de todos en el último.
   const partidosPorEquipoTemporada = await db.execute<{ equipoId: number; equipoNombre: string; temporada: string | null; total: number; fechaMin: string | null; fechaMax: string | null }>(sql`
     SELECT
       COALESCE(jet.equipo_id, heq.equipo_id) AS "equipoId",
@@ -397,7 +399,7 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
     JOIN partidos p ON p.id = pl.partido_id
     LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = pl.jugador_id AND jet.temporada = p.temporada
     LEFT JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = pl.jugador_id AND p.temporada IS NULL
+      ON heq.jugador_id = pl.jugador_id
      AND heq.fecha_inicio <= COALESCE(p.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, CURRENT_DATE))
     JOIN equipos e ON e.id = COALESCE(jet.equipo_id, heq.equipo_id)
@@ -411,7 +413,7 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
     LEFT JOIN partidos p ON p.id = g.partido_id
     LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = g.jugador_id AND jet.temporada = g.temporada
     LEFT JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = g.jugador_id AND g.temporada IS NULL
+      ON heq.jugador_id = g.jugador_id
      AND heq.fecha_inicio <= COALESCE(p.fecha, g.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, g.fecha, CURRENT_DATE))
     WHERE g.jugador_id = ${jugadorId} AND g.propio = false AND COALESCE(jet.equipo_id, heq.equipo_id) IS NOT NULL
@@ -424,7 +426,7 @@ router.get("/jugadores/:id/historial", async (req, res): Promise<void> => {
     LEFT JOIN partidos p ON p.id = t.partido_id
     LEFT JOIN jugador_equipo_temporada jet ON jet.jugador_id = t.jugador_id AND jet.temporada = t.temporada
     LEFT JOIN jugador_equipo_historial heq
-      ON heq.jugador_id = t.jugador_id AND t.temporada IS NULL
+      ON heq.jugador_id = t.jugador_id
      AND heq.fecha_inicio <= COALESCE(p.fecha, t.fecha, CURRENT_DATE)
      AND (heq.fecha_fin IS NULL OR heq.fecha_fin >= COALESCE(p.fecha, t.fecha, CURRENT_DATE))
     WHERE t.jugador_id = ${jugadorId} AND COALESCE(jet.equipo_id, heq.equipo_id) IS NOT NULL

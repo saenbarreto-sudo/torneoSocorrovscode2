@@ -16,7 +16,11 @@ import {
 const router: IRouter = Router();
 
 router.get("/programacion", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(programacionTable).orderBy(programacionTable.semana);
+  const rows = await db
+    .select()
+    .from(programacionTable)
+    .where(isNull(programacionTable.temporada))
+    .orderBy(programacionTable.semana);
   res.json(GetProgramacionResponse.parse(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() }))));
 });
 

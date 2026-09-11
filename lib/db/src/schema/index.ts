@@ -14,3 +14,4 @@ export * from "./ajustes";
 export * from "./fases";
 export * from "./mesas";
 export * from "./eventos";
+export * from "./temporadas";

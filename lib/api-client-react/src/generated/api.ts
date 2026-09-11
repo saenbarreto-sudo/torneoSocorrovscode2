@@ -23,6 +23,8 @@ import type {
   Ajustes,
   AjustesUpdate,
   AmonestadoResumen,
+  CerrarTemporadaInput,
+  CierreResultado,
   DashboardResumen,
   DeleteSemanaFechaResult,
   Equipo,
@@ -59,12 +61,14 @@ import type {
   PartidosLoteInput,
   PartidosLoteResult,
   PosicionEquipo,
+  ResumenCierre,
   SemanaFecha,
   SemanaFechaInput,
   SemanaFechaUpdate,
   Tarjeta,
   TarjetaInput,
-  TarjetaUpdate
+  TarjetaUpdate,
+  Temporada
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1746,6 +1750,232 @@ export const useCreateFasesLote = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateFasesLoteMutationOptions(options));
+    }
+
+export const getGetTemporadasUrl = () => {
+
+
+
+
+  return `/api/temporadas`
+}
+
+/**
+ * @summary Closed tournaments, newest first
+ */
+export const getTemporadas = async ( options?: Parameters<typeof customFetch>[1]): Promise<Temporada[]> => {
+
+  return customFetch<Temporada[]>(getGetTemporadasUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemporadasQueryKey = () => {
+    return [
+    `/api/temporadas`
+    ] as const;
+    }
+
+
+export const getGetTemporadasQueryOptions = <TData = Awaited<ReturnType<typeof getTemporadas>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemporadas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemporadasQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemporadas>>> = ({ signal }) => getTemporadas({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemporadas>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemporadasQueryResult = NonNullable<Awaited<ReturnType<typeof getTemporadas>>>
+export type GetTemporadasQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Closed tournaments, newest first
+ */
+
+export function useGetTemporadas<TData = Awaited<ReturnType<typeof getTemporadas>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemporadas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemporadasQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetResumenCierreUrl = () => {
+
+
+
+
+  return `/api/temporadas/resumen-cierre`
+}
+
+/**
+ * Se consulta ANTES de cerrar, para poder mostrarle al usuario exactamente qué se va a sellar en vez de pedirle que confíe a ciegas en un botón que toca todo el torneo.
+ * @summary What closing the current tournament would stamp (admin only)
+ */
+export const getResumenCierre = async ( options?: Parameters<typeof customFetch>[1]): Promise<ResumenCierre> => {
+
+  return customFetch<ResumenCierre>(getGetResumenCierreUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResumenCierreQueryKey = () => {
+    return [
+    `/api/temporadas/resumen-cierre`
+    ] as const;
+    }
+
+
+export const getGetResumenCierreQueryOptions = <TData = Awaited<ReturnType<typeof getResumenCierre>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumenCierre>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResumenCierreQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResumenCierre>>> = ({ signal }) => getResumenCierre({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResumenCierre>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResumenCierreQueryResult = NonNullable<Awaited<ReturnType<typeof getResumenCierre>>>
+export type GetResumenCierreQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary What closing the current tournament would stamp (admin only)
+ */
+
+export function useGetResumenCierre<TData = Awaited<ReturnType<typeof getResumenCierre>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumenCierre>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResumenCierreQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCerrarTemporadaUrl = () => {
+
+
+
+
+  return `/api/temporadas/cerrar`
+}
+
+/**
+ * @summary Close the current tournament, stamping everything with its season (admin only)
+ */
+export const cerrarTemporada = async (cerrarTemporadaInput: CerrarTemporadaInput, options?: Parameters<typeof customFetch>[1]): Promise<CierreResultado> => {
+
+  return customFetch<CierreResultado>(getCerrarTemporadaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cerrarTemporadaInput)
+  }
+);}
+
+
+
+
+
+export const getCerrarTemporadaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cerrarTemporada>>, TError,{data: BodyType<CerrarTemporadaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cerrarTemporada>>, TError,{data: BodyType<CerrarTemporadaInput>}, TContext> => {
+
+const mutationKey = ['cerrarTemporada'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cerrarTemporada>>, {data: BodyType<CerrarTemporadaInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  cerrarTemporada(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CerrarTemporadaMutationResult = NonNullable<Awaited<ReturnType<typeof cerrarTemporada>>>
+    export type CerrarTemporadaMutationBody = BodyType<CerrarTemporadaInput>
+    export type CerrarTemporadaMutationError = ErrorType<void>
+
+    /**
+ * @summary Close the current tournament, stamping everything with its season (admin only)
+ */
+export const useCerrarTemporada = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cerrarTemporada>>, TError,{data: BodyType<CerrarTemporadaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cerrarTemporada>>,
+        TError,
+        {data: BodyType<CerrarTemporadaInput>},
+        TContext
+      > => {
+      return useMutation(getCerrarTemporadaMutationOptions(options));
     }
 
 export const getGetEventosUrl = (params?: GetEventosParams,) => {

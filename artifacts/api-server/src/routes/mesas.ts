@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, inArray, isNull } from "drizzle-orm";
 import { db, mesasTable, pagosTable, egresosTable, equiposTable, ESTADOS_MESA } from "@workspace/db";
 import type { EstadoMesa } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
@@ -48,7 +48,10 @@ function mapMesa(
 
 /** El cuadre completo de un día, tal como lo consume la pantalla. */
 async function detalleDeFecha(fecha: string) {
-  const [mesa] = await db.select().from(mesasTable).where(eq(mesasTable.fecha, fecha));
+  const [mesa] = await db
+    .select()
+    .from(mesasTable)
+    .where(and(eq(mesasTable.fecha, fecha), isNull(mesasTable.temporada)));
   if (!mesa) {
     return { fecha, mesa: null, ingresos: [], egresos: [], totalIngresos: 0, totalEgresos: 0, saldo: 0 };
   }
@@ -84,7 +87,11 @@ async function detalleDeFecha(fecha: string) {
 }
 
 router.get("/mesas", requireAuth, async (_req, res): Promise<void> => {
-  const mesas = await db.select().from(mesasTable).orderBy(desc(mesasTable.fecha));
+  const mesas = await db
+    .select()
+    .from(mesasTable)
+    .where(isNull(mesasTable.temporada))
+    .orderBy(desc(mesasTable.fecha));
   const resultado = [];
   for (const mesa of mesas) {
     const { totalIngresos, totalEgresos, saldo } = await totalesDeMesa(mesa.id);
@@ -156,7 +163,10 @@ router.put("/mesas/:fecha", requireAuth, writeAccess.pagos, async (req, res): Pr
     return;
   }
 
-  const [existente] = await db.select().from(mesasTable).where(eq(mesasTable.fecha, fecha));
+  const [existente] = await db
+    .select()
+    .from(mesasTable)
+    .where(and(eq(mesasTable.fecha, fecha), isNull(mesasTable.temporada)));
   if (existente?.estado === "cerrada") {
     res.status(409).json({ error: "Esta mesa ya está cerrada. Ábrela de nuevo si necesitas corregirla." });
     return;

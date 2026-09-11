@@ -19,6 +19,11 @@ export const egresosTable = pgTable("egresos", {
   // Si este gasto salió de la mesa de un día de juego (árbitro, cal,
   // balones, ayuda a los trabajadores), queda enlazado a esa mesa.
   mesaId: integer("mesa_id").references(() => mesasTable.id, { onDelete: "set null" }),
+  // Sello del torneo al que pertenece: NULL = torneo en curso, un valor
+  // tipo "2026-2027" = torneo ya cerrado (ver schema/temporadas.ts). Sin
+  // esto, los gastos de un torneo seguirían restando en el saldo del
+  // siguiente, para siempre.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

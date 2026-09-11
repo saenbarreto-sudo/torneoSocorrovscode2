@@ -302,6 +302,44 @@ export interface FasesLoteResult {
   omitidas: number;
 }
 
+export interface Temporada {
+  nombre: string;
+  /** @nullable */
+  cerradaAt?: string | null;
+  createdAt: string;
+}
+
+export interface ResumenCierre {
+  nombreSugerido: string;
+  partidos: number;
+  goles: number;
+  tarjetas: number;
+  pagos: number;
+  egresos: number;
+  mesas: number;
+  programacion: number;
+  fases: number;
+  jugadores: number;
+}
+
+export interface CerrarTemporadaInput {
+  /** Nombre del torneo que se cierra, con la forma "2026-2027". */
+  nombre: string;
+}
+
+export interface CierreResultado {
+  nombre: string;
+  partidos?: number;
+  goles?: number;
+  tarjetas?: number;
+  pagos?: number;
+  egresos?: number;
+  mesas?: number;
+  programacion?: number;
+  fases?: number;
+  jugadoresConFoto?: number;
+}
+
 export type EventoAccion = typeof EventoAccion[keyof typeof EventoAccion];
 
 

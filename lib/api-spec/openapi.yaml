@@ -46,6 +46,8 @@ tags:
     description: Match-day cash sheet (la mesa)
   - name: eventos
     description: Activity log (admin only)
+  - name: temporadas
+    description: Closing a tournament and starting a new one
 
 paths:
   /healthz:
@@ -483,6 +485,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FasesLoteResult"
+
+  # ── TEMPORADAS ─────────────────────────────────────────────────────────────
+  /temporadas:
+    get:
+      operationId: getTemporadas
+      tags: [temporadas]
+      summary: Closed tournaments, newest first
+      responses:
+        "200":
+          description: Seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Temporada"
+
+  /temporadas/resumen-cierre:
+    get:
+      operationId: getResumenCierre
+      tags: [temporadas]
+      summary: What closing the current tournament would stamp (admin only)
+      description: >
+        Se consulta ANTES de cerrar, para poder mostrarle al usuario
+        exactamente qué se va a sellar en vez de pedirle que confíe a ciegas
+        en un botón que toca todo el torneo.
+      responses:
+        "200":
+          description: Counts per table plus a suggested season name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumenCierre"
+
+  /temporadas/cerrar:
+    post:
+      operationId: cerrarTemporada
+      tags: [temporadas]
+      summary: Close the current tournament, stamping everything with its season (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CerrarTemporadaInput"
+      responses:
+        "201":
+          description: Rows stamped per table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CierreResultado"
+        "409":
+          description: Nothing to close, or that season name already exists
 
   # ── REGISTRO DE ACTIVIDAD ──────────────────────────────────────────────────
   /eventos:
@@ -2022,6 +2078,78 @@ components:
         password:
           type: string
           minLength: 1
+
+    # ── TEMPORADAS ──────────────────────────────────────────────────────────
+    Temporada:
+      type: object
+      required: [nombre, createdAt]
+      properties:
+        nombre:
+          type: string
+        # NULL en las temporadas importadas de los Excel viejos, que nunca
+        # pasaron por el cierre desde la app.
+        cerradaAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ResumenCierre:
+      type: object
+      required: [nombreSugerido, partidos, goles, tarjetas, pagos, egresos, mesas, programacion, fases, jugadores]
+      properties:
+        nombreSugerido:
+          type: string
+        partidos:
+          type: number
+        goles:
+          type: number
+        tarjetas:
+          type: number
+        pagos:
+          type: number
+        egresos:
+          type: number
+        mesas:
+          type: number
+        programacion:
+          type: number
+        fases:
+          type: number
+        jugadores:
+          type: number
+
+    CerrarTemporadaInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          description: 'Nombre del torneo que se cierra, con la forma "2026-2027".'
+
+    CierreResultado:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+        partidos:
+          type: number
+        goles:
+          type: number
+        tarjetas:
+          type: number
+        pagos:
+          type: number
+        egresos:
+          type: number
+        mesas:
+          type: number
+        programacion:
+          type: number
+        fases:
+          type: number
+        jugadoresConFoto:
+          type: number
 
     # ── REGISTRO DE ACTIVIDAD ───────────────────────────────────────────────
     # Una línea del registro: quién, qué hizo, sobre qué y cuándo. "cambios"

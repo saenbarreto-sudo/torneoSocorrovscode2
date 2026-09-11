@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, isNull } from "drizzle-orm";
 import { db, egresosTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
@@ -20,7 +20,11 @@ function mapEgreso(row: typeof egresosTable.$inferSelect) {
 }
 
 router.get("/egresos", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(egresosTable).orderBy(desc(egresosTable.fecha));
+  const rows = await db
+    .select()
+    .from(egresosTable)
+    .where(isNull(egresosTable.temporada))
+    .orderBy(desc(egresosTable.fecha));
   res.json(GetEgresosResponse.parse(rows.map(mapEgreso)));
 });
 

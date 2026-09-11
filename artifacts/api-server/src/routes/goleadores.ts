@@ -83,7 +83,7 @@ router.get("/vallas", async (_req, res): Promise<void> => {
       AND p.jugado = true
       AND p.walkover = false
       AND p.temporada IS NULL
-      AND (p.fase IS NULL OR COALESCE((SELECT f.tipo FROM fases f WHERE f.nombre = p.fase), 'eliminacion') != 'eliminacion')
+      AND (p.fase IS NULL OR COALESCE((SELECT f.tipo FROM fases f WHERE f.nombre = p.fase AND f.temporada IS NULL), 'eliminacion') != 'eliminacion')
     WHERE e.activo = true
     GROUP BY e.id, e.nombre
     ORDER BY goles_recibidos ASC, partidos_jugados DESC, e.nombre ASC

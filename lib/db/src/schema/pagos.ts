@@ -26,6 +26,11 @@ export const pagosTable = pgTable("pagos", {
   // Al borrar la mesa el pago no desaparece: sigue siendo plata que entró,
   // solo pierde el enlace.
   mesaId: integer("mesa_id").references(() => mesasTable.id, { onDelete: "set null" }),
+  // Sello del torneo al que pertenece: NULL = torneo en curso, un valor
+  // tipo "2026-2027" = torneo ya cerrado (ver schema/temporadas.ts). Sin
+  // esto, la inscripción ya pagada de un torneo seguiría contando como
+  // pagada en el siguiente.
+  temporada: text("temporada"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

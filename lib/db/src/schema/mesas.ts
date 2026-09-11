@@ -25,6 +25,10 @@ export const mesasTable = pgTable("mesas", {
   nombre: text("nombre"),
   estado: text("estado").notNull().default("abierta"),
   observaciones: text("observaciones"),
+  // Sello del torneo al que pertenece: NULL = torneo en curso, un valor
+  // tipo "2026-2027" = torneo ya cerrado (ver schema/temporadas.ts).
+  // La lista de días de juego arranca vacía en cada torneo nuevo.
+  temporada: text("temporada"),
   cerradaAt: timestamp("cerrada_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

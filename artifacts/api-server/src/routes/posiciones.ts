@@ -8,7 +8,7 @@ import {
   CreateFasesLoteBody,
   CreateFasesLoteResponse,
 } from "@workspace/api-zod";
-import { sql } from "drizzle-orm";
+import { isNull, sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -146,7 +146,7 @@ router.get("/fases", async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT DISTINCT p.fase as nombre, COALESCE(f.tipo, 'eliminacion') as tipo, COALESCE(f.orden, 999999) as orden
     FROM partidos p
-    LEFT JOIN fases f ON f.nombre = p.fase
+    LEFT JOIN fases f ON f.nombre = p.fase AND f.temporada IS NULL
     WHERE p.temporada IS NULL
       AND p.fase IS NOT NULL
       AND p.fase NOT IN (${sql.join(FASES_TEMPORADA_REGULAR.map((f) => sql`${f}`), sql`, `)})
@@ -174,7 +174,7 @@ router.post("/fases", requireAuth, writeAccess.partidos, async (req, res): Promi
     const resultado = await db
       .insert(fasesTable)
       .values({ nombre: fase.nombre, tipo: fase.tipo })
-      .onConflictDoNothing({ target: fasesTable.nombre })
+      .onConflictDoNothing({ target: fasesTable.nombre, where: isNull(fasesTable.temporada) })
       .returning({ nombre: fasesTable.nombre });
     if (resultado.length > 0) registradas++;
     else omitidas++;
