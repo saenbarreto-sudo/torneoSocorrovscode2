@@ -11,6 +11,8 @@ export interface Arbitro {
   nombre: string;
   /** @nullable */
   telefono?: string | null;
+  /** @nullable */
+  foto?: string | null;
   activo: boolean;
   /** @nullable */
   notas?: string | null;

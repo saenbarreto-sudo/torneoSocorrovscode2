@@ -366,6 +366,7 @@ export const GetArbitrosResponseItem = zod.object({
   "id": zod.number(),
   "nombre": zod.string(),
   "telefono": zod.string().nullish(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean(),
   "notas": zod.string().nullish(),
   "partidosDirigidos": zod.number().optional(),
@@ -380,6 +381,7 @@ export const GetArbitrosResponse = zod.array(GetArbitrosResponseItem)
 export const CrearArbitroBody = zod.object({
   "nombre": zod.string(),
   "telefono": zod.string().optional(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "notas": zod.string().optional()
 })
@@ -388,6 +390,7 @@ export const CrearArbitroResponse = zod.object({
   "id": zod.number(),
   "nombre": zod.string(),
   "telefono": zod.string().nullish(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean(),
   "notas": zod.string().nullish(),
   "partidosDirigidos": zod.number().optional(),
@@ -423,6 +426,7 @@ export const ActualizarArbitroParams = zod.object({
 export const ActualizarArbitroBody = zod.object({
   "nombre": zod.string(),
   "telefono": zod.string().optional(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean().optional(),
   "notas": zod.string().optional()
 })
@@ -431,11 +435,23 @@ export const ActualizarArbitroResponse = zod.object({
   "id": zod.number(),
   "nombre": zod.string(),
   "telefono": zod.string().nullish(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean(),
   "notas": zod.string().nullish(),
   "partidosDirigidos": zod.number().optional(),
   "createdAt": zod.string()
 })
+
+
+/**
+ * Solo se puede borrar a un árbitro que no tenga ningún partido a su nombre — sirve para deshacer un alta equivocada o un duplicado. Si ya dirigió partidos se responde 409: ahí lo que corresponde es desactivarlo, para no dejar esos partidos sin saber quién los dirigió.
+ * @summary Delete a referee who has never worked a match
+ */
+export const BorrarArbitroParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BorrarArbitroResponse = zod.void()
 
 
 /**
@@ -450,6 +466,7 @@ export const GetFichaArbitroResponse = zod.object({
   "id": zod.number(),
   "nombre": zod.string(),
   "telefono": zod.string().nullish(),
+  "foto": zod.string().nullish(),
   "activo": zod.boolean(),
   "notas": zod.string().nullish(),
   "partidosDirigidos": zod.number().optional(),

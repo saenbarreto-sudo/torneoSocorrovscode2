@@ -9,6 +9,8 @@
 export interface ArbitroInput {
   nombre: string;
   telefono?: string;
+  /** @nullable */
+  foto?: string | null;
   activo?: boolean;
   notas?: string;
 }

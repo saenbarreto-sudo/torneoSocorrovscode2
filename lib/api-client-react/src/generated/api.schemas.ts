@@ -176,6 +176,8 @@ export interface Arbitro {
   nombre: string;
   /** @nullable */
   telefono?: string | null;
+  /** @nullable */
+  foto?: string | null;
   activo: boolean;
   /** @nullable */
   notas?: string | null;
@@ -186,6 +188,8 @@ export interface Arbitro {
 export interface ArbitroInput {
   nombre: string;
   telefono?: string;
+  /** @nullable */
+  foto?: string | null;
   activo?: boolean;
   notas?: string;
 }

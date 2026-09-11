@@ -371,6 +371,28 @@ paths:
                 $ref: "#/components/schemas/Arbitro"
         "404":
           description: Not found
+    delete:
+      operationId: borrarArbitro
+      tags: [arbitros]
+      summary: Delete a referee who has never worked a match
+      description: >
+        Solo se puede borrar a un árbitro que no tenga ningún partido a su
+        nombre — sirve para deshacer un alta equivocada o un duplicado. Si ya
+        dirigió partidos se responde 409: ahí lo que corresponde es
+        desactivarlo, para no dejar esos partidos sin saber quién los dirigió.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: The referee already has matches to their name
 
   /arbitros/{id}/estadisticas:
     get:
@@ -1976,6 +1998,9 @@ components:
           type: string
         telefono:
           type: ["string", "null"]
+        # Data URL (base64) de la foto, igual que la del carné del jugador.
+        foto:
+          type: ["string", "null"]
         activo:
           type: boolean
         notas:
@@ -1996,6 +2021,9 @@ components:
           type: string
         telefono:
           type: string
+        # null borra la foto que tuviera; omitirlo la deja como está.
+        foto:
+          type: ["string", "null"]
         activo:
           type: boolean
         notas:

@@ -81,8 +81,12 @@ export default function FichaArbitro() {
       <Card>
         <CardContent className="p-6 sm:p-8 space-y-6">
           <div className="flex gap-4 items-start flex-wrap">
-            <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <BadgeCheck className="h-7 w-7" />
+            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 overflow-hidden">
+              {arbitro.foto ? (
+                <img src={arbitro.foto} alt={arbitro.nombre} className="w-full h-full object-cover" />
+              ) : (
+                <BadgeCheck className="h-9 w-9" />
+              )}
             </div>
             <div className="flex-1 min-w-[220px]">
               <h2 className="text-2xl font-extrabold tracking-tight">{arbitro.nombre}</h2>

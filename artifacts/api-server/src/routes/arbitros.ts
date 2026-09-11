@@ -11,6 +11,7 @@ import {
   ActualizarArbitroParams,
   ActualizarArbitroBody,
   ActualizarArbitroResponse,
+  BorrarArbitroParams,
   GetFichaArbitroParams,
   GetFichaArbitroResponse,
   GetEstadisticasArbitrosResponse,
@@ -54,6 +55,7 @@ router.get("/arbitros", async (req, res): Promise<void> => {
     id: Number(r.id),
     nombre: String(r.nombre),
     telefono: (r.telefono as string | null) ?? null,
+    foto: (r.foto as string | null) ?? null,
     activo: Boolean(r.activo),
     notas: (r.notas as string | null) ?? null,
     partidosDirigidos: Number(r.partidos_dirigidos ?? 0),
@@ -154,6 +156,45 @@ router.patch("/arbitros/:id", requireAuth, writeAccess.arbitros, async (req, res
       partidosDirigidos,
     }),
   );
+});
+
+/**
+ * Borrar un árbitro es para deshacer un alta equivocada (un duplicado, un
+ * nombre mal escrito), no para "sacar" a alguien que ya trabajó: si tiene
+ * partidos a su nombre, borrarlo los dejaría sin árbitro y sin forma de
+ * saber quién los dirigió. En ese caso lo correcto es desactivarlo, que es
+ * lo que sugiere el mensaje.
+ */
+router.delete("/arbitros/:id", requireAuth, writeAccess.arbitros, async (req, res): Promise<void> => {
+  const params = BorrarArbitroParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const id = params.data.id;
+
+  const [arbitro] = await db.select().from(arbitrosTable).where(eq(arbitrosTable.id, id));
+  if (!arbitro) {
+    res.status(404).json({ error: "Árbitro no encontrado" });
+    return;
+  }
+
+  const conteo = await db.execute(sql`
+    SELECT COUNT(*)::int as partidos FROM partidos WHERE arbitro_id = ${id}
+  `);
+  const partidos = Number(conteo.rows[0]?.partidos ?? 0);
+  if (partidos > 0) {
+    res.status(409).json({
+      error:
+        `No se puede borrar a ${arbitro.nombre} porque tiene ${partidos} partido(s) a su nombre; ` +
+        `borrarlo dejaría esos partidos sin saber quién los dirigió. ` +
+        `Si ya no arbitra, desactívalo: deja de aparecer para asignarlo, pero se conserva su historial.`,
+    });
+    return;
+  }
+
+  await db.delete(arbitrosTable).where(eq(arbitrosTable.id, id));
+  res.sendStatus(204);
 });
 
 router.get("/arbitros/:id/estadisticas", async (req, res): Promise<void> => {

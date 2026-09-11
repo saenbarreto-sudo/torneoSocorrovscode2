@@ -1397,6 +1397,78 @@ export const useActualizarArbitro = <TError = ErrorType<void>,
       return useMutation(getActualizarArbitroMutationOptions(options));
     }
 
+export const getBorrarArbitroUrl = (id: number,) => {
+
+
+
+
+  return `/api/arbitros/${id}`
+}
+
+/**
+ * Solo se puede borrar a un árbitro que no tenga ningún partido a su nombre — sirve para deshacer un alta equivocada o un duplicado. Si ya dirigió partidos se responde 409: ahí lo que corresponde es desactivarlo, para no dejar esos partidos sin saber quién los dirigió.
+ * @summary Delete a referee who has never worked a match
+ */
+export const borrarArbitro = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getBorrarArbitroUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getBorrarArbitroMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof borrarArbitro>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof borrarArbitro>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['borrarArbitro'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof borrarArbitro>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  borrarArbitro(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BorrarArbitroMutationResult = NonNullable<Awaited<ReturnType<typeof borrarArbitro>>>
+
+    export type BorrarArbitroMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a referee who has never worked a match
+ */
+export const useBorrarArbitro = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof borrarArbitro>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof borrarArbitro>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getBorrarArbitroMutationOptions(options));
+    }
+
 export const getGetFichaArbitroUrl = (id: number,) => {
 
 

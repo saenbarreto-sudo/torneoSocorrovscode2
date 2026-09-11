@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetArbitros,
   useGetEstadisticasArbitros,
+  useBorrarArbitro,
+  getGetArbitrosQueryKey,
+  getGetEstadisticasArbitrosQueryKey,
   type Arbitro,
   type ArbitroComparativaLinea,
 } from '@workspace/api-client-react';
 import { useAuth, canWrite } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
+import { extractErrorMessage } from '@/lib/api-errors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -14,9 +20,20 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Plus, Edit2, Search, BadgeCheck, Swords, Wallet } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, BadgeCheck, Swords, Wallet } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
 import { ArbitroFormDialog } from '@/components/arbitro-form-dialog';
 
@@ -50,6 +67,28 @@ export default function Arbitros({ embebido }: { embebido?: boolean } = {}) {
 
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (a: Arbitro, e: React.MouseEvent) => { e.stopPropagation(); setEditing(a); setOpen(true); };
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const borrar = useBorrarArbitro();
+
+  /**
+   * Borrar solo sirve para deshacer un alta equivocada: si el árbitro ya
+   * dirigió partidos el servidor lo rechaza y sugiere desactivarlo, para no
+   * dejar esos partidos sin saber quién los dirigió.
+   */
+  async function onBorrar(a: Arbitro) {
+    try {
+      await borrar.mutateAsync({ id: a.id });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getGetArbitrosQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetEstadisticasArbitrosQueryKey() }),
+      ]);
+      toast({ title: `Se borró a ${a.nombre}` });
+    } catch (err) {
+      toast({ title: 'No se pudo borrar', description: extractErrorMessage(err), variant: 'destructive' });
+    }
+  }
 
   // ── Datos para los gráficos de la pestaña Estadísticas ──
   const lineas: ArbitroComparativaLinea[] = comparativa?.arbitros ?? [];
@@ -131,15 +170,59 @@ export default function Arbitros({ embebido }: { embebido?: boolean } = {}) {
                   ) : (
                     arbitros?.map((a) => (
                       <TableRow key={a.id} className="cursor-pointer" onClick={() => navigate(`/arbitros/${a.id}`)}>
-                        <TableCell className="font-bold">{a.nombre}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center text-muted-foreground">
+                              {a.foto ? (
+                                <img src={a.foto} alt={a.nombre} className="w-full h-full object-cover" />
+                              ) : (
+                                <BadgeCheck className="h-4 w-4" />
+                              )}
+                            </div>
+                            <span className="font-bold">{a.nombre}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{a.telefono || '—'}</TableCell>
                         <TableCell className="text-center font-mono tabular-nums">{a.partidosDirigidos ?? 0}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant={a.activo ? 'success' : 'secondary'}>{a.activo ? 'Activo' : 'Inactivo'}</Badge>
                         </TableCell>
                         {puedeEscribir && (
-                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" onClick={(e) => openEdit(a, e)}><Edit2 className="h-4 w-4" /></Button>
+                          <TableCell className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" onClick={(e) => openEdit(a, e)} aria-label={`Editar a ${a.nombre}`}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label={`Borrar a ${a.nombre}`}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Borrar a {a.nombre}?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {(a.partidosDirigidos ?? 0) > 0 ? (
+                                      <>
+                                        Ya tiene <span className="font-semibold">{a.partidosDirigidos} partido(s) dirigidos</span>, así
+                                        que no se va a poder borrar — esos partidos quedarían sin saber quién los dirigió. Si ya no
+                                        arbitra, edítalo y desmarca "Sigue arbitrando": desaparece de la lista para asignar, pero se
+                                        conserva todo su historial.
+                                      </>
+                                    ) : (
+                                      <>
+                                        Se borra de la lista de árbitros. Esto sirve para deshacer un alta equivocada o un nombre
+                                        repetido; no se puede deshacer.
+                                      </>
+                                    )}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onBorrar(a)}>Borrar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         )}
                       </TableRow>
