@@ -13,3 +13,4 @@ export * from "./usuarios";
 export * from "./ajustes";
 export * from "./fases";
 export * from "./mesas";
+export * from "./eventos";

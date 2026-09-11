@@ -615,6 +615,35 @@ export const CreateFasesLoteResponse = zod.object({
 
 
 /**
+ * @summary Activity log — who created, edited, deleted or signed in (admin only)
+ */
+export const GetEventosQueryParams = zod.object({
+  "usuarioId": zod.coerce.number().optional(),
+  "accion": zod.enum(['ingreso', 'ingreso_fallido', 'crear', 'editar', 'borrar']).optional(),
+  "desde": zod.coerce.string().optional(),
+  "hasta": zod.coerce.string().optional(),
+  "limite": zod.coerce.number().optional()
+})
+
+export const GetEventosResponseItem = zod.object({
+  "id": zod.number(),
+  "usuarioId": zod.number().nullish(),
+  "usuarioNombre": zod.string(),
+  "accion": zod.enum(['ingreso', 'ingreso_fallido', 'crear', 'editar', 'borrar']),
+  "entidad": zod.string(),
+  "entidadId": zod.number().nullish(),
+  "descripcion": zod.string(),
+  "cambios": zod.array(zod.object({
+  "campo": zod.string(),
+  "antes": zod.string(),
+  "despues": zod.string()
+})),
+  "createdAt": zod.string()
+})
+export const GetEventosResponse = zod.array(GetEventosResponseItem)
+
+
+/**
  * @summary History of match-day cash sheets, newest first
  */
 export const GetMesasResponseItem = zod.object({

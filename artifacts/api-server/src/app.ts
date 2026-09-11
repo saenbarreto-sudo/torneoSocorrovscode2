@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { registroDeEventos } from "./lib/registro-eventos";
 
 const app: Express = express();
 
@@ -32,6 +33,9 @@ app.use(cors());
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 
+// Va justo antes del router y después de express.json: necesita el cuerpo
+// ya leído para poder decir qué cambió.
+app.use("/api", registroDeEventos());
 app.use("/api", router);
 
 export default app;

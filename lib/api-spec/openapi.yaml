@@ -44,6 +44,8 @@ tags:
     description: Organization expenses
   - name: mesas
     description: Match-day cash sheet (la mesa)
+  - name: eventos
+    description: Activity log (admin only)
 
 paths:
   /healthz:
@@ -481,6 +483,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FasesLoteResult"
+
+  # ── REGISTRO DE ACTIVIDAD ──────────────────────────────────────────────────
+  /eventos:
+    get:
+      operationId: getEventos
+      tags: [eventos]
+      summary: Activity log — who created, edited, deleted or signed in (admin only)
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: accion
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ingreso, ingreso_fallido, crear, editar, borrar]
+        - name: desde
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: hasta
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limite
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Events, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evento"
 
   # ── MESA ───────────────────────────────────────────────────────────────────
   /mesas:
@@ -1977,6 +2022,46 @@ components:
         password:
           type: string
           minLength: 1
+
+    # ── REGISTRO DE ACTIVIDAD ───────────────────────────────────────────────
+    # Una línea del registro: quién, qué hizo, sobre qué y cuándo. "cambios"
+    # trae el antes → después campo por campo (nunca contraseñas ni fotos).
+    EventoCambio:
+      type: object
+      required: [campo, antes, despues]
+      properties:
+        campo:
+          type: string
+        antes:
+          type: string
+        despues:
+          type: string
+
+    Evento:
+      type: object
+      required: [id, usuarioNombre, accion, entidad, descripcion, cambios, createdAt]
+      properties:
+        id:
+          type: number
+        usuarioId:
+          type: ["number", "null"]
+        usuarioNombre:
+          type: string
+        accion:
+          type: string
+          enum: [ingreso, ingreso_fallido, crear, editar, borrar]
+        entidad:
+          type: string
+        entidadId:
+          type: ["number", "null"]
+        descripcion:
+          type: string
+        cambios:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventoCambio"
+        createdAt:
+          type: string
 
     # ── MESA ────────────────────────────────────────────────────────────────
     # La caja de un día de juego. Los ingresos son pagos de los equipos y los

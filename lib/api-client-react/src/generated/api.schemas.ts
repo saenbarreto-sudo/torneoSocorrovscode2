@@ -302,6 +302,37 @@ export interface FasesLoteResult {
   omitidas: number;
 }
 
+export type EventoAccion = typeof EventoAccion[keyof typeof EventoAccion];
+
+
+export const EventoAccion = {
+  ingreso: 'ingreso',
+  ingreso_fallido: 'ingreso_fallido',
+  crear: 'crear',
+  editar: 'editar',
+  borrar: 'borrar',
+} as const;
+
+export interface EventoCambio {
+  campo: string;
+  antes: string;
+  despues: string;
+}
+
+export interface Evento {
+  id: number;
+  /** @nullable */
+  usuarioId?: number | null;
+  usuarioNombre: string;
+  accion: EventoAccion;
+  entidad: string;
+  /** @nullable */
+  entidadId?: number | null;
+  descripcion: string;
+  cambios: EventoCambio[];
+  createdAt: string;
+}
+
 export type MesaResumenEstado = typeof MesaResumenEstado[keyof typeof MesaResumenEstado];
 
 
@@ -628,6 +659,25 @@ export type GetPosicionesParams = {
  */
 fase?: string;
 };
+
+export type GetEventosParams = {
+usuarioId?: number;
+accion?: GetEventosAccion;
+desde?: string;
+hasta?: string;
+limite?: number;
+};
+
+export type GetEventosAccion = typeof GetEventosAccion[keyof typeof GetEventosAccion];
+
+
+export const GetEventosAccion = {
+  ingreso: 'ingreso',
+  ingreso_fallido: 'ingreso_fallido',
+  crear: 'crear',
+  editar: 'editar',
+  borrar: 'borrar',
+} as const;
 
 export type GetTarjetasParams = {
 tipo?: GetTarjetasTipo;

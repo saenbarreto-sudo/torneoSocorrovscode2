@@ -28,9 +28,11 @@ import type {
   Equipo,
   EquipoInput,
   EquipoUpdate,
+  Evento,
   Fase,
   FasesLoteInput,
   FasesLoteResult,
+  GetEventosParams,
   GetJugadoresParams,
   GetPagosParams,
   GetPagosResumenEquiposParams,
@@ -1745,6 +1747,90 @@ export const useCreateFasesLote = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateFasesLoteMutationOptions(options));
     }
+
+export const getGetEventosUrl = (params?: GetEventosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/eventos?${stringifiedParams}` : `/api/eventos`
+}
+
+/**
+ * @summary Activity log — who created, edited, deleted or signed in (admin only)
+ */
+export const getEventos = async (params?: GetEventosParams, options?: Parameters<typeof customFetch>[1]): Promise<Evento[]> => {
+
+  return customFetch<Evento[]>(getGetEventosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEventosQueryKey = (params?: GetEventosParams,) => {
+    return [
+    `/api/eventos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEventosQueryOptions = <TData = Awaited<ReturnType<typeof getEventos>>, TError = ErrorType<unknown>>(params?: GetEventosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEventos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEventosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEventos>>> = ({ signal }) => getEventos(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEventos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEventosQueryResult = NonNullable<Awaited<ReturnType<typeof getEventos>>>
+export type GetEventosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Activity log — who created, edited, deleted or signed in (admin only)
+ */
+
+export function useGetEventos<TData = Awaited<ReturnType<typeof getEventos>>, TError = ErrorType<unknown>>(
+ params?: GetEventosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEventos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEventosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMesasUrl = () => {
 

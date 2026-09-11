@@ -17,6 +17,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { ROLE_LABELS, useAuth, type Role } from '@/lib/auth';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Actividad from '@/pages/actividad';
 
 interface Usuario {
   id: number;
@@ -53,6 +55,8 @@ const usuarioSchema = z.object({
 
 type UsuarioFormValues = z.infer<typeof usuarioSchema>;
 
+type Pestana = 'cuentas' | 'actividad';
+
 export default function Usuarios() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -60,6 +64,7 @@ export default function Usuarios() {
   const { data: usuarios, isLoading } = useUsuarios();
   const { data: equipos } = useGetEquipos();
 
+  const [pestana, setPestana] = useState<Pestana>('cuentas');
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -161,10 +166,13 @@ export default function Usuarios() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Usuarios</h1>
-            <p className="text-muted-foreground mt-1">Cuentas de acceso y asignación de roles</p>
+            <p className="text-muted-foreground mt-1">
+              {pestana === 'cuentas' ? 'Cuentas de acceso y asignación de roles' : 'Quién hizo qué en el torneo'}
+            </p>
           </div>
         </div>
 
+        {pestana === 'cuentas' && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={openNew} className="w-full sm:w-auto">
@@ -288,8 +296,19 @@ export default function Usuarios() {
             </Form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
+      <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
+        <TabsList>
+          <TabsTrigger value="cuentas">Usuarios</TabsTrigger>
+          <TabsTrigger value="actividad">Actividad</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {pestana === 'actividad' && <Actividad embebido />}
+
+      {pestana === 'cuentas' && (
       <Card>
         <CardHeader>
           <CardTitle>Cuentas registradas</CardTitle>
@@ -340,6 +359,7 @@ export default function Usuarios() {
           </Table>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
