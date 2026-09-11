@@ -1365,7 +1365,8 @@ export const GetPlanillaResponse = zod.object({
   "goles": zod.number(),
   "amarillas": zod.number(),
   "rojas": zod.number(),
-  "fechasSancion": zod.number().optional()
+  "fechasSancion": zod.number().optional(),
+  "fechasPendientes": zod.number().optional()
 }))
 })
 

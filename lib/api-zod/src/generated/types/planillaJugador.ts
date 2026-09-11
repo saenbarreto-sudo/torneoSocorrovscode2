@@ -20,4 +20,5 @@ export interface PlanillaJugador {
   amarillas: number;
   rojas: number;
   fechasSancion?: number;
+  fechasPendientes?: number;
 }

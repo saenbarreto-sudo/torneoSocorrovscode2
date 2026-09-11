@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   planillaTable,
@@ -13,6 +13,63 @@ import { requireAuth, writeAccess } from "../lib/permissions";
 import { GetPlanillaResponse, SavePlanillaBody, GetPlanillaParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+/**
+ * Cuántas fechas de sanción le faltaban a cada jugador de estos dos equipos
+ * AL MOMENTO de este partido.
+ *
+ * Se mide contra el partido y no contra "hoy" a propósito: una planilla se
+ * puede llenar días después, y lo que importa es cuántas fechas había
+ * cumplido el jugador cuando se jugó, no cuántas lleva ahora.
+ *
+ * Una fecha se cumple igual que en GET /sanciones: el equipo disputó un
+ * partido posterior a la tarjeta (y anterior a este) sin que el jugador
+ * apareciera en la planilla.
+ *
+ * La tarjeta mostrada en ESTE partido no cuenta, porque el jugador sí jugó
+ * el partido en el que lo expulsaron — la sanción empieza a correr después.
+ */
+async function fechasPendientesPorJugador(
+  partido: typeof partidosTable.$inferSelect,
+): Promise<Map<number, number>> {
+  const rows = await db.execute(sql`
+    SELECT
+      t.jugador_id,
+      MAX(GREATEST(t.fechas_sancion - (
+        SELECT COUNT(*)::int
+        FROM partidos pp
+        WHERE pp.jugado = true
+          AND pp.temporada IS NULL
+          AND (pp.local_id = j.equipo_id OR pp.visitante_id = j.equipo_id)
+          AND (
+            pp.semana > t.semana
+            OR (pp.semana = t.semana AND t.partido_id IS NOT NULL AND pp.id > t.partido_id)
+          )
+          AND (
+            pp.semana < ${partido.semana}
+            OR (pp.semana = ${partido.semana} AND pp.id < ${partido.id})
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM planilla pl
+            WHERE pl.partido_id = pp.id AND pl.jugador_id = t.jugador_id
+          )
+      ), 0))::int as pendientes
+    FROM tarjetas t
+    JOIN jugadores j ON j.id = t.jugador_id
+    WHERE t.fechas_sancion > 0
+      AND t.temporada IS NULL
+      AND j.equipo_id IN (${partido.localId}, ${partido.visitanteId})
+      AND (t.partido_id IS NULL OR t.partido_id <> ${partido.id})
+    GROUP BY t.jugador_id
+  `);
+
+  const pendientes = new Map<number, number>();
+  for (const r of (rows.rows ?? rows) as Record<string, unknown>[]) {
+    const valor = Number(r.pendientes ?? 0);
+    if (valor > 0) pendientes.set(Number(r.jugador_id), valor);
+  }
+  return pendientes;
+}
 
 /**
  * Devuelve la nómina completa de los dos equipos del partido — igual que la
@@ -68,6 +125,8 @@ router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
     ORDER BY j.equipo_id, j.nombre
   `);
 
+  const pendientes = await fechasPendientesPorJugador(partido);
+
   const jugadores = (rows.rows ?? rows).map((r: Record<string, unknown>) => ({
     jugadorId: Number(r.jugador_id),
     jugadorNombre: String(r.jugador_nombre),
@@ -80,6 +139,7 @@ router.get("/partidos/:id/planilla", async (req, res): Promise<void> => {
     amarillas: Number(r.amarillas),
     rojas: Number(r.rojas),
     fechasSancion: Number(r.fechas_sancion ?? 0),
+    fechasPendientes: pendientes.get(Number(r.jugador_id)) ?? 0,
   }));
 
   res.json(
@@ -168,6 +228,34 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
     if (jugoVisitante < MINIMO_JUGADORES) faltantes.push(`al visitante le faltan ${MINIMO_JUGADORES - jugoVisitante}`);
     res.status(400).json({
       error: `Cada equipo necesita al menos ${MINIMO_JUGADORES} jugadores alineados para guardar el partido (${faltantes.join(", ")}).`,
+    });
+    return;
+  }
+
+  // Un jugador con fechas de sanción pendientes no puede alinearse. Igual
+  // que el mínimo de jugadores, se valida acá y no solo en el formulario:
+  // esta es la ruta que de verdad protege los datos.
+  const pendientesPorJugador = await fechasPendientesPorJugador(partido);
+  const sancionadosAlineados = filas
+    .filter((j) => j.jugo && (pendientesPorJugador.get(j.jugadorId) ?? 0) > 0)
+    .map((j) => ({ jugadorId: j.jugadorId, fechas: pendientesPorJugador.get(j.jugadorId)! }));
+
+  if (sancionadosAlineados.length > 0) {
+    const nombres = new Map(
+      (
+        await db
+          .select({ id: jugadoresTable.id, nombre: jugadoresTable.nombre })
+          .from(jugadoresTable)
+          .where(inArray(jugadoresTable.id, sancionadosAlineados.map((s) => s.jugadorId)))
+      ).map((j) => [j.id, j.nombre]),
+    );
+    const detalle = sancionadosAlineados
+      .map((s) => `${nombres.get(s.jugadorId) ?? `Jugador ${s.jugadorId}`} (le ${s.fechas === 1 ? "falta 1 fecha" : `faltan ${s.fechas} fechas`})`)
+      .join(", ");
+    res.status(409).json({
+      error:
+        `No se puede alinear a un jugador que todavía no ha cumplido su sanción: ${detalle}. ` +
+        "Si la sanción está mal registrada, corrige las fechas de la tarjeta roja en Amonestados.",
     });
     return;
   }

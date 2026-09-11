@@ -2417,6 +2417,10 @@ components:
           type: number
         fechasSancion:
           type: number
+        # Fechas de sanción que el jugador todavía NO había cumplido cuando
+        # se jugó este partido. Mayor que cero = no se puede alinear.
+        fechasPendientes:
+          type: number
 
     Planilla:
       type: object

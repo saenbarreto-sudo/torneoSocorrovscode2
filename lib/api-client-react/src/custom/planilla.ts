@@ -22,6 +22,11 @@ export interface PlanillaJugador {
   amarillas: number;
   rojas: number;
   fechasSancion?: number;
+  /**
+   * Fechas de sanción que el jugador todavía NO había cumplido cuando se
+   * jugó este partido. Mayor que cero = no se puede alinear.
+   */
+  fechasPendientes?: number;
 }
 
 export interface Planilla {

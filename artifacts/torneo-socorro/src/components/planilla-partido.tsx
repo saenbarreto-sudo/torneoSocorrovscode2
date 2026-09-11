@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useGetPlanilla, useSavePlanilla, useGetSanciones, type PlanillaJugador } from '@workspace/api-client-react';
+import { useGetPlanilla, useSavePlanilla, type PlanillaJugador } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,8 @@ type Fila = Pick<PlanillaJugador, 'jugadorId' | 'jugadorNombre' | 'equipoId' | '
   amarillas: number;
   rojas: number;
   fechasSancion: number;
+  /** Fechas de sanción sin cumplir a la fecha de este partido. >0 = no puede jugar. */
+  fechasPendientes: number;
 };
 
 const PUNTOS_AMARILLA = 10;
@@ -27,7 +29,6 @@ function NominaEquipo({
   golesEquipo,
   fairPlay,
   readOnly,
-  suspendidos,
   onChange,
 }: {
   titulo: string;
@@ -35,7 +36,6 @@ function NominaEquipo({
   golesEquipo: number;
   fairPlay: number;
   readOnly: boolean;
-  suspendidos: Set<number>;
   onChange: (jugadorId: number, cambios: Partial<Fila>) => void;
 }) {
   const jugaron = filas.filter((f) => f.jugo).length;
@@ -77,9 +77,16 @@ function NominaEquipo({
                   <input
                     type="checkbox"
                     checked={f.jugo}
-                    disabled={readOnly}
+                    // Un sancionado no se puede marcar: la casilla queda
+                    // bloqueada hasta que cumpla sus fechas.
+                    disabled={readOnly || f.fechasPendientes > 0}
                     onChange={(e) => onChange(f.jugadorId, { jugo: e.target.checked })}
                     aria-label={`${f.jugadorNombre} jugó`}
+                    title={
+                      f.fechasPendientes > 0
+                        ? `Sancionado: le ${f.fechasPendientes === 1 ? 'falta 1 fecha' : `faltan ${f.fechasPendientes} fechas`} por cumplir`
+                        : undefined
+                    }
                   />
                 </td>
                 <td className="p-2">
@@ -94,12 +101,12 @@ function NominaEquipo({
                 </td>
                 <td className="p-2">
                   <span className="font-medium">{f.jugadorNombre}</span>
-                  {suspendidos.has(f.jugadorId) && (
+                  {f.fechasPendientes > 0 && (
                     <span
                       className="ml-2 text-[10px] font-bold uppercase tracking-wide text-destructive"
-                      title="Tiene fechas de sanción pendientes"
+                      title="No puede jugar hasta cumplir su sanción"
                     >
-                      Sancionado
+                      Sancionado · {f.fechasPendientes === 1 ? 'falta 1 fecha' : `faltan ${f.fechasPendientes} fechas`}
                     </span>
                   )}
                   {f.nCarnet != null && (
@@ -190,11 +197,6 @@ export function PlanillaPartido({
 }) {
   const { toast } = useToast();
   const { data, isLoading } = useGetPlanilla(partido.id);
-  const { data: sanciones } = useGetSanciones();
-  // Jugadores que todavía deben cumplir fechas: no deberían alinearse.
-  const suspendidos = new Set(
-    (sanciones ?? []).filter((s) => s.fechasPendientes > 0).map((s) => s.jugadorId),
-  );
   const saveMutation = useSavePlanilla(partido.id);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [arbitro, setArbitro] = useState('');
@@ -217,6 +219,7 @@ export function PlanillaPartido({
         amarillas: j.amarillas,
         rojas: j.rojas,
         fechasSancion: j.fechasSancion ?? 0,
+        fechasPendientes: j.fechasPendientes ?? 0,
       })),
     );
   }, [data]);
@@ -255,7 +258,7 @@ export function PlanillaPartido({
   const resLocal = resumen(locales);
   const resVisitante = resumen(visitantes);
 
-  const alineadosSancionados = filas.filter((f) => f.jugo && suspendidos.has(f.jugadorId));
+  const alineadosSancionados = filas.filter((f) => f.jugo && f.fechasPendientes > 0);
 
   const jugoLocal = locales.filter((f) => f.jugo).length;
   const jugoVisitante = visitantes.filter((f) => f.jugo).length;
@@ -278,12 +281,18 @@ export function PlanillaPartido({
       return;
     }
     if (alineadosSancionados.length > 0) {
-      const nombres = alineadosSancionados.map((f) => f.jugadorNombre).join(', ');
-      const seguir = window.confirm(
-        `Estos jugadores tienen fechas de sanción pendientes: ${nombres}.\n\n` +
-          '¿Confirmas que aun así estuvieron en el partido?',
-      );
-      if (!seguir) return;
+      const detalle = alineadosSancionados
+        .map(
+          (f) =>
+            `${f.jugadorNombre} (le ${f.fechasPendientes === 1 ? 'falta 1 fecha' : `faltan ${f.fechasPendientes} fechas`})`,
+        )
+        .join(', ');
+      toast({
+        title: 'Hay jugadores sancionados en la planilla',
+        description: `No se puede guardar con ${detalle}. Si la sanción está mal, corrige las fechas de la roja en Amonestados.`,
+        variant: 'destructive',
+      });
+      return;
     }
     saveMutation.mutate(
       {
@@ -365,7 +374,6 @@ export function PlanillaPartido({
           golesEquipo={resLocal.goles}
           fairPlay={resLocal.fairPlay}
           readOnly={readOnly}
-          suspendidos={suspendidos}
           onChange={actualizar}
         />
         <NominaEquipo
@@ -374,7 +382,6 @@ export function PlanillaPartido({
           golesEquipo={resVisitante.goles}
           fairPlay={resVisitante.fairPlay}
           readOnly={readOnly}
-          suspendidos={suspendidos}
           onChange={actualizar}
         />
       </div>
