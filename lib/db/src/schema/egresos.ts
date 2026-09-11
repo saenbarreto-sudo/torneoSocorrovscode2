@@ -2,6 +2,7 @@ import { pgTable, text, serial, timestamp, integer, date } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { mesasTable } from "./mesas";
+import { partidosTable } from "./partidos";
 
 /**
  * Gastos de la organización (no de los equipos): compra de láminas para
@@ -19,6 +20,11 @@ export const egresosTable = pgTable("egresos", {
   // Si este gasto salió de la mesa de un día de juego (árbitro, cal,
   // balones, ayuda a los trabajadores), queda enlazado a esa mesa.
   mesaId: integer("mesa_id").references(() => mesasTable.id, { onDelete: "set null" }),
+  // El partido al que corresponde el gasto, cuando aplica. Hace falta para
+  // el arbitraje: un mismo día se juegan varios partidos y cada uno puede
+  // tener su propio árbitro, con su propio pago. Los demás gastos del día
+  // (cal, balones, trabajadores) son del día entero y lo dejan en NULL.
+  partidoId: integer("partido_id").references(() => partidosTable.id, { onDelete: "set null" }),
   // Sello del torneo al que pertenece: NULL = torneo en curso, un valor
   // tipo "2026-2027" = torneo ya cerrado (ver schema/temporadas.ts). Sin
   // esto, los gastos de un torneo seguirían restando en el saldo del

@@ -34,7 +34,7 @@ import {
  * La mesa: el cuadre de caja de un día de juego.
  *
  * Lo que entra son los pagos de arbitraje de cada equipo que juega ese día
- * (más las cintas de capitán) y lo que sale es el árbitro, la cal, los
+ * (más las cintas de capitán) y lo que sale son los árbitros, la cal, los
  * balones y la ayuda a los trabajadores. Lo que queda pasa a la caja del
  * torneo — y pasa solo, porque los ingresos se guardan como pagos y los
  * gastos como egresos, que es de donde Tesorería saca su saldo.
@@ -42,6 +42,10 @@ import {
  * Los equipos del día no se escriben a mano: salen de los partidos
  * programados para esa fecha. El valor que le toca a cada uno también sale
  * solo de Ajustes, y se duplica en las fases que se juegan con terna.
+ *
+ * El arbitraje va por partido, no por día: un mismo sábado se juegan varios
+ * y cada uno puede llevar su propio árbitro, cobrando distinto. Por eso cada
+ * gasto de arbitraje queda enlazado a su partido (egresos.partido_id).
  */
 
 const CONCEPTO_MESA = 'Mesa';
@@ -112,6 +116,15 @@ interface LineaGasto {
   valor: number;
 }
 
+/** El árbitro de un partido puntual del día, con lo que se le paga. */
+interface LineaArbitro {
+  partidoId: number;
+  enfrentamiento: string;
+  fase: string | null;
+  nombre: string;
+  valor: number;
+}
+
 function numeroDeInput(valor: string): number {
   // Un campo vacío vale cero, no NaN: así no se rompe la suma mientras se
   // está escribiendo.
@@ -160,8 +173,9 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
 
   // ── Estado editable de la planilla ────────────────────────────────────────
   const [lineas, setLineas] = useState<LineaEquipo[]>([]);
-  const [arbitroNombre, setArbitroNombre] = useState('');
-  const [arbitroValor, setArbitroValor] = useState(0);
+  // Un árbitro por partido: el mismo día se juegan varios y cada uno puede
+  // llevar el suyo, cobrando distinto.
+  const [arbitros, setArbitros] = useState<LineaArbitro[]>([]);
   const [cal, setCal] = useState(0);
   const [balones, setBalones] = useState(0);
   const [trabajadores, setTrabajadores] = useState<LineaGasto[]>([]);
@@ -222,16 +236,33 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
     setLineas(nuevas);
 
     const gastos = detalle.egresos ?? [];
-    const arbitro = gastos.find((e) => e.categoria === CATEGORIA_ARBITRAJE);
     const guardadoCal = gastos.find((e) => e.categoria === CATEGORIA_CAL);
     const guardadoBalones = gastos.find((e) => e.categoria === CATEGORIA_BALONES);
 
-    // Sin nada guardado todavía, el árbitro arranca con el valor que le
-    // corresponde a la fase del día (la mayoría de días tienen una sola).
-    const sugeridoArbitro = partidosDelDia.reduce((s, p) => s + valorArbitroDelPartido(p, ajustes), 0);
+    // Una fila de árbitro por partido del día. Si ya se guardó, manda lo
+    // guardado; si no, el nombre sale de la planilla del partido (por si ya
+    // la llenaron) y el valor del que le corresponde a esa fase en Ajustes.
+    const arbitrosGuardados = gastos.filter((e) => e.categoria === CATEGORIA_ARBITRAJE);
+    const porPartido = new Map(
+      arbitrosGuardados.filter((e) => e.partidoId != null).map((e) => [e.partidoId!, e]),
+    );
+    // Lo que quedó de antes de que el arbitraje se llevara por partido: una
+    // sola línea suelta, sin partido. Se le asigna al primero del día para
+    // no perder el dato.
+    const sueltos = arbitrosGuardados.filter((e) => e.partidoId == null);
 
-    setArbitroNombre(arbitro?.descripcion ?? '');
-    setArbitroValor(arbitro?.valor ?? sugeridoArbitro);
+    setArbitros(
+      partidosDelDia.map((p, i) => {
+        const guardado = porPartido.get(p.id) ?? (i === 0 ? sueltos[0] : undefined);
+        return {
+          partidoId: p.id,
+          enfrentamiento: `${p.localNombre} vs ${p.visitanteNombre}`,
+          fase: p.fase ?? null,
+          nombre: guardado?.descripcion ?? p.arbitro ?? '',
+          valor: guardado?.valor ?? valorArbitroDelPartido(p, ajustes),
+        };
+      }),
+    );
     setCal(guardadoCal?.valor ?? 0);
     setBalones(guardadoBalones?.valor ?? 0);
     setTrabajadores(
@@ -256,8 +287,9 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
   const valorCinta = ajustes?.valorCintaCapitan ?? 0;
   const totalCintas = lineas.reduce((s, l) => s + l.cintas * valorCinta, 0);
   const totalIngresos = lineas.filter((l) => l.pago).reduce((s, l) => s + l.valor, 0) + totalCintas;
+  const totalArbitros = arbitros.reduce((s, a) => s + a.valor, 0);
   const totalEgresos =
-    arbitroValor +
+    totalArbitros +
     cal +
     balones +
     trabajadores.reduce((s, t) => s + t.valor, 0) +
@@ -265,10 +297,14 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
   const saldo = totalIngresos - totalEgresos;
 
   const sinPagar = lineas.filter((l) => !l.pago);
-  const noAlcanza = totalIngresos < arbitroValor && arbitroValor > 0;
+  const noAlcanza = totalIngresos < totalArbitros && totalArbitros > 0;
 
   function actualizarLinea(clave: string, cambios: Partial<LineaEquipo>) {
     setLineas((prev) => prev.map((l) => (l.clave === clave ? { ...l, ...cambios } : l)));
+  }
+
+  function actualizarArbitro(partidoId: number, cambios: Partial<LineaArbitro>) {
+    setArbitros((prev) => prev.map((a) => (a.partidoId === partidoId ? { ...a, ...cambios } : a)));
   }
 
   async function onGuardar() {
@@ -281,13 +317,14 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         .map((l) => ({ equipoId: l.equipoId, concepto: CONCEPTO_CINTA, monto: l.cintas * valorCinta })),
     ];
     const egresos = [
-      ...(arbitroValor > 0
-        ? [{
-            categoria: CATEGORIA_ARBITRAJE,
-            descripcion: arbitroNombre.trim() || 'Arbitraje',
-            valor: arbitroValor,
-          }]
-        : []),
+      ...arbitros
+        .filter((a) => a.valor > 0)
+        .map((a) => ({
+          categoria: CATEGORIA_ARBITRAJE,
+          descripcion: a.nombre.trim() || 'Arbitraje',
+          valor: a.valor,
+          partidoId: a.partidoId,
+        })),
       ...(cal > 0 ? [{ categoria: CATEGORIA_CAL, descripcion: 'Cal', valor: cal }] : []),
       ...(balones > 0 ? [{ categoria: CATEGORIA_BALONES, descripcion: 'Balones', valor: balones }] : []),
       ...trabajadores
@@ -337,9 +374,17 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
           '—',
         ],
       })),
-    ...(arbitroValor > 0
-      ? [{ clave: 'e-arbitro', celdas: ['Árbitro', arbitroNombre || '—', '—', formatMoney(arbitroValor)] }]
-      : []),
+    ...arbitros
+      .filter((a) => a.valor > 0)
+      .map((a) => ({
+        clave: `e-arb-${a.partidoId}`,
+        celdas: [
+          'Árbitro',
+          `${a.nombre || 'Sin nombre'} · ${a.enfrentamiento}`,
+          '—',
+          formatMoney(a.valor),
+        ],
+      })),
     ...(cal > 0 ? [{ clave: 'e-cal', celdas: ['Cal', '—', '—', formatMoney(cal)] }] : []),
     ...(balones > 0 ? [{ clave: 'e-balones', celdas: ['Balones', '—', '—', formatMoney(balones)] }] : []),
     ...trabajadores
@@ -554,26 +599,47 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
           <CardContent className="p-4 space-y-4">
             <div>
               <h3 className="font-bold text-sm">Lo que sale</h3>
-              <p className="text-xs text-muted-foreground">El valor del árbitro se sugiere según la fase</p>
+              <p className="text-xs text-muted-foreground">Cada partido lleva su propio árbitro; el valor se sugiere según la fase</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Árbitro</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nombre del árbitro"
-                  disabled={bloqueado}
-                  value={arbitroNombre}
-                  onChange={(e) => setArbitroNombre(e.target.value)}
-                />
-                <Input
-                  className="w-32 text-right"
-                  placeholder="0"
-                  disabled={bloqueado}
-                  value={arbitroValor === 0 ? '' : String(arbitroValor)}
-                  onChange={(e) => setArbitroValor(numeroDeInput(e.target.value))}
-                />
+              <div className="flex items-baseline justify-between">
+                <Label>
+                  Árbitros <span className="text-muted-foreground font-normal">· uno por partido</span>
+                </Label>
+                {arbitros.length > 0 && (
+                  <span className="text-xs text-muted-foreground">{formatMoney(totalArbitros)}</span>
+                )}
               </div>
+
+              {arbitros.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No hay partidos programados para ese día.</p>
+              ) : (
+                arbitros.map((a) => (
+                  <div key={a.partidoId} className="space-y-1">
+                    <p className="text-xs text-muted-foreground">
+                      {a.enfrentamiento}
+                      {a.fase && <span className="ml-1">· {a.fase}</span>}
+                      {hayTerna(a.fase, ajustes) && <span className="ml-1 font-semibold">· terna</span>}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nombre del árbitro"
+                        disabled={bloqueado}
+                        value={a.nombre}
+                        onChange={(e) => actualizarArbitro(a.partidoId, { nombre: e.target.value })}
+                      />
+                      <Input
+                        className="w-32 text-right"
+                        placeholder="0"
+                        disabled={bloqueado}
+                        value={a.valor === 0 ? '' : String(a.valor)}
+                        onChange={(e) => actualizarArbitro(a.partidoId, { valor: numeroDeInput(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">

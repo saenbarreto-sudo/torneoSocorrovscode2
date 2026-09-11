@@ -12,4 +12,6 @@ export interface MesaEgreso {
   categoria?: string | null;
   descripcion: string;
   valor: number;
+  /** @nullable */
+  partidoId?: number | null;
 }

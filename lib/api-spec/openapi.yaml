@@ -2278,6 +2278,10 @@ components:
           type: string
         valor:
           type: number
+        # El partido al que corresponde, cuando aplica: cada partido del día
+        # puede tener su propio árbitro con su propio pago.
+        partidoId:
+          type: ["number", "null"]
 
     MesaDetalle:
       type: object
@@ -2345,6 +2349,8 @@ components:
                 type: string
               valor:
                 type: number
+              partidoId:
+                type: ["number", "null"]
 
     # Cambio de la propia contraseña: se exige la actual para confirmar
     # identidad, así un token robado no basta para dejar a alguien por fuera.

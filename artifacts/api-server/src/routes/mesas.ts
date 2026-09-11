@@ -79,6 +79,7 @@ async function detalleDeFecha(fecha: string) {
       categoria: e.categoria,
       descripcion: e.descripcion,
       valor: e.valor,
+      partidoId: e.partidoId,
     })),
     totalIngresos,
     totalEgresos,
@@ -144,6 +145,9 @@ router.put("/mesas/:fecha", requireAuth, writeAccess.pagos, async (req, res): Pr
       categoria: l.categoria == null ? null : String(l.categoria),
       descripcion: String(l.descripcion ?? ""),
       valor: Math.round(Number(l.valor ?? 0)),
+      // Solo el arbitraje lo usa: un día tiene varios partidos y cada uno
+      // puede llevar su propio árbitro.
+      partidoId: typeof l.partidoId === "number" ? l.partidoId : null,
     };
   });
 
@@ -207,6 +211,7 @@ router.put("/mesas/:fecha", requireAuth, writeAccess.pagos, async (req, res): Pr
         fecha,
         descripcion: e.descripcion,
         categoria: e.categoria,
+        partidoId: e.partidoId,
         valor: e.valor,
         mesaId: mesa.id,
       })),

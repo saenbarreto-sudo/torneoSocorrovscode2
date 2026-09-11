@@ -754,7 +754,8 @@ export const GetMesaPorFechaResponse = zod.object({
   "id": zod.number(),
   "categoria": zod.string().nullish(),
   "descripcion": zod.string(),
-  "valor": zod.number()
+  "valor": zod.number(),
+  "partidoId": zod.number().nullish()
 })),
   "totalIngresos": zod.number(),
   "totalEgresos": zod.number(),
@@ -781,7 +782,8 @@ export const GuardarMesaBody = zod.object({
   "egresos": zod.array(zod.object({
   "categoria": zod.string().nullish(),
   "descripcion": zod.string(),
-  "valor": zod.number()
+  "valor": zod.number(),
+  "partidoId": zod.number().nullish()
 }))
 })
 
@@ -808,7 +810,8 @@ export const GuardarMesaResponse = zod.object({
   "id": zod.number(),
   "categoria": zod.string().nullish(),
   "descripcion": zod.string(),
-  "valor": zod.number()
+  "valor": zod.number(),
+  "partidoId": zod.number().nullish()
 })),
   "totalIngresos": zod.number(),
   "totalEgresos": zod.number(),

@@ -11,4 +11,6 @@ export type MesaGuardarInputEgresosItem = {
   categoria?: string | null;
   descripcion: string;
   valor: number;
+  /** @nullable */
+  partidoId?: number | null;
 };
