@@ -724,6 +724,26 @@ export const GetMesasResponse = zod.array(GetMesasResponseItem)
 
 
 /**
+ * En qué se va la plata de la mesa en todo el torneo: cuánto entró por cada concepto (mesa, cintas) y cuánto salió por cada categoría (árbitros, cal, balones, trabajadores), sumando todos los días.
+ * @summary Season totals of the match-day cash sheets, by concept
+ */
+export const GetResumenMesasQueryParams = zod.object({
+  "temporada": zod.coerce.string().optional()
+})
+
+export const GetResumenMesasResponse = zod.object({
+  "ingresos": zod.array(zod.object({
+  "nombre": zod.string(),
+  "total": zod.number()
+})),
+  "egresos": zod.array(zod.object({
+  "nombre": zod.string(),
+  "total": zod.number()
+}))
+})
+
+
+/**
  * Devuelve el cuadre de esa fecha. Si todavía no se ha creado la mesa de ese día, responde igual con las listas vacías y mesa en null, para que la pantalla pueda mostrar el día en blanco y listo para llenar.
  * @summary The cash sheet of one match day (income, expenses and balance)
  */

@@ -392,6 +392,16 @@ export interface MesaResumen {
   saldo: number;
 }
 
+export interface ResumenMesaLinea {
+  nombre: string;
+  total: number;
+}
+
+export interface ResumenMesas {
+  ingresos: ResumenMesaLinea[];
+  egresos: ResumenMesaLinea[];
+}
+
 export interface MesaIngreso {
   id: number;
   /** @nullable */
@@ -734,6 +744,10 @@ export const GetEventosAccion = {
 } as const;
 
 export type GetMesasParams = {
+temporada?: TemporadaParameter;
+};
+
+export type GetResumenMesasParams = {
 temporada?: TemporadaParameter;
 };
 

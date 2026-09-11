@@ -46,6 +46,7 @@ import type {
   GetPartidosParams,
   GetPosicionesParams,
   GetProgramacionParams,
+  GetResumenMesasParams,
   GetTarjetasParams,
   Goleador,
   HealthStatus,
@@ -68,6 +69,7 @@ import type {
   PartidosLoteResult,
   PosicionEquipo,
   ResumenCierre,
+  ResumenMesas,
   SemanaFecha,
   SemanaFechaInput,
   SemanaFechaUpdate,
@@ -2154,6 +2156,91 @@ export function useGetMesas<TData = Awaited<ReturnType<typeof getMesas>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMesasQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetResumenMesasUrl = (params?: GetResumenMesasParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mesas/resumen?${stringifiedParams}` : `/api/mesas/resumen`
+}
+
+/**
+ * En qué se va la plata de la mesa en todo el torneo: cuánto entró por cada concepto (mesa, cintas) y cuánto salió por cada categoría (árbitros, cal, balones, trabajadores), sumando todos los días.
+ * @summary Season totals of the match-day cash sheets, by concept
+ */
+export const getResumenMesas = async (params?: GetResumenMesasParams, options?: Parameters<typeof customFetch>[1]): Promise<ResumenMesas> => {
+
+  return customFetch<ResumenMesas>(getGetResumenMesasUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResumenMesasQueryKey = (params?: GetResumenMesasParams,) => {
+    return [
+    `/api/mesas/resumen`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetResumenMesasQueryOptions = <TData = Awaited<ReturnType<typeof getResumenMesas>>, TError = ErrorType<unknown>>(params?: GetResumenMesasParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumenMesas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResumenMesasQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResumenMesas>>> = ({ signal }) => getResumenMesas(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResumenMesas>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResumenMesasQueryResult = NonNullable<Awaited<ReturnType<typeof getResumenMesas>>>
+export type GetResumenMesasQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Season totals of the match-day cash sheets, by concept
+ */
+
+export function useGetResumenMesas<TData = Awaited<ReturnType<typeof getResumenMesas>>, TError = ErrorType<unknown>>(
+ params?: GetResumenMesasParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumenMesas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResumenMesasQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

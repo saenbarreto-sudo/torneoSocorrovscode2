@@ -5,6 +5,8 @@ import {
   useGetAjustes,
   useGuardarMesa,
   useCambiarEstadoMesa,
+  useGetMesas,
+  useGetResumenMesas,
   getGetMesaPorFechaQueryOptions,
   getGetMesaPorFechaQueryKey,
   type Ajustes,
@@ -27,7 +29,7 @@ import { extractErrorMessage } from '@/lib/api-errors';
 import { formatMoney, formatFecha } from '@/lib/utils';
 import { useAuth, canWrite } from '@/lib/auth';
 import {
-  Coins, Printer, Save, Lock, Unlock, Plus, Trash2, TrendingUp, TrendingDown, Wallet, AlertTriangle,
+  Coins, Printer, Save, Lock, Unlock, Plus, Trash2, TrendingUp, TrendingDown, Wallet, AlertTriangle, History,
 } from 'lucide-react';
 
 /**
@@ -687,6 +689,8 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         </Card>
       </div>
 
+      <HistorialMesas fechaActual={fecha} onVerDia={setFecha} />
+
       <ImprimirPortal activo={imprimiendo}>{planilla}</ImprimirPortal>
     </div>
   );
@@ -769,6 +773,171 @@ function ListaGastos({
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * El historial: qué dejó cada día de juego y en qué se fue la plata en todo
+ * el torneo. Va debajo del cuadre del día porque es la historia de lo mismo
+ * que se está mirando arriba — al hacer clic en una fila, se abre ese día.
+ *
+ * Respeta el torneo que se esté viendo: con un torneo cerrado seleccionado,
+ * muestra el historial de ese año (ver lib/temporada.tsx).
+ */
+function HistorialMesas({
+  fechaActual,
+  onVerDia,
+}: {
+  fechaActual: string;
+  onVerDia: (fecha: string) => void;
+}) {
+  const { data: mesas } = useGetMesas();
+  const { data: resumen } = useGetResumenMesas();
+  const { imprimiendo, imprimir } = useImprimir();
+
+  const filas = mesas ?? [];
+  const totales = filas.reduce(
+    (acc, m) => ({
+      ingresos: acc.ingresos + m.totalIngresos,
+      egresos: acc.egresos + m.totalEgresos,
+      saldo: acc.saldo + m.saldo,
+    }),
+    { ingresos: 0, egresos: 0, saldo: 0 },
+  );
+
+  if (filas.length === 0) return null;
+
+  const bloqueResumen = (titulo: string, lineas: Array<{ nombre: string; total: number }>) => (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{titulo}</p>
+      {lineas.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nada todavía.</p>
+      ) : (
+        lineas.map((l) => (
+          <div key={l.nombre} className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{l.nombre}</span>
+            <span className="font-mono">{formatMoney(l.total)}</span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <History className="h-5 w-5 text-primary" />
+        <h3 className="font-bold">Historial de mesas</h3>
+        <span className="ml-auto">
+          <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir historial de mesas">
+            <Printer className="h-4 w-4" />
+          </Button>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Día</TableHead>
+                  <TableHead className="text-center">Estado</TableHead>
+                  <TableHead className="text-right">Entró</TableHead>
+                  <TableHead className="text-right">Salió</TableHead>
+                  <TableHead className="text-right">Queda</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filas.map((m) => (
+                  <TableRow
+                    key={m.id}
+                    onClick={() => onVerDia(m.fecha)}
+                    className={`cursor-pointer ${m.fecha === fechaActual ? 'bg-accent/60' : ''}`}
+                    title="Ver la mesa de este día"
+                  >
+                    <TableCell className="font-semibold whitespace-nowrap">{formatFecha(m.fecha)}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={m.estado === 'cerrada' ? 'secondary' : 'success'} className="text-[10px]">
+                        {m.estado === 'cerrada' ? 'Cerrada' : 'Abierta'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-emerald-700 dark:text-emerald-400">
+                      {formatMoney(m.totalIngresos)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-destructive">
+                      {formatMoney(m.totalEgresos)}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono font-bold ${m.saldo < 0 ? 'text-destructive' : ''}`}>
+                      {formatMoney(m.saldo)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="border-t-2 bg-muted/40">
+                  <TableCell colSpan={2} className="font-bold">Total del torneo</TableCell>
+                  <TableCell className="text-right font-mono font-bold">{formatMoney(totales.ingresos)}</TableCell>
+                  <TableCell className="text-right font-mono font-bold">{formatMoney(totales.egresos)}</TableCell>
+                  <TableCell
+                    className={`text-right font-mono font-black ${totales.saldo < 0 ? 'text-destructive' : 'text-primary'}`}
+                  >
+                    {formatMoney(totales.saldo)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div>
+              <h4 className="font-bold text-sm">En qué se va la plata</h4>
+              <p className="text-xs text-muted-foreground">Sumando todos los días del torneo</p>
+            </div>
+            {bloqueResumen('Entró por', resumen?.ingresos ?? [])}
+            {bloqueResumen('Salió en', resumen?.egresos ?? [])}
+          </CardContent>
+        </Card>
+      </div>
+
+      <ImprimirPortal activo={imprimiendo}>
+        <TablaImprimible
+          titulo="HISTORIAL DE MESAS"
+          columnas={[
+            { encabezado: 'Día' },
+            { encabezado: 'Entró', alineacion: 'derecha' },
+            { encabezado: 'Salió', alineacion: 'derecha' },
+            { encabezado: 'Queda', alineacion: 'derecha' },
+          ]}
+          filas={[
+            ...filas.map((m) => ({
+              clave: m.id,
+              celdas: [
+                formatFecha(m.fecha),
+                formatMoney(m.totalIngresos),
+                formatMoney(m.totalEgresos),
+                formatMoney(m.saldo),
+              ],
+            })),
+            {
+              clave: 'total',
+              destacada: true,
+              celdas: [
+                'Total del torneo',
+                formatMoney(totales.ingresos),
+                formatMoney(totales.egresos),
+                formatMoney(totales.saldo),
+              ],
+            },
+          ]}
+          nota={
+            (resumen?.egresos ?? []).length > 0
+              ? `Salió en: ${(resumen?.egresos ?? []).map((l) => `${l.nombre} ${formatMoney(l.total)}`).join(' · ')}`
+              : undefined
+          }
+        />
+      </ImprimirPortal>
     </div>
   );
 }

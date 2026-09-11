@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
-import { and, eq, desc, inArray, isNull } from "drizzle-orm";
+import { and, eq, desc, inArray, isNull, sql } from "drizzle-orm";
 import { db, mesasTable, pagosTable, egresosTable, equiposTable, ESTADOS_MESA } from "@workspace/db";
 import type { EstadoMesa } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
-import { filtroTemporada, temporadaPedida } from "../lib/temporada";
+import { filtroTemporada, filtroTemporadaSql, temporadaPedida } from "../lib/temporada";
 
 const router: IRouter = Router();
 
@@ -99,6 +99,43 @@ router.get("/mesas", requireAuth, async (req, res): Promise<void> => {
     resultado.push(mapMesa(mesa, { totalIngresos, totalEgresos, saldo }));
   }
   res.json(resultado);
+});
+
+/**
+ * En qué se va la plata de la mesa en todo el torneo: cuánto entró por
+ * cada concepto y cuánto salió por cada categoría, sumando todos los días.
+ *
+ * Se calcula acá y no en la pantalla porque, si no, habría que bajarse
+ * todos los pagos y egresos del torneo solo para sumarlos — y además ni el
+ * pago ni el egreso dicen a qué mesa pertenecen cuando salen por la API.
+ *
+ * OJO con el orden: esta ruta va ANTES de "/mesas/:fecha", si no "resumen"
+ * se tomaría como si fuera una fecha.
+ */
+router.get("/mesas/resumen", requireAuth, async (req, res): Promise<void> => {
+  const temporada = temporadaPedida(req);
+  const filas = await db.execute<{ tipo: string; nombre: string; total: number }>(sql`
+    SELECT 'ingreso' AS tipo, p.concepto AS nombre, SUM(p.monto)::int AS total
+    FROM pagos p
+    JOIN mesas m ON m.id = p.mesa_id
+    WHERE ${filtroTemporadaSql("m.temporada", temporada)}
+    GROUP BY p.concepto
+    UNION ALL
+    SELECT 'egreso' AS tipo, COALESCE(e.categoria, 'Otro') AS nombre, SUM(e.valor)::int AS total
+    FROM egresos e
+    JOIN mesas m ON m.id = e.mesa_id
+    WHERE ${filtroTemporadaSql("m.temporada", temporada)}
+    GROUP BY COALESCE(e.categoria, 'Otro')
+  `);
+
+  const todas = (filas.rows ?? filas) as Array<{ tipo: string; nombre: string; total: number }>;
+  const porTipo = (tipo: string) =>
+    todas
+      .filter((f) => f.tipo === tipo)
+      .map((f) => ({ nombre: String(f.nombre), total: Number(f.total ?? 0) }))
+      .sort((a, b) => b.total - a.total);
+
+  res.json({ ingresos: porTipo("ingreso"), egresos: porTipo("egreso") });
 });
 
 router.get("/mesas/:fecha", requireAuth, async (req, res): Promise<void> => {

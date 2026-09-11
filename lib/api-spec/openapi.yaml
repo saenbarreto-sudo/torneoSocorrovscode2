@@ -607,6 +607,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/MesaResumen"
 
+  /mesas/resumen:
+    get:
+      operationId: getResumenMesas
+      tags: [mesas]
+      summary: Season totals of the match-day cash sheets, by concept
+      description: >
+        En qué se va la plata de la mesa en todo el torneo: cuánto entró por
+        cada concepto (mesa, cintas) y cuánto salió por cada categoría
+        (árbitros, cal, balones, trabajadores), sumando todos los días.
+      parameters:
+        - $ref: "#/components/parameters/Temporada"
+      responses:
+        "200":
+          description: Totals by concept
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumenMesas"
+
   /mesas/{fecha}:
     get:
       operationId: getMesaPorFecha
@@ -2308,6 +2327,29 @@ components:
           type: number
         saldo:
           type: number
+
+    # Un renglón del resumen: "Árbitros: $1.200.000".
+    ResumenMesaLinea:
+      type: object
+      required: [nombre, total]
+      properties:
+        nombre:
+          type: string
+        total:
+          type: number
+
+    ResumenMesas:
+      type: object
+      required: [ingresos, egresos]
+      properties:
+        ingresos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumenMesaLinea"
+        egresos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumenMesaLinea"
 
     MesaEstadoInput:
       type: object
