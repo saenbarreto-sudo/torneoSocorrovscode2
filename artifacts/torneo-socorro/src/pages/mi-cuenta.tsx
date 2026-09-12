@@ -4,10 +4,12 @@ import { useGetMiEquipo, getGetPagosQueryOptions, type Pago } from '@workspace/a
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Landmark, Printer, TrendingUp } from 'lucide-react';
+import { Landmark, Printer, TrendingUp, Download } from 'lucide-react';
 import { formatMoney, formatFecha } from '@/lib/utils';
 import { CONCEPTOS, CONCEPTO_LABEL, type Concepto } from '@/lib/conceptos-pago';
 import { ExtractoEquipo } from '@/components/extracto-equipo';
+import { ReciboPago } from '@/components/recibo-pago';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { useImprimir } from '@/hooks/use-imprimir';
 
@@ -44,6 +46,10 @@ export default function MiCuenta() {
   const equipoId = mio?.equipo.id;
   const { imprimiendo, imprimir } = useImprimir();
   const [conceptosExtracto] = useState<Concepto[]>([...CONCEPTOS]);
+  // El recibo que el delegado abrió para guardarse. Es el mismo comprobante
+  // que entrega el Comité (components/recibo-pago.tsx), así que el papel que
+  // se queda el equipo es idéntico al del torneo.
+  const [reciboAbierto, setReciboAbierto] = useState<Pago | null>(null);
 
   const { data: pagos } = useQuery<Pago[]>({
     ...getGetPagosQueryOptions(equipoId != null ? { equipoId } : undefined),
@@ -56,6 +62,26 @@ export default function MiCuenta() {
   const { equipo, cuenta } = mio;
   const recibos = pagos ?? [];
   const alDia = cuenta.saldoInscripcion <= 0;
+
+  // Los comprobantes (recibo suelto y extracto) piden un Equipo completo,
+  // pero /mi-equipo solo manda lo que el delegado necesita ver. Se completa
+  // acá con lo que ya se sabe: el resto no sale impreso.
+  const equipoParaRecibo = {
+    id: equipo.id,
+    nombre: equipo.nombre,
+    delegado: equipo.delegado ?? null,
+    telefono: equipo.telefono ?? null,
+    color: equipo.color ?? null,
+    activo: true,
+    puntosBonificacion: 0,
+    deudaInscripcion: cuenta.deudaInscripcion,
+    createdAt: new Date().toISOString(),
+  };
+  // El saldo solo se imprime en los recibos de inscripción (ver recibo-pago.tsx).
+  const saldoDelRecibo =
+    reciboAbierto?.concepto === 'Inscripcion'
+      ? { deudaTotal: cuenta.deudaInscripcion, pagado: cuenta.pagadoInscripcion, saldo: cuenta.saldoInscripcion }
+      : undefined;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -201,12 +227,13 @@ export default function MiCuenta() {
                   <TableHead>Concepto</TableHead>
                   <TableHead>Periodo</TableHead>
                   <TableHead className="text-right">Monto</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recibos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                       Cuando el Comité registre un pago tuyo, aparecerá acá.
                     </TableCell>
                   </TableRow>
@@ -221,6 +248,17 @@ export default function MiCuenta() {
                           {p.mes || (p.semana != null ? `Fecha ${p.semana}` : '—')}
                         </TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{formatMoney(p.monto)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setReciboAbierto(p)}
+                            title="Ver y guardar este recibo"
+                            aria-label={`Descargar el recibo ${p.codigoRecibo ?? p.id}`}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="border-t-2 bg-muted/40">
@@ -228,6 +266,7 @@ export default function MiCuenta() {
                       <TableCell className="text-right font-mono tabular-nums font-bold">
                         {formatMoney(recibos.reduce((s, p) => s + p.monto, 0))}
                       </TableCell>
+                      <TableCell />
                     </TableRow>
                   </>
                 )}
@@ -237,19 +276,35 @@ export default function MiCuenta() {
         </CardContent>
       </Card>
 
+      {/* ── Un recibo suelto, para verlo y guardarlo ── */}
+      <Dialog open={reciboAbierto != null} onOpenChange={(v) => !v && setReciboAbierto(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Recibo de pago</DialogTitle>
+          </DialogHeader>
+          {reciboAbierto && (
+            <ReciboPago pago={reciboAbierto} equipo={equipoParaRecibo} saldoInscripcion={saldoDelRecibo} />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReciboAbierto(null)}>Cerrar</Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-2" /> Guardar / imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* La copia que de verdad se imprime va fuera del diálogo; ver el
+          comentario junto a ".imprimir-solo" en index.css. */}
+      <ImprimirPortal activo={reciboAbierto != null}>
+        {reciboAbierto && (
+          <ReciboPago pago={reciboAbierto} equipo={equipoParaRecibo} saldoInscripcion={saldoDelRecibo} />
+        )}
+      </ImprimirPortal>
+
       <ImprimirPortal activo={imprimiendo}>
         <ExtractoEquipo
-          equipo={{
-            id: equipo.id,
-            nombre: equipo.nombre,
-            delegado: equipo.delegado ?? null,
-            telefono: equipo.telefono ?? null,
-            color: equipo.color ?? null,
-            activo: true,
-            puntosBonificacion: 0,
-            deudaInscripcion: cuenta.deudaInscripcion,
-            createdAt: new Date().toISOString(),
-          }}
+          equipo={equipoParaRecibo}
           pagos={recibos}
           conceptos={conceptosExtracto}
           saldoInscripcion={{
