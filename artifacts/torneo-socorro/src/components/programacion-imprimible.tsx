@@ -63,16 +63,28 @@ export function ProgramacionImprimible({ semana, partidos }: { semana: SemanaFec
                 {porFecha.get(fecha)!.map((p, i) => (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between gap-3 text-sm px-3 py-2 ${
-                      i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'
-                    } ${i > 0 ? 'border-t border-[hsl(273_20%_90%)]' : ''}`}
+                    className={`px-3 py-2 ${i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'} ${
+                      i > 0 ? 'border-t border-[hsl(273_20%_90%)]' : ''
+                    }`}
                   >
-                    <span className="font-mono text-xs w-20 shrink-0 whitespace-nowrap bg-[hsl(273_51%_94%)] text-[hsl(273_51%_32%)] font-bold rounded px-1.5 py-0.5 text-center">
-                      {p.hora ? formatHora12(p.hora) : '—'}
-                    </span>
-                    <span className="flex-1 text-right font-semibold">{p.localNombre}</span>
-                    <span className="text-[hsl(340_74%_40%)] text-xs font-bold shrink-0">vs</span>
-                    <span className="flex-1 font-semibold">{p.visitanteNombre}</span>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-mono text-xs w-20 shrink-0 whitespace-nowrap bg-[hsl(273_51%_94%)] text-[hsl(273_51%_32%)] font-bold rounded px-1.5 py-0.5 text-center">
+                        {p.hora ? formatHora12(p.hora) : '—'}
+                      </span>
+                      <span className="flex-1 text-right font-semibold">{p.localNombre}</span>
+                      <span className="text-[hsl(340_74%_40%)] text-xs font-bold shrink-0">vs</span>
+                      <span className="flex-1 font-semibold">{p.visitanteNombre}</span>
+                    </div>
+                    {/* De qué grupo (o de qué fase) es el partido: sin esto, en
+                        fase de grupos el cronograma no dice a cuál pertenece
+                        cada cruce. */}
+                    {p.fase && (
+                      <div className="pl-20 mt-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-[hsl(273_51%_32%)] bg-[hsl(273_51%_94%)] rounded px-1.5 py-0.5">
+                          {p.fase}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

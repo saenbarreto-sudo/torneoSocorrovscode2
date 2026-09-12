@@ -57,16 +57,19 @@ import { Label } from '@/components/ui/label';
  * un nombre de fase mal escrito.
  */
 const FASES_ELIMINACION_FIJAS = [
+  // Va de primero porque en el torneo va de primero: el repechaje define
+  // cuál es el último equipo que entra a cuartos, así que no puede haber
+  // cuartos mientras no se juegue. Es el partido extra para desempatar
+  // quién ocupa un cupo de la fase de grupos cuando un grupo queda con un
+  // equipo de más (ej. 5 en vez de 4). No se etiqueta con el nombre del
+  // grupo para no alterar su tabla de posiciones.
+  'Repechaje',
   'Muerte súbita',
   'Final liguilla',
   'Semifinal liguilla',
   'Semifinal del torneo',
   'Final del torneo',
   '3er puesto',
-  // Partido extra para desempatar quién ocupa un cupo de la fase de grupos
-  // cuando un grupo queda con un equipo de más (ej. 5 en vez de 4). No se
-  // etiqueta con el nombre del grupo para no alterar su tabla de posiciones.
-  'Repechaje',
 ];
 
 const FASES_FIJAS = ['Primera vuelta', 'Segunda vuelta', ...FASES_ELIMINACION_FIJAS];

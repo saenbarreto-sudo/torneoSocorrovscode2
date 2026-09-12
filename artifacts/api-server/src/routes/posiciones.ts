@@ -138,6 +138,29 @@ router.get("/posiciones", async (req, res): Promise<void> => {
   res.json(GetPosicionesResponse.parse(data));
 });
 
+/**
+ * El repechaje define cuál es el último equipo que entra a cuartos, así que
+ * en el torneo va SIEMPRE antes que cuartos — no puede haber cuartos
+ * mientras el repechaje no se juegue.
+ *
+ * Pero el orden guardado en la tabla "fases" es el orden en que se CREARON,
+ * y el repechaje se suele armar después de haber dejado listos los cuartos.
+ * Por eso acá se lo reubica: se le da el lugar justo antes de cuartos, en
+ * vez de dejarlo donde cayó por fecha de creación. Si no hay cuartos, se
+ * queda donde estaba.
+ *
+ * Se hace en este único punto a propósito: las pestañas de Posiciones, las
+ * de la Matriz y las columnas del cuadro de la fase final salen todas de
+ * esta misma respuesta, así que con arreglarlo aquí quedan las tres bien.
+ */
+function conRepechajeAntesDeCuartos<T extends { nombre: string; orden: number }>(fases: T[]): T[] {
+  const cuartos = fases.filter((f) => /cuartos/i.test(f.nombre));
+  if (cuartos.length === 0) return fases;
+  const primerCuartos = Math.min(...cuartos.map((f) => f.orden));
+  const lugarDeFase = (f: T) => (/repechaje/i.test(f.nombre) ? primerCuartos - 0.5 : f.orden);
+  return [...fases].sort((a, b) => lugarDeFase(a) - lugarDeFase(b) || a.nombre.localeCompare(b.nombre, "es"));
+}
+
 router.get("/fases", async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   // Solo fases con partidos de verdad en el torneo actual (no todo lo que
@@ -160,7 +183,7 @@ router.get("/fases", async (req, res): Promise<void> => {
     tipo: String(r.tipo),
     orden: Number(r.orden),
   }));
-  res.json(GetFasesResponse.parse(data));
+  res.json(GetFasesResponse.parse(conRepechajeAntesDeCuartos(data)));
 });
 
 router.post("/fases", requireAuth, writeAccess.partidos, async (req, res): Promise<void> => {
