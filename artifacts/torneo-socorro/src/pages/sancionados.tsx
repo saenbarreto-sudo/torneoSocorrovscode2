@@ -2,21 +2,29 @@ import { useGetAmonestados } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Ban } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Ban, Printer } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
+import { useAuth, esDelComite } from '@/lib/auth';
+import { ImprimirPortal } from '@/components/imprimir-portal';
+import { TablaImprimible } from '@/components/tabla-imprimible';
+import { useImprimir } from '@/hooks/use-imprimir';
 
 /**
  * Quién está sancionado y cuánto debe por tarjetas: la cartelera que se
  * revisa antes de cada fecha, para saber a quién no se puede alinear y qué
  * hay que pagar en la mesa.
  *
- * Es solo de consulta — no lleva botón de imprimir a propósito: el
- * documento oficial de amonestados lo saca el Comité desde su pantalla.
+ * El delegado y el invitado solo la consultan; el Comité y el Administrador
+ * del sistema sí la pueden imprimir, que es la hoja que se pega en la
+ * cartelera antes de cada fecha.
  *
  * `embebido`: va dentro de Tablas del torneo (ver pages/tablas-torneo.tsx).
  */
 export default function Sancionados({ embebido = false }: { embebido?: boolean }) {
   const { data: amonestados, isLoading } = useGetAmonestados();
+  const { role } = useAuth();
+  const { imprimiendo, imprimir } = useImprimir();
 
   const filas = amonestados ?? [];
   const totalDeuda = filas.reduce((s, a) => s + (a.valorDeuda ?? 0), 0);
@@ -32,6 +40,12 @@ export default function Sancionados({ embebido = false }: { embebido?: boolean }
             {sancionados > 0 && `${sancionados} con fechas pendientes · `}
             {formatMoney(totalDeuda)} por cobrar
           </span>
+        )}
+        {/* Solo quien organiza el torneo saca la hoja para la cartelera. */}
+        {esDelComite(role) && filas.length > 0 && (
+          <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir sancionados">
+            <Printer className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
@@ -109,6 +123,40 @@ export default function Sancionados({ embebido = false }: { embebido?: boolean }
         Las amarillas que se muestran son las que están sin pagar. Un jugador con fechas pendientes no se puede alinear
         hasta cumplirlas.
       </p>
+
+      <ImprimirPortal activo={imprimiendo}>
+        <TablaImprimible
+          titulo="SANCIONADOS Y TARJETAS"
+          columnas={[
+            { encabezado: 'Jugador' },
+            { encabezado: 'Equipo' },
+            { encabezado: 'Amar.', alineacion: 'centro' },
+            { encabezado: 'Rojas', alineacion: 'centro' },
+            { encabezado: 'Sanción', alineacion: 'centro' },
+            { encabezado: 'Debe', alineacion: 'derecha' },
+          ]}
+          filas={[
+            ...filas.map((a) => ({
+              clave: a.jugadorId,
+              destacada: (a.sancionFechas ?? 0) > 0,
+              celdas: [
+                a.jugadorNombre,
+                a.equipoNombre,
+                a.amarillas || '—',
+                a.rojas || '—',
+                (a.sancionFechas ?? 0) > 0 ? `${a.sancionFechas} fecha(s)` : '—',
+                (a.valorDeuda ?? 0) > 0 ? formatMoney(a.valorDeuda ?? 0) : 'Al día',
+              ],
+            })),
+            {
+              clave: 'total',
+              destacada: true,
+              celdas: ['Total por cobrar', '', '', '', '', formatMoney(totalDeuda)],
+            },
+          ]}
+          nota="Las amarillas que se muestran son las que están sin pagar. Un jugador con fechas pendientes no se puede alinear hasta cumplirlas."
+        />
+      </ImprimirPortal>
     </div>
   );
 }

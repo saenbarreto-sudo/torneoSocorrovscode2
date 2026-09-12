@@ -27,6 +27,15 @@ export function puedeImprimir(role: Role | null): boolean {
   return role !== null && role !== "publico"
 }
 
+/**
+ * true si el rol es del Comité Organizador o el Administrador del sistema,
+ * o sea quien organiza el torneo — no el delegado ni el invitado, que solo
+ * consultan.
+ */
+export function esDelComite(role: Role | null): boolean {
+  return role === "admin" || role === "superadmin"
+}
+
 /** true si el rol puede ver el registro de Actividad (quién hizo qué). */
 export function puedeVerActividad(role: Role | null): boolean {
   return role === "superadmin"
