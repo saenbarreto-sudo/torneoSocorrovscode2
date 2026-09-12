@@ -201,7 +201,10 @@ router.delete("/tarjetas/:id", requireAuth, writeAccess.tarjetas, async (req, re
   }
 });
 
-router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
+// Pública a propósito: quién está sancionado y cuánto debe es lo que se
+// pone en la cartelera antes de cada fecha — el delegado tiene que poder
+// mirarlo, y el que llega a la cancha también.
+router.get("/amonestados", async (req, res): Promise<void> => {
   const temporada = temporadaPedida(req);
   // "t.temporada IS NULL" = solo el torneo actual (ver schema/tarjetas.ts).
   //
@@ -210,7 +213,6 @@ router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
   // equipo actual: si se transfiere a mitad de torneo, sus tarjetas
   // anteriores se quedan con el equipo viejo (mismo criterio que goleadores
   // y la ficha individual del jugador).
-  const equipoAcotado = equipoAConsultar(req.quien!, null);
   const rows = await db.execute(sql`
     SELECT
       j.id as jugador_id,
@@ -219,7 +221,13 @@ router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
       e.nombre as equipo_nombre,
       COUNT(CASE WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 END)::int as amarillas,
       COUNT(CASE WHEN t.tipo = 'roja' THEN 1 END)::int as rojas,
-      SUM(CASE WHEN t.tipo = 'roja' THEN 2 WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 ELSE 0 END)::int as sancion_fechas
+      SUM(CASE WHEN t.tipo = 'roja' THEN 2 WHEN t.tipo = 'amarilla' AND t.pagada = false THEN 1 ELSE 0 END)::int as sancion_fechas,
+      -- Lo que debe por tarjetas sin pagar. El valor sale de la tarjeta (se
+      -- le pone el del día en que se registró); si quedó sin valor, se usa
+      -- el de Ajustes de ahora, para no mostrar una deuda en cero que no es.
+      COALESCE(SUM(CASE WHEN t.pagada = false THEN
+        COALESCE(NULLIF(t.valor, 0), CASE WHEN t.tipo = 'roja' THEN aj.valor_roja ELSE aj.valor_amarilla END)
+      ELSE 0 END), 0)::int as valor_deuda
     FROM tarjetas t
     JOIN jugadores j ON j.id = t.jugador_id
     LEFT JOIN partidos p ON p.id = t.partido_id
@@ -239,8 +247,8 @@ router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
       LIMIT 1
     ) heq ON true
     JOIN equipos e ON e.id = COALESCE(heq.equipo_id, j.equipo_id)
+    CROSS JOIN (SELECT valor_amarilla, valor_roja FROM ajustes WHERE id = 1) aj
     WHERE ${filtroTemporadaSql("t.temporada", temporada)}
-      ${equipoAcotado != null ? sql`AND COALESCE(heq.equipo_id, j.equipo_id) = ${equipoAcotado}` : sql``}
     GROUP BY j.id, j.nombre, j.n_carnet, e.id, e.nombre
     HAVING COUNT(CASE WHEN t.tipo = 'roja' OR (t.tipo = 'amarilla' AND t.pagada = false) THEN 1 END) > 0
     ORDER BY rojas DESC, amarillas DESC
@@ -253,6 +261,7 @@ router.get("/amonestados", requiereSesion, async (req, res): Promise<void> => {
     amarillas: Number(r.amarillas ?? 0),
     rojas: Number(r.rojas ?? 0),
     sancionFechas: Number(r.sancion_fechas ?? 0),
+    valorDeuda: Number(r.valor_deuda ?? 0),
   }));
   res.json(GetAmonestadosResponse.parse(data));
 });

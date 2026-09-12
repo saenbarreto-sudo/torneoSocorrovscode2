@@ -4,6 +4,7 @@ import Goleadores from '@/pages/goleadores';
 import Vallas from '@/pages/vallas';
 import MatrizResultados from '@/pages/matriz-resultados';
 import { CuadroFinalSeccion } from '@/pages/cuadro-final-seccion';
+import Sancionados from '@/pages/sancionados';
 
 /**
  * Las tres tablas de consulta del torneo en una sola pantalla: posiciones
@@ -25,7 +26,7 @@ export default function TablasTorneo() {
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tablas del torneo</h1>
-          <p className="text-muted-foreground mt-1">Posiciones, goleadores y valla menos vencida</p>
+          <p className="text-muted-foreground mt-1">Posiciones, goleadores, valla menos vencida y sancionados</p>
         </div>
       </div>
 
@@ -40,6 +41,10 @@ export default function TablasTorneo() {
         <Goleadores embebido />
         <Vallas embebido />
       </div>
+
+      {/* Quién no puede jugar la próxima fecha y qué debe por tarjetas. Es
+          solo de consulta: no lleva botón de imprimir (ver sancionados.tsx). */}
+      <Sancionados embebido />
     </div>
   );
 }

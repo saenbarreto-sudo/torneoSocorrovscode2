@@ -11,6 +11,7 @@ import { GitFork, Printer } from 'lucide-react';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { useImprimir } from '@/hooks/use-imprimir';
 import { CuadroFinal, type GrupoDelCuadro, type RondaDelCuadro } from '@/components/cuadro-final';
+import { useAuth, puedeImprimir } from '@/lib/auth';
 
 /** La casilla del 3er puesto se dibuja aparte, no como una ronda más de la llave. */
 const FASE_TERCER_PUESTO = '3er puesto';
@@ -28,6 +29,8 @@ const FASE_TERCER_PUESTO = '3er puesto';
 export function CuadroFinalSeccion() {
   const { data: fases } = useGetFases();
   const { imprimiendo, imprimir } = useImprimir();
+  // El invitado consulta, no imprime (ver puedeImprimir en lib/auth.tsx).
+  const { role } = useAuth();
 
   const fasesGrupos = (fases ?? []).filter((f) => f.tipo === 'grupos');
   const fasesEliminacion = (fases ?? []).filter((f) => f.tipo === 'eliminacion' && f.nombre !== FASE_TERCER_PUESTO);
@@ -75,11 +78,13 @@ export function CuadroFinalSeccion() {
       <div className="flex items-center gap-2">
         <GitFork className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-bold tracking-tight">Cuadro final</h2>
-        <span className="ml-auto">
-          <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir cuadro final">
-            <Printer className="h-4 w-4" />
-          </Button>
-        </span>
+        {puedeImprimir(role) && (
+          <span className="ml-auto">
+            <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir cuadro final">
+              <Printer className="h-4 w-4" />
+            </Button>
+          </span>
+        )}
       </div>
 
       <CuadroFinal grupos={grupos} rondas={rondas} tercerPuesto={tercerPuesto} />

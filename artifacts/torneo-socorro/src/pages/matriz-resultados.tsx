@@ -8,6 +8,7 @@ import { Grid3x3, Printer } from 'lucide-react';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
+import { useAuth, puedeImprimir } from '@/lib/auth';
 
 /**
  * La matriz de resultados: quién le ganó a quién, de un vistazo, sin tener
@@ -73,11 +74,13 @@ export default function MatrizResultados({ embebido = false }: { embebido?: bool
   });
 
   const nombreFase = esTablaGeneral ? 'Tabla general' : fase;
-  const botonImprimir = (
+  // El invitado consulta, no imprime (ver puedeImprimir en lib/auth.tsx).
+  const { role } = useAuth();
+  const botonImprimir = puedeImprimir(role) ? (
     <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir matriz de resultados">
       <Printer className="h-4 w-4" />
     </Button>
-  );
+  ) : null;
 
   return (
     <div className="space-y-4">

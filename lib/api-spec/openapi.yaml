@@ -2550,6 +2550,11 @@ components:
           type: number
         sancionFechas:
           type: ["number", "null"]
+        # Lo que debe por sus tarjetas sin pagar. Sale del valor con el que
+        # se registró cada tarjeta; si alguna quedó sin valor, se usa el de
+        # Ajustes de ahora.
+        valorDeuda:
+          type: number
 
     # ── PAGOS ────────────────────────────────────────────────────────────────
     Pago:

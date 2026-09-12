@@ -1247,7 +1247,8 @@ export const GetAmonestadosResponseItem = zod.object({
   "equipoNombre": zod.string(),
   "amarillas": zod.number(),
   "rojas": zod.number(),
-  "sancionFechas": zod.number().nullish()
+  "sancionFechas": zod.number().nullish(),
+  "valorDeuda": zod.number().optional()
 })
 export const GetAmonestadosResponse = zod.array(GetAmonestadosResponseItem)
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
+import { useAuth, puedeImprimir } from '@/lib/auth';
 
 const NOTA_WO = 'Los goles de partidos ganados por W.O. no se cuentan aquí, según el Art. 23 del reglamento. La valla deja de sumar al terminar la fase de grupos.';
 
@@ -16,11 +17,13 @@ export default function Vallas({ embebido = false }: { embebido?: boolean }) {
   const conPartidos = (vallas ?? []).filter((v) => v.partidosJugados > 0);
   const { imprimiendo, imprimir } = useImprimir();
 
-  const botonImprimir = (
+  // El invitado consulta, no imprime (ver puedeImprimir en lib/auth.tsx).
+  const { role } = useAuth();
+  const botonImprimir = puedeImprimir(role) ? (
     <Button variant="ghost" size="icon" onClick={imprimir} aria-label="Imprimir valla menos vencida">
       <Printer className="h-4 w-4" />
     </Button>
-  );
+  ) : null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

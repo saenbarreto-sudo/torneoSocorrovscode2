@@ -18,6 +18,15 @@ export const ROLE_LABELS: Record<Role, string> = {
   publico: "Invitado",
 }
 
+/**
+ * true si el rol puede imprimir. El invitado entra a consultar desde el
+ * celular, en la cancha: ve las tablas pero no genera documentos del
+ * torneo, que son los que el Comité reparte.
+ */
+export function puedeImprimir(role: Role | null): boolean {
+  return role !== null && role !== "publico"
+}
+
 /** true si el rol puede ver el registro de Actividad (quién hizo qué). */
 export function puedeVerActividad(role: Role | null): boolean {
   return role === "superadmin"

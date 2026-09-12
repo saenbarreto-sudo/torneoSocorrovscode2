@@ -41,7 +41,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, canWrite } from '@/lib/auth';
+import { useAuth, canWrite, puedeImprimir } from '@/lib/auth';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { ProgramacionImprimible } from '@/components/programacion-imprimible';
@@ -253,9 +253,11 @@ export default function Programacion({
                         <ListChecks className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => setSemanaImprimir(prog)} aria-label="Imprimir semana">
-                      <Printer className="h-4 w-4" />
-                    </Button>
+                    {puedeImprimir(role) && (
+                      <Button variant="ghost" size="icon" onClick={() => setSemanaImprimir(prog)} aria-label="Imprimir semana">
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    )}
                     {puedeProgramar && (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(prog)} aria-label="Editar semana">

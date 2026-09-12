@@ -731,6 +731,7 @@ export interface AmonestadoResumen {
   rojas: number;
   /** @nullable */
   sancionFechas?: number | null;
+  valorDeuda?: number;
 }
 
 export interface Pago {
