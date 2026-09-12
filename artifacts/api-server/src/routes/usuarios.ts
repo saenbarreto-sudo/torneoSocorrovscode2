@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { db, usuariosTable, ROLES_USUARIO } from "@workspace/db";
 import { hashPassword } from "../lib/password";
 import { requireAuth, requireRole } from "../lib/require-auth";
-import { soloComite } from "../lib/alcance";
 
 const router: IRouter = Router();
 
@@ -19,9 +18,10 @@ function toPublic(u: typeof usuariosTable.$inferSelect) {
   };
 }
 
-// Todas las rutas de este archivo requieren estar autenticado como
-// Comité Organizador (admin). Solo esa cuenta puede crear/editar usuarios.
-router.use("/usuarios", requireAuth, requireRole("admin"));
+// Las cuentas del sistema las maneja solo el Administrador del sistema: el
+// Comité organiza el torneo, no reparte accesos. Si pudieran, podrían
+// crearse una cuenta a la medida y saltarse el control de la Actividad.
+router.use("/usuarios", requireAuth, requireRole("superadmin"));
 
 const ROL_SISTEMA = "superadmin";
 
@@ -49,7 +49,7 @@ function bloqueaTocarElSistema(
   return true;
 }
 
-router.get("/usuarios", soloComite, async (_req, res): Promise<void> => {
+router.get("/usuarios", async (_req, res): Promise<void> => {
   const usuarios = await db.select().from(usuariosTable).orderBy(usuariosTable.nombre);
   res.json(usuarios.map(toPublic));
 });

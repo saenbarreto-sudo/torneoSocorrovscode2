@@ -6,7 +6,7 @@ import NotFound from '@/pages/not-found';
 import Login from '@/pages/login';
 import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
 import { AppLayout } from '@/components/layout/app-layout';
-import { AuthProvider, canAccessRoute, useAuth } from '@/lib/auth';
+import { AuthProvider, canAccessRoute, rutaInicial, useAuth } from '@/lib/auth';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TemporadaProvider } from '@/lib/temporada';
 import { Loader2 } from 'lucide-react';
@@ -49,13 +49,37 @@ function Protected({ path, component: Component }: { path: string; component: Co
   return <Component />;
 }
 
+/**
+ * Al entrar, lleva a cada quien a su primera pestaña: Dashboard el Comité y
+ * el Administrador del sistema, "Mi equipo" el delegado.
+ *
+ * Hace falta porque la dirección sobrevive al cambio de sesión: quien salía
+ * estando en "Mi equipo" y volvía a entrar con otro perfil se quedaba en la
+ * pantalla del perfil anterior. Recargar la página NO dispara esto (ver
+ * `recienIngreso` en lib/auth.tsx), para no sacar a nadie de donde está
+ * trabajando.
+ */
+function LlevarASuInicio() {
+  const { role, recienIngreso, ingresoAtendido } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!recienIngreso) return;
+    navigate(rutaInicial(role), { replace: true });
+    ingresoAtendido();
+  }, [recienIngreso, role, navigate, ingresoAtendido]);
+
+  return null;
+}
+
 function Router() {
   const { role } = useAuth();
   return (
     <AppLayout>
+      <LlevarASuInicio />
       <Switch>
         {/* El delegado arranca en su equipo, no en el tablero del torneo. */}
-        <Route path="/">{() => (role === 'delegado' ? <Redirect to="/mi-equipo" replace /> : <Dashboard />)}</Route>
+        <Route path="/">{() => (role === 'delegado' ? <Redirect to={rutaInicial(role)} replace /> : <Dashboard />)}</Route>
         <Route path="/mi-equipo">{() => <Protected path="/mi-equipo" component={MiEquipo} />}</Route>
         <Route path="/mis-partidos">{() => <Protected path="/mis-partidos" component={MisPartidos} />}</Route>
         <Route path="/mi-cuenta">{() => <Protected path="/mi-cuenta" component={MiCuenta} />}</Route>

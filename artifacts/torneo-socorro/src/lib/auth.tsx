@@ -54,11 +54,40 @@ const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
   publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/goleadores", "/vallas"],
 }
 
+/**
+ * Rutas que ni el Comité ve: son del Administrador del sistema.
+ *
+ * Crear usuarios y repartir accesos no es tarea del Comité, y la Actividad
+ * es el registro de lo que el Comité hace — si ellos manejaran las cuentas,
+ * podrían crearse una a la medida y el control no serviría.
+ */
+const RUTAS_SOLO_SISTEMA = ["/usuarios"]
+
+/**
+ * Las pantallas del delegado son solo suyas. El Comité tiene permiso "*",
+ * así que sin esto podía quedarse parado en "Mi equipo" al cambiar de
+ * perfil — y esa pantalla, sin un equipo detrás, no tiene qué mostrar.
+ */
+const RUTAS_SOLO_DELEGADO = ["/mi-equipo", "/mis-partidos", "/mi-cuenta"]
+
 export function canAccessRoute(role: Role | null, path: string): boolean {
   if (!role) return false
+  if (RUTAS_SOLO_SISTEMA.includes(path)) return role === "superadmin"
+  if (RUTAS_SOLO_DELEGADO.includes(path)) return role === "delegado"
   const allowed = ROUTE_PERMISSIONS[role]
   if (allowed === "*") return true
   return allowed.includes(path)
+}
+
+/**
+ * Dónde arranca cada quien al entrar: su primera pestaña del menú.
+ *
+ * Hace falta porque la sesión anterior deja la dirección donde estaba: si
+ * alguien sale estando en "Mi equipo" y entra después con otro perfil, sin
+ * esto se quedaría en la pantalla del perfil anterior.
+ */
+export function rutaInicial(role: Role | null): string {
+  return role === "delegado" ? "/mi-equipo" : "/"
 }
 
 /** true si el rol solo puede consultar, no crear/editar/eliminar registros */
@@ -110,6 +139,14 @@ interface AuthState {
   isAuthenticated: boolean
   /** true mientras se restaura la sesión guardada al cargar la app */
   isLoading: boolean
+  /**
+   * true justo después de entrar (no al recargar la página): le dice al
+   * enrutador que lleve a la persona a su pantalla de inicio. Recargar NO lo
+   * activa, para no sacar a nadie de donde estaba trabajando.
+   */
+  recienIngreso: boolean
+  /** Lo apaga cuando ya se llevó a la persona a su inicio. */
+  ingresoAtendido: () => void
   login: (username: string, password: string) => Promise<LoginResult>
   loginPublico: () => void
   logout: () => void
@@ -132,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null)
   const [role, setRole] = React.useState<Role | null>(null)
   const [isLoading, setLoading] = React.useState(true)
+  const [recienIngreso, setRecienIngreso] = React.useState(false)
   const tokenRef = React.useRef<string | null>(null)
 
   // Registra el proveedor de token para que TODAS las llamadas del cliente
@@ -186,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tokenRef.current = result.token
       setUser(result.user)
       setRole(result.user.rol)
+      setRecienIngreso(true)
       try {
         sessionStorage.setItem(TOKEN_KEY, result.token)
         sessionStorage.removeItem(PUBLICO_KEY)
@@ -202,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tokenRef.current = null
     setUser(null)
     setRole("publico")
+    setRecienIngreso(true)
     try {
       sessionStorage.setItem(PUBLICO_KEY, "1")
       sessionStorage.removeItem(TOKEN_KEY)
@@ -222,11 +262,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const ingresoAtendido = React.useCallback(() => setRecienIngreso(false), [])
+
   const value: AuthState = {
     user,
     role,
     isAuthenticated: role !== null,
     isLoading,
+    recienIngreso,
+    ingresoAtendido,
     login,
     loginPublico,
     logout,
