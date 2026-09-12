@@ -17,15 +17,17 @@ export function ProgramacionImprimible({ semana, partidos }: { semana: SemanaFec
     porFecha.get(clave)!.push(p);
   }
   const fechasOrdenadas = [...porFecha.keys()].sort();
+  const [ano, mes, dia] = new Date().toISOString().slice(0, 10).split('-');
   for (const lista of porFecha.values()) {
     lista.sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? ''));
   }
 
   return (
     <div className="bg-white text-[hsl(273_45%_12%)] border border-[hsl(273_20%_85%)] rounded-lg overflow-hidden max-w-md mx-auto">
-      {/* Grilla 1fr/auto/1fr para que el nombre quede centrado de verdad (las
-          dos columnas de los costados miden lo mismo entre sí, aunque la de
-          la derecha vaya vacía). */}
+      {/* Mismo encabezado que el resto de lo imprimible (ver
+          tabla-imprimible.tsx): grilla 1fr/auto/1fr para que el nombre quede
+          centrado de verdad, con el escudo a la izquierda y la fecha de
+          generación a la derecha. */}
       <div className="bg-[hsl(273_51%_32%)] text-white px-6 py-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <img
           src="/logo-torneo-socorro.png"
@@ -40,7 +42,10 @@ export function ProgramacionImprimible({ semana, partidos }: { semana: SemanaFec
             {semana.esFestivo && ' · Festivo'}
           </div>
         </div>
-        <div aria-hidden />
+        <div className="text-right shrink-0 justify-self-end">
+          <div className="text-[10px] text-white/70 uppercase tracking-wide">Generado</div>
+          <div className="font-mono text-sm">{`${dia}/${mes}/${ano}`}</div>
+        </div>
       </div>
       <div className="h-1.5 bg-[hsl(340_74%_27%)]" />
 
@@ -49,18 +54,24 @@ export function ProgramacionImprimible({ semana, partidos }: { semana: SemanaFec
           <p className="text-sm text-[hsl(273_15%_40%)]">Todavía no hay partidos con fecha para esta semana.</p>
         ) : (
           fechasOrdenadas.map((fecha) => (
-            <div key={fecha || 'sin-fecha'}>
-              <div className="text-sm font-bold text-[hsl(340_74%_27%)] border-b border-[hsl(273_20%_88%)] pb-1 mb-2">
+            <div key={fecha || 'sin-fecha'} className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)]">
+              {/* Cada día con su barra, como los grupos del cuadro final. */}
+              <div className="bg-[hsl(340_74%_27%)] text-white text-sm font-bold px-3 py-1.5">
                 {fecha ? formatFechaConDia(fecha) : 'Sin fecha'}
               </div>
-              <div className="space-y-2">
-                {porFecha.get(fecha)!.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="font-mono text-[hsl(273_15%_40%)] w-20 shrink-0 whitespace-nowrap">
+              <div>
+                {porFecha.get(fecha)!.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between gap-3 text-sm px-3 py-2 ${
+                      i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'
+                    } ${i > 0 ? 'border-t border-[hsl(273_20%_90%)]' : ''}`}
+                  >
+                    <span className="font-mono text-xs w-20 shrink-0 whitespace-nowrap bg-[hsl(273_51%_94%)] text-[hsl(273_51%_32%)] font-bold rounded px-1.5 py-0.5 text-center">
                       {p.hora ? formatHora12(p.hora) : '—'}
                     </span>
                     <span className="flex-1 text-right font-semibold">{p.localNombre}</span>
-                    <span className="text-[hsl(273_15%_40%)] text-xs shrink-0">vs</span>
+                    <span className="text-[hsl(340_74%_40%)] text-xs font-bold shrink-0">vs</span>
                     <span className="flex-1 font-semibold">{p.visitanteNombre}</span>
                   </div>
                 ))}

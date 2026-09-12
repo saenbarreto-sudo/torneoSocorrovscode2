@@ -93,34 +93,36 @@ export function ExtractoEquipo({
             No hay recibos registrados para los conceptos elegidos.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-[hsl(273_20%_85%)] text-left text-[11px] text-[hsl(273_15%_40%)] uppercase tracking-wide">
-                <th className="py-2 font-semibold">Recibo</th>
-                <th className="py-2 font-semibold">Fecha</th>
-                <th className="py-2 font-semibold">Concepto</th>
-                <th className="py-2 font-semibold text-right">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagos.map((p) => (
-                <tr key={p.id} className="border-b border-[hsl(273_20%_92%)]">
-                  <td className="py-1.5 font-mono">{p.codigoRecibo ?? (p.nRecibo ? `#${String(p.nRecibo).padStart(4, '0')}` : '—')}</td>
-                  <td className="py-1.5 font-mono">{formatFecha(p.fecha)}</td>
-                  <td className="py-1.5">{CONCEPTO_LABEL[p.concepto] ?? p.concepto}</td>
-                  <td className="py-1.5 text-right font-mono font-semibold">{formatMoney(p.monto)}</td>
+          <div className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)]">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-[hsl(273_51%_32%)] text-white text-left text-[11px] uppercase tracking-wide">
+                  <th className="py-2 px-2 font-bold">Recibo</th>
+                  <th className="py-2 px-2 font-bold">Fecha</th>
+                  <th className="py-2 px-2 font-bold">Concepto</th>
+                  <th className="py-2 px-2 font-bold text-right">Monto</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={3} className="pt-3 font-bold">Total</td>
-                <td className="pt-3 text-right font-mono font-extrabold text-lg text-[hsl(340_74%_27%)]">
-                  {formatMoney(total)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody>
+                {pagos.map((p, i) => (
+                  <tr key={p.id} className={i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'}>
+                    <td className="py-1.5 px-2 font-mono border-t border-[hsl(273_20%_90%)]">{p.codigoRecibo ?? (p.nRecibo ? `#${String(p.nRecibo).padStart(4, '0')}` : '—')}</td>
+                    <td className="py-1.5 px-2 font-mono border-t border-[hsl(273_20%_90%)]">{formatFecha(p.fecha)}</td>
+                    <td className="py-1.5 px-2 border-t border-[hsl(273_20%_90%)]">{CONCEPTO_LABEL[p.concepto] ?? p.concepto}</td>
+                    <td className="py-1.5 px-2 text-right font-mono font-semibold border-t border-[hsl(273_20%_90%)]">{formatMoney(p.monto)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-[hsl(340_74%_94%)] border-t-2 border-[hsl(340_74%_45%)]">
+                  <td colSpan={3} className="py-2 px-2 font-bold">Total</td>
+                  <td className="py-2 px-2 text-right font-mono font-extrabold text-lg text-[hsl(340_74%_27%)]">
+                    {formatMoney(total)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </div>
 

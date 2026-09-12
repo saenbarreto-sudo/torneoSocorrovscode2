@@ -144,38 +144,43 @@ export function FichaJugadorImprimible({
           {historial.length === 0 ? (
             <p className="text-sm text-[hsl(273_15%_40%)]">Sin historial todavía.</p>
           ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-[10px] text-[hsl(273_15%_40%)] uppercase tracking-wide">
-                  <th className="py-1 pr-2 font-bold">Equipo</th>
-                  <th className="py-1 pr-2 font-bold">Temporada</th>
-                  <th className="py-1 px-2 text-center font-bold">PJ</th>
-                  <th className="py-1 px-2 text-center font-bold">Goles</th>
-                  <th className="py-1 px-2 text-center font-bold">Am.</th>
-                  <th className="py-1 pl-2 text-center font-bold">Roj.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historial.map((h) => (
-                  <tr key={`${h.equipoId}-${h.temporada ?? 'actual'}`} className="border-t border-[hsl(273_20%_92%)]">
-                    <td className="py-1 pr-2 font-semibold">{h.equipoNombre}</td>
-                    <td className="py-1 pr-2">{h.temporada ?? 'Actual'}</td>
-                    <td className="py-1 px-2 text-center font-mono">{h.partidosJugados}</td>
-                    <td className="py-1 px-2 text-center font-mono font-bold">{h.goles}</td>
-                    <td className="py-1 px-2 text-center font-mono">{h.amarillas}</td>
-                    <td className="py-1 pl-2 text-center font-mono">{h.rojas}</td>
+            <div className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)]">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[hsl(273_51%_32%)] text-white text-left text-[10px] uppercase tracking-wide">
+                    <th className="py-1.5 px-2 font-bold">Equipo</th>
+                    <th className="py-1.5 px-2 font-bold">Temporada</th>
+                    <th className="py-1.5 px-2 text-center font-bold">PJ</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Goles</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Am.</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Roj.</th>
                   </tr>
-                ))}
-                <tr className="border-t-2 border-[hsl(273_20%_80%)] font-bold">
-                  <td className="py-1 pr-2">Total</td>
-                  <td />
-                  <td className="py-1 px-2 text-center font-mono">{total.pj}</td>
-                  <td className="py-1 px-2 text-center font-mono">{total.goles}</td>
-                  <td className="py-1 px-2 text-center font-mono">{total.amarillas}</td>
-                  <td className="py-1 pl-2 text-center font-mono">{total.rojas}</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {historial.map((h, i) => (
+                    <tr
+                      key={`${h.equipoId}-${h.temporada ?? 'actual'}`}
+                      className={i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'}
+                    >
+                      <td className="py-1 px-2 font-semibold border-t border-[hsl(273_20%_90%)]">{h.equipoNombre}</td>
+                      <td className="py-1 px-2 border-t border-[hsl(273_20%_90%)]">{h.temporada ?? 'Actual'}</td>
+                      <td className="py-1 px-2 text-center font-mono border-t border-[hsl(273_20%_90%)]">{h.partidosJugados}</td>
+                      <td className="py-1 px-2 text-center font-mono font-bold border-t border-[hsl(273_20%_90%)]">{h.goles}</td>
+                      <td className="py-1 px-2 text-center font-mono border-t border-[hsl(273_20%_90%)]">{h.amarillas}</td>
+                      <td className="py-1 px-2 text-center font-mono border-t border-[hsl(273_20%_90%)]">{h.rojas}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[hsl(340_74%_94%)] border-t-2 border-[hsl(340_74%_45%)] font-bold">
+                    <td className="py-1.5 px-2">Total</td>
+                    <td />
+                    <td className="py-1.5 px-2 text-center font-mono">{total.pj}</td>
+                    <td className="py-1.5 px-2 text-center font-mono">{total.goles}</td>
+                    <td className="py-1.5 px-2 text-center font-mono">{total.amarillas}</td>
+                    <td className="py-1.5 px-2 text-center font-mono">{total.rojas}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

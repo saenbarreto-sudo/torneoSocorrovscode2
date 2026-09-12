@@ -209,6 +209,21 @@
   }
 }
 
+/* Que los colores SÍ salgan en el papel.
+   Por defecto el navegador no imprime los fondos: la casilla "Gráficos de
+   fondo" del diálogo de impresión viene apagada, y sin ella la franja
+   morada del encabezado sale en blanco — o sea, letras blancas sobre papel
+   blanco: el título desaparece. Medido de verdad con Page.printToPDF: con
+   printBackground=false el morado hsl(273 51% 32%) y el vinotinto
+   hsl(340 74% 27%) no estaban en el PDF.
+   Con esto el navegador tiene que respetar los colores tal cual, sin que
+   nadie se acuerde de marcar la casilla. */
+.imprimir-solo,
+.imprimir-solo * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
 /* El cuadro de la fase final es ancho (una columna por ronda), así que su
    hoja va acostada. Se hace con una "named page" de CSS: la regla @page no
    se puede condicionar por clase, pero sí se puede declarar una página con

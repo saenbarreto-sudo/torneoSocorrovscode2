@@ -90,34 +90,46 @@ export function ExtractoJugador({
             No tiene tarjetas de los tipos elegidos.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-[hsl(273_20%_85%)] text-left text-[11px] text-[hsl(273_15%_40%)] uppercase tracking-wide">
-                <th className="py-2 font-semibold">Fecha</th>
-                <th className="py-2 font-semibold">Semana</th>
-                <th className="py-2 font-semibold">Tipo</th>
-                <th className="py-2 font-semibold text-right">Valor</th>
-                <th className="py-2 font-semibold text-right">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tarjetas.map((t) => (
-                <tr key={t.id} className="border-b border-[hsl(273_20%_92%)]">
-                  <td className="py-1.5 font-mono">{formatFecha(t.fecha)}</td>
-                  <td className="py-1.5 font-mono">{t.semana}</td>
-                  <td className="py-1.5">{TIPO_LABEL[t.tipo] ?? t.tipo}</td>
-                  <td className="py-1.5 text-right font-mono font-semibold">{formatMoney(t.valor)}</td>
-                  <td className="py-1.5 text-right">
-                    {t.pagada ? (
-                      <span className="font-semibold text-green-700">Pagada</span>
-                    ) : (
-                      <span className="font-semibold text-[hsl(340_74%_27%)]">Pendiente</span>
-                    )}
-                  </td>
+          <div className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)]">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-[hsl(273_51%_32%)] text-white text-left text-[11px] uppercase tracking-wide">
+                  <th className="py-2 px-2 font-bold">Fecha</th>
+                  <th className="py-2 px-2 font-bold">Semana</th>
+                  <th className="py-2 px-2 font-bold">Tipo</th>
+                  <th className="py-2 px-2 font-bold text-right">Valor</th>
+                  <th className="py-2 px-2 font-bold text-right">Estado</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tarjetas.map((t, i) => (
+                  <tr key={t.id} className={i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'}>
+                    <td className="py-1.5 px-2 font-mono border-t border-[hsl(273_20%_90%)]">{formatFecha(t.fecha)}</td>
+                    <td className="py-1.5 px-2 font-mono border-t border-[hsl(273_20%_90%)]">{t.semana}</td>
+                    <td className="py-1.5 px-2 border-t border-[hsl(273_20%_90%)]">
+                      <span
+                        className={`inline-block px-1.5 py-0.5 rounded font-semibold ${
+                          t.tipo === 'roja'
+                            ? 'bg-[hsl(0_72%_92%)] text-[hsl(0_72%_30%)]'
+                            : 'bg-[hsl(45_90%_88%)] text-[hsl(35_80%_28%)]'
+                        }`}
+                      >
+                        {TIPO_LABEL[t.tipo] ?? t.tipo}
+                      </span>
+                    </td>
+                    <td className="py-1.5 px-2 text-right font-mono font-semibold border-t border-[hsl(273_20%_90%)]">{formatMoney(t.valor)}</td>
+                    <td className="py-1.5 px-2 text-right border-t border-[hsl(273_20%_90%)]">
+                      {t.pagada ? (
+                        <span className="font-semibold text-green-700">Pagada</span>
+                      ) : (
+                        <span className="font-semibold text-[hsl(340_74%_27%)]">Pendiente</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

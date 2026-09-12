@@ -74,31 +74,45 @@ export function TablaImprimible({
         {filas.length === 0 ? (
           <p className="text-sm text-[hsl(273_15%_40%)] text-center py-4">Todavía no hay datos para esta tabla.</p>
         ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-[10px] text-[hsl(273_15%_40%)] uppercase tracking-wide">
-                {columnas.map((c) => (
-                  <th key={c.encabezado} className={`py-1 px-1.5 font-bold ${claseAlineacion(c.alineacion)}`}>
-                    {c.encabezado}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filas.map((fila) => (
-                <tr
-                  key={fila.clave}
-                  className={`border-t border-[hsl(273_20%_92%)] ${fila.destacada ? 'bg-[hsl(273_51%_96%)] font-semibold' : ''}`}
-                >
-                  {fila.celdas.map((celda, i) => (
-                    <td key={i} className={`py-1.5 px-1.5 ${claseAlineacion(columnas[i]?.alineacion)}`}>
-                      {celda}
-                    </td>
+          /* Encabezado morado y filas alternadas, como el cuadro de la fase
+             final: la tabla se lee de un vistazo y se ve del torneo, no como
+             una lista pegada. */
+          <div className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)]">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-[hsl(273_51%_32%)] text-white text-[10px] uppercase tracking-wide">
+                  {columnas.map((c) => (
+                    <th key={c.encabezado} className={`py-2 px-2 font-bold ${claseAlineacion(c.alineacion)}`}>
+                      {c.encabezado}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filas.map((fila, indice) => (
+                  <tr
+                    key={fila.clave}
+                    className={
+                      fila.destacada
+                        ? 'bg-[hsl(340_74%_94%)] font-bold border-l-[3px] border-l-[hsl(340_74%_45%)]'
+                        : indice % 2 === 1
+                          ? 'bg-[hsl(273_40%_97%)]'
+                          : 'bg-white'
+                    }
+                  >
+                    {fila.celdas.map((celda, i) => (
+                      <td
+                        key={i}
+                        className={`py-1.5 px-2 border-t border-[hsl(273_20%_90%)] ${claseAlineacion(columnas[i]?.alineacion)}`}
+                      >
+                        {celda}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
