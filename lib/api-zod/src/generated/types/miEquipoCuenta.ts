@@ -5,8 +5,11 @@
  * Torneo Socorro Senior Master Plus 40 - Tournament Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { MiEquipoConcepto } from './miEquipoConcepto';
 
 export interface MiEquipoCuenta {
+  pendienteTotal: number;
+  conceptos: MiEquipoConcepto[];
   deudaInscripcion: number;
   pagadoInscripcion: number;
   saldoInscripcion: number;

@@ -2048,12 +2048,38 @@ components:
         fechasPendientes:
           type: number
 
+    MiEquipoConcepto:
+      type: object
+      required: [concepto, etiqueta, pagado]
+      properties:
+        concepto:
+          type: string
+        etiqueta:
+          type: string
+        pagado:
+          type: number
+        # null = ese concepto no se lleva como deuda (multas, FOFI,
+        # traspasos, arbitraje, cintas): solo se sabe lo que ya se pagó.
+        # Es distinto de 0, que sí significa "está al día".
+        pendiente:
+          type: ["number", "null"]
+        # Cuántas unidades están pendientes (tarjetas, carnés), cuando aplica.
+        cantidadPendiente:
+          type: ["number", "null"]
+
     MiEquipoCuenta:
       type: object
       required:
         [deudaInscripcion, pagadoInscripcion, saldoInscripcion, amarillasSinPagar,
-         valorAmarillasSinPagar, carnetsSinPagar, valorCarnetsSinPagar, pagadoTotal]
+         valorAmarillasSinPagar, carnetsSinPagar, valorCarnetsSinPagar, pagadoTotal,
+         pendienteTotal, conceptos]
       properties:
+        pendienteTotal:
+          type: number
+        conceptos:
+          type: array
+          items:
+            $ref: "#/components/schemas/MiEquipoConcepto"
         deudaInscripcion:
           type: number
         pagadoInscripcion:

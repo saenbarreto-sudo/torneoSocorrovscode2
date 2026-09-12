@@ -371,6 +371,14 @@ export const GetMiEquipoResponse = zod.object({
   "telefono": zod.string().nullish()
 }),
   "cuenta": zod.object({
+  "pendienteTotal": zod.number(),
+  "conceptos": zod.array(zod.object({
+  "concepto": zod.string(),
+  "etiqueta": zod.string(),
+  "pagado": zod.number(),
+  "pendiente": zod.number().nullish(),
+  "cantidadPendiente": zod.number().nullish()
+})),
   "deudaInscripcion": zod.number(),
   "pagadoInscripcion": zod.number(),
   "saldoInscripcion": zod.number(),

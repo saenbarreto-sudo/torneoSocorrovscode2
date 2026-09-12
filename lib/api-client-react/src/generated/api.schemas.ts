@@ -182,7 +182,19 @@ export type MiEquipoEquipo = {
   telefono?: string | null;
 };
 
+export interface MiEquipoConcepto {
+  concepto: string;
+  etiqueta: string;
+  pagado: number;
+  /** @nullable */
+  pendiente?: number | null;
+  /** @nullable */
+  cantidadPendiente?: number | null;
+}
+
 export interface MiEquipoCuenta {
+  pendienteTotal: number;
+  conceptos: MiEquipoConcepto[];
   deudaInscripcion: number;
   pagadoInscripcion: number;
   saldoInscripcion: number;

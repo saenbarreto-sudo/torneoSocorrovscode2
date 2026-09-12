@@ -6,8 +6,14 @@ import { equiposTable } from "./equipos";
 /**
  * Roles de acceso al sistema. "publico" no tiene cuenta de usuario (entra
  * sin credenciales, solo consulta) por eso no aparece en la tabla usuarios.
+ *
+ * "superadmin" (Administrador del sistema) está POR ENCIMA del Comité: hace
+ * todo lo que hace un admin, y además es el único que ve el registro de
+ * Actividad — que es justamente el control de lo que hace el Comité — y el
+ * único que puede repartir ese rol. Si cualquier admin pudiera asignárselo,
+ * el control no serviría de nada.
  */
-export const ROLES_USUARIO = ["admin", "delegado"] as const;
+export const ROLES_USUARIO = ["superadmin", "admin", "delegado"] as const;
 export type RolUsuario = (typeof ROLES_USUARIO)[number];
 
 export const usuariosTable = pgTable("usuarios", {

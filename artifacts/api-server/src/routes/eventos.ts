@@ -9,7 +9,9 @@ const router: IRouter = Router();
  * El registro de actividad solo lo ve el Comité Organizador: dice quién
  * hizo qué, y eso no es información para los delegados.
  */
-router.get("/eventos", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
+// El registro de Actividad es el control de lo que hace el Comité, así que
+// el Comité no se ve a sí mismo: solo lo abre el Administrador del sistema.
+router.get("/eventos", requireAuth, requireRole("superadmin"), async (req, res): Promise<void> => {
   const { usuarioId, accion, desde, hasta, limite } = req.query as Record<string, string | undefined>;
 
   const condiciones: SQL[] = [];

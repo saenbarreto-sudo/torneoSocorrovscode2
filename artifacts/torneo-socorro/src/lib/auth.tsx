@@ -4,13 +4,23 @@ import { customFetch, setAuthTokenGetter, ApiError } from "@workspace/api-client
 /**
  * Roles del sistema. "publico" es el único que no tiene cuenta en la base
  * de datos: cualquiera puede entrar como invitado, solo a consultar.
+ *
+ * "superadmin" está por encima del Comité: hace todo lo que hace un admin y
+ * además es el único que ve el registro de Actividad — que es justamente el
+ * control de lo que hace el Comité — y el único que puede repartir ese rol.
  */
-export type Role = "admin" | "delegado" | "publico"
+export type Role = "superadmin" | "admin" | "delegado" | "publico"
 
 export const ROLE_LABELS: Record<Role, string> = {
+  superadmin: "Administrador del sistema",
   admin: "Comité Organizador",
   delegado: "Delegado de equipo",
   publico: "Invitado",
+}
+
+/** true si el rol puede ver el registro de Actividad (quién hizo qué). */
+export function puedeVerActividad(role: Role | null): boolean {
+  return role === "superadmin"
 }
 
 export interface AuthUser {
@@ -38,6 +48,7 @@ export interface AuthUser {
  * corresponde.
  */
 const ROUTE_PERMISSIONS: Record<Role, string[] | "*"> = {
+  superadmin: "*",
   admin: "*",
   delegado: ["/", "/mi-equipo", "/mis-partidos", "/mi-cuenta", "/tablas", "/posiciones", "/goleadores", "/vallas"],
   publico: ["/", "/tablas", "/posiciones", "/programacion", "/partidos", "/goleadores", "/vallas"],
@@ -61,6 +72,7 @@ export function isReadOnlyRole(role: Role): boolean {
  * Invitado nunca pueden escribir, solo consultar.
  */
 const WRITE_PERMISSIONS: Record<Role, string[] | "*"> = {
+  superadmin: "*",
   admin: "*",
   delegado: [],
   publico: [],

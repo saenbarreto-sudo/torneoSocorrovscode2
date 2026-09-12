@@ -123,6 +123,88 @@ router.get("/mi-equipo", requiereSesion, async (req, res): Promise<void> => {
   const amarillasSinPagar = plantilla.reduce((s, j) => s + j.amarillasSinPagar, 0);
   const carnetsSinPagar = plantilla.filter((j) => !j.carnetPagado).length;
 
+  // ── Tarjetas sin pagar, con lo que cuesta cada una ──
+  // El valor sale de la tarjeta misma (se le asigna al registrarla, con lo
+  // que valía ese día en Ajustes); si esa tarjeta quedó sin valor, se usa el
+  // de Ajustes de ahora para no mostrar un pendiente en cero que no es.
+  const tarjetasPendientes = await db.execute(sql`
+    SELECT t.tipo,
+           COUNT(*)::int as cantidad,
+           COALESCE(SUM(COALESCE(t.valor, 0)), 0)::int as valor,
+           COUNT(*) FILTER (WHERE t.valor IS NULL OR t.valor = 0)::int as sin_valor
+    FROM tarjetas t
+    JOIN jugadores j ON j.id = t.jugador_id
+    WHERE j.equipo_id = ${equipoId}
+      AND t.pagada = false
+      AND ${filtroTemporadaSql("t.temporada", temporada)}
+    GROUP BY t.tipo
+  `);
+  const pendientePorTipo = new Map<string, { cantidad: number; valor: number }>();
+  for (const r of tarjetasPendientes.rows as Record<string, unknown>[]) {
+    const tipo = String(r.tipo);
+    const sinValor = Number(r.sin_valor ?? 0);
+    const precioHoy = tipo === "roja" ? (ajustes?.valorRoja ?? 0) : (ajustes?.valorAmarilla ?? 0);
+    pendientePorTipo.set(tipo, {
+      cantidad: Number(r.cantidad ?? 0),
+      valor: Number(r.valor ?? 0) + sinValor * precioHoy,
+    });
+  }
+  const amarillasPend = pendientePorTipo.get("amarilla") ?? { cantidad: 0, valor: 0 };
+  const rojasPend = pendientePorTipo.get("roja") ?? { cantidad: 0, valor: 0 };
+
+  /**
+   * El detalle concepto por concepto, que es lo que el delegado quiere ver:
+   * cuánto lleva pagado y cuánto le falta de cada cosa.
+   *
+   * Solo cuatro conceptos tienen un pendiente que el sistema pueda saber
+   * (inscripción, tarjetas y carnés): ahí hay una deuda registrada contra la
+   * cual comparar. Multas, FOFI, traspasos, arbitraje y cintas se registran
+   * cuando se pagan, así que de esos solo se puede mostrar lo pagado —
+   * `pendiente: null` es justamente "esto no se lleva como deuda", distinto
+   * de "debe cero".
+   */
+  const conceptos = [
+    {
+      concepto: "Inscripcion",
+      etiqueta: "Inscripción",
+      pagado: pagadoInscripcion,
+      pendiente: Math.max(0, equipo.deudaInscripcion - pagadoInscripcion),
+      cantidadPendiente: null as number | null,
+    },
+    {
+      concepto: "Amarillas",
+      etiqueta: "Tarjetas amarillas",
+      pagado: pagadoPorConcepto.get("Amarillas") ?? 0,
+      pendiente: amarillasPend.valor,
+      cantidadPendiente: amarillasPend.cantidad,
+    },
+    {
+      concepto: "Rojas",
+      etiqueta: "Tarjetas rojas",
+      pagado: pagadoPorConcepto.get("Rojas") ?? 0,
+      pendiente: rojasPend.valor,
+      cantidadPendiente: rojasPend.cantidad,
+    },
+    {
+      concepto: "Carnet",
+      etiqueta: "Carnés",
+      pagado: pagadoPorConcepto.get("Carnet") ?? 0,
+      pendiente: carnetsSinPagar * (ajustes?.valorCarnet ?? 0),
+      cantidadPendiente: carnetsSinPagar,
+    },
+    { concepto: "Multas", etiqueta: "Multas", pagado: pagadoPorConcepto.get("Multas") ?? 0, pendiente: null, cantidadPendiente: null },
+    { concepto: "FOFI", etiqueta: "FOFI", pagado: pagadoPorConcepto.get("FOFI") ?? 0, pendiente: null, cantidadPendiente: null },
+    { concepto: "Traspaso", etiqueta: "Traspasos", pagado: pagadoPorConcepto.get("Traspaso") ?? 0, pendiente: null, cantidadPendiente: null },
+    { concepto: "Mesa", etiqueta: "Arbitraje (mesa)", pagado: pagadoPorConcepto.get("Mesa") ?? 0, pendiente: null, cantidadPendiente: null },
+    {
+      concepto: "Cinta de capitán",
+      etiqueta: "Cintas de capitán",
+      pagado: pagadoPorConcepto.get("Cinta de capitán") ?? 0,
+      pendiente: null,
+      cantidadPendiente: null,
+    },
+  ];
+
   const cuenta = {
     deudaInscripcion: equipo.deudaInscripcion,
     pagadoInscripcion,
@@ -132,6 +214,8 @@ router.get("/mi-equipo", requiereSesion, async (req, res): Promise<void> => {
     carnetsSinPagar,
     valorCarnetsSinPagar: carnetsSinPagar * (ajustes?.valorCarnet ?? 0),
     pagadoTotal: [...pagadoPorConcepto.values()].reduce((s, v) => s + v, 0),
+    pendienteTotal: conceptos.reduce((s, c) => s + (c.pendiente ?? 0), 0),
+    conceptos,
   };
 
   // ── El próximo partido (el más cercano que todavía no se ha jugado) ──

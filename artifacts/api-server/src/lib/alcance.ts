@@ -35,7 +35,9 @@ export interface Quien {
  */
 export async function quienPregunta(req: Request): Promise<Quien | null> {
   if (!req.user) return null;
-  if (req.user.rol === "admin") {
+  // El Administrador del sistema ve lo mismo que el Comité (y además la
+  // Actividad, que se controla aparte en routes/eventos.ts).
+  if (req.user.rol === "admin" || req.user.rol === "superadmin") {
     return { usuarioId: req.user.sub, esAdmin: true, equipoId: null };
   }
   const [usuario] = await db
@@ -56,7 +58,7 @@ export async function quienPregunta(req: Request): Promise<Quien | null> {
  */
 export function soloComite(req: Request, res: Response, next: NextFunction): void {
   requireAuth(req, res, () => {
-    if (req.user?.rol !== "admin") {
+    if (req.user?.rol !== "admin" && req.user?.rol !== "superadmin") {
       res.status(403).json({ error: "Esta información es solo del Comité Organizador." });
       return;
     }

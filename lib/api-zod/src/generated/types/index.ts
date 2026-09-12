@@ -83,6 +83,7 @@ export * from './mesaIngreso';
 export * from './mesaResumen';
 export * from './mesaResumenEstado';
 export * from './miEquipo';
+export * from './miEquipoConcepto';
 export * from './miEquipoCuenta';
 export * from './miEquipoEquipo';
 export * from './miEquipoJugador';

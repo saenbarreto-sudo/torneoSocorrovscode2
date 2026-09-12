@@ -4,7 +4,7 @@ import { useGetMiEquipo, getGetPagosQueryOptions, type Pago } from '@workspace/a
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Landmark, Printer, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Landmark, Printer, TrendingUp } from 'lucide-react';
 import { formatMoney, formatFecha } from '@/lib/utils';
 import { CONCEPTOS, CONCEPTO_LABEL, type Concepto } from '@/lib/conceptos-pago';
 import { ExtractoEquipo } from '@/components/extracto-equipo';
@@ -57,9 +57,6 @@ export default function MiCuenta() {
   const recibos = pagos ?? [];
   const alDia = cuenta.saldoInscripcion <= 0;
 
-  // Lo pendiente que no es inscripción: tarjetas y carnés sin pagar.
-  const otrosPendientes = cuenta.valorAmarillasSinPagar + cuenta.valorCarnetsSinPagar;
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -88,7 +85,12 @@ export default function MiCuenta() {
           alerta={!alDia}
           detalle={alDia ? 'No debes nada de inscripción' : undefined}
         />
-        <Cifra etiqueta="Pagado en total" valor={formatMoney(cuenta.pagadoTotal)} detalle="Todos los conceptos" />
+        <Cifra
+          etiqueta="Total pendiente"
+          valor={cuenta.pendienteTotal > 0 ? formatMoney(cuenta.pendienteTotal) : 'Al día'}
+          alerta={cuenta.pendienteTotal > 0}
+          detalle={`Pagado en total: ${formatMoney(cuenta.pagadoTotal)}`}
+        />
       </div>
 
       {/* ── Barra de avance de la inscripción ── */}
@@ -118,24 +120,68 @@ export default function MiCuenta() {
         </CardContent>
       </Card>
 
-      {/* ── Otros pendientes ── */}
-      {otrosPendientes > 0 && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
-          <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-            <div>
-              <p className="font-bold text-sm">Además tienes pendiente {formatMoney(otrosPendientes)}</p>
-              <p className="text-sm text-muted-foreground">
-                {cuenta.amarillasSinPagar > 0 &&
-                  `${cuenta.amarillasSinPagar} tarjeta(s) amarilla(s) por ${formatMoney(cuenta.valorAmarillasSinPagar)}`}
-                {cuenta.amarillasSinPagar > 0 && cuenta.carnetsSinPagar > 0 && ' · '}
-                {cuenta.carnetsSinPagar > 0 &&
-                  `${cuenta.carnetsSinPagar} carné(s) por ${formatMoney(cuenta.valorCarnetsSinPagar)}`}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* ── El detalle concepto por concepto ── */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="px-6 py-4 border-b">
+            <h2 className="text-lg font-bold">Qué debes y qué has pagado</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Concepto por concepto</p>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Concepto</TableHead>
+                  <TableHead className="text-right">Pendiente</TableHead>
+                  <TableHead className="text-right">Pagado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cuenta.conceptos.map((c) => (
+                  <TableRow key={c.concepto} className={c.pendiente ? 'bg-destructive/5' : ''}>
+                    <TableCell className="font-semibold">
+                      {c.etiqueta}
+                      {c.cantidadPendiente != null && c.cantidadPendiente > 0 && (
+                        <span className="text-muted-foreground font-normal"> · {c.cantidadPendiente} sin pagar</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {c.pendiente == null ? (
+                        // No se lleva como deuda: solo se registra lo que se
+                        // paga, así que no hay un "falta" que mostrar.
+                        <span className="text-muted-foreground" title="Este concepto no se lleva como deuda: solo se registra lo que se paga">—</span>
+                      ) : c.pendiente > 0 ? (
+                        <span className="font-bold text-destructive">{formatMoney(c.pendiente)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Al día</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {c.pagado > 0 ? formatMoney(c.pagado) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="border-t-2 bg-muted/40">
+                  <TableCell className="font-bold">Total</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums font-bold">
+                    {cuenta.pendienteTotal > 0 ? (
+                      <span className="text-destructive">{formatMoney(cuenta.pendienteTotal)}</span>
+                    ) : (
+                      'Al día'
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums font-bold">
+                    {formatMoney(cuenta.pagadoTotal)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-xs text-muted-foreground px-6 py-3 border-t">
+            Los conceptos con «—» en Pendiente no se llevan como deuda: se registran cuando se pagan.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* ── Sus recibos ── */}
       <Card>

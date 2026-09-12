@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { ROLE_LABELS, useAuth, type Role } from '@/lib/auth';
+import { ROLE_LABELS, useAuth, puedeVerActividad, type Role } from '@/lib/auth';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Actividad from '@/pages/actividad';
 
@@ -30,6 +30,11 @@ interface Usuario {
   createdAt: string;
 }
 
+/**
+ * El rol de Administrador del sistema no está acá: solo lo puede repartir
+ * quien ya lo tiene, así que se agrega aparte según quién esté conectado
+ * (el servidor lo vuelve a comprobar, ver routes/usuarios.ts).
+ */
 const ROLES_ASIGNABLES: Exclude<Role, 'publico'>[] = ['admin', 'delegado'];
 
 const usuariosQueryKey = ['usuarios'];
@@ -48,7 +53,7 @@ const usuarioSchema = z.object({
     .min(3, 'Mínimo 3 caracteres')
     .regex(/^[a-z0-9._-]+$/i, 'Solo letras, números, punto, guion y guion bajo'),
   password: z.string().optional(),
-  rol: z.enum(['admin', 'delegado']),
+  rol: z.enum(['superadmin', 'admin', 'delegado']),
   equipoId: z.string().optional(),
   activo: z.boolean().default(true),
 });
@@ -59,7 +64,11 @@ type Pestana = 'cuentas' | 'actividad';
 
 export default function Usuarios() {
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, role } = useAuth();
+  const veActividad = puedeVerActividad(role);
+  const rolesAsignables: Exclude<Role, 'publico'>[] = veActividad
+    ? ['superadmin', ...ROLES_ASIGNABLES]
+    : ROLES_ASIGNABLES;
   const queryClient = useQueryClient();
   const { data: usuarios, isLoading } = useUsuarios();
   const { data: equipos } = useGetEquipos();
@@ -234,7 +243,7 @@ export default function Usuarios() {
                           <SelectTrigger><SelectValue /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {ROLES_ASIGNABLES.map((r) => (
+                          {rolesAsignables.map((r) => (
                             <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
                           ))}
                         </SelectContent>
@@ -299,14 +308,19 @@ export default function Usuarios() {
         )}
       </div>
 
-      <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
-        <TabsList>
-          <TabsTrigger value="cuentas">Usuarios</TabsTrigger>
-          <TabsTrigger value="actividad">Actividad</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* La Actividad es el registro de lo que hace el Comité, así que el
+          Comité no se ve a sí mismo: la pestaña solo aparece para el
+          Administrador del sistema. Sin ella, no hay ni pestañas que mostrar. */}
+      {veActividad && (
+        <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
+          <TabsList>
+            <TabsTrigger value="cuentas">Usuarios</TabsTrigger>
+            <TabsTrigger value="actividad">Actividad</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
-      {pestana === 'actividad' && <Actividad embebido />}
+      {veActividad && pestana === 'actividad' && <Actividad embebido />}
 
       {pestana === 'cuentas' && (
       <Card>

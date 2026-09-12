@@ -28,10 +28,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   next();
 }
 
+/**
+ * El Administrador del sistema pasa cualquier control de rol: está por
+ * encima del Comité, no al lado. Se resuelve acá, en un solo punto, para no
+ * tener que acordarse de sumarlo en cada requireRole("admin") del proyecto.
+ */
+const ROL_POR_ENCIMA_DE_TODO = "superadmin";
+
 /** Exige, además de estar autenticado, que el rol esté en la lista dada. */
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.rol)) {
+    if (!req.user || (req.user.rol !== ROL_POR_ENCIMA_DE_TODO && !roles.includes(req.user.rol))) {
       res.status(403).json({ error: "No tienes permiso para realizar esta acción" });
       return;
     }
