@@ -195,7 +195,6 @@ router.get("/mi-equipo", requiereSesion, async (req, res): Promise<void> => {
     { concepto: "Multas", etiqueta: "Multas", pagado: pagadoPorConcepto.get("Multas") ?? 0, pendiente: null, cantidadPendiente: null },
     { concepto: "FOFI", etiqueta: "FOFI", pagado: pagadoPorConcepto.get("FOFI") ?? 0, pendiente: null, cantidadPendiente: null },
     { concepto: "Traspaso", etiqueta: "Traspasos", pagado: pagadoPorConcepto.get("Traspaso") ?? 0, pendiente: null, cantidadPendiente: null },
-    { concepto: "Mesa", etiqueta: "Arbitraje (mesa)", pagado: pagadoPorConcepto.get("Mesa") ?? 0, pendiente: null, cantidadPendiente: null },
     {
       concepto: "Cinta de capitán",
       etiqueta: "Cintas de capitán",
@@ -213,7 +212,10 @@ router.get("/mi-equipo", requiereSesion, async (req, res): Promise<void> => {
     valorAmarillasSinPagar: amarillasSinPagar * (ajustes?.valorAmarilla ?? 0),
     carnetsSinPagar,
     valorCarnetsSinPagar: carnetsSinPagar * (ajustes?.valorCarnet ?? 0),
-    pagadoTotal: [...pagadoPorConcepto.values()].reduce((s, v) => s + v, 0),
+    // El arbitraje de la mesa no entra en la cuenta del delegado (se cuadra
+    // el mismo día de juego, aparte). Se descuenta también del total para
+    // que la columna "Pagado" sume exactamente lo que se está mostrando.
+    pagadoTotal: conceptos.reduce((s, c) => s + c.pagado, 0),
     pendienteTotal: conceptos.reduce((s, c) => s + (c.pendiente ?? 0), 0),
     conceptos,
   };
