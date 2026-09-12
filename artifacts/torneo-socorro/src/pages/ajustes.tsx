@@ -83,7 +83,11 @@ const CAMPOS_GENERALES: Array<{ name: CampoNumero; label: string; ayuda?: string
 /** Fases que siempre se pagan con 1 árbitro: un solo valor cada una. */
 const CAMPOS_ARBITRAJE_SIMPLE: Array<{ name: CampoNumero; label: string }> = [
   { name: 'valorArbitrajePrimeraVuelta', label: 'Primera vuelta' },
-  { name: 'valorArbitrajeSegundaVuelta', label: 'Segunda vuelta' },
+  // El campo guardado se sigue llamando ...SegundaVuelta (así está cargado
+  // en la base), pero lo que se juega en esa parte del torneo es la fase de
+  // grupos, y ese es el nombre que se muestra. Ver ARBITRO_POR_FASE en
+  // pages/mesa.tsx: los partidos de grupos toman este valor.
+  { name: 'valorArbitrajeSegundaVuelta', label: 'Fase de grupos' },
   { name: 'valorFofi', label: 'FOFI' },
 ];
 

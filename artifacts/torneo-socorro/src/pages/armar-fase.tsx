@@ -131,6 +131,21 @@ export default function ArmarFase() {
   const nombreFaseActual = nombreEditadoAMano ? nombreFase : nombreSugerido;
 
   const { data: partidosExistentes } = useGetPartidos();
+
+  /**
+   * Repechajes que todavía no se han jugado.
+   *
+   * El repechaje define cuál es el último equipo que entra a la siguiente
+   * ronda, así que mientras no se juegue las tablas de arriba no están
+   * cerradas: armar los cruces ahora puede sembrar al equipo equivocado.
+   * No se bloquea — a veces hace falta dejar el calendario listo de una —
+   * pero sí se avisa antes de guardar.
+   */
+  const repechajesPendientes = useMemo(
+    () => (partidosExistentes ?? []).filter((p) => /repechaje/i.test(p.fase ?? '') && !p.jugado),
+    [partidosExistentes],
+  );
+
   const semanaSugerida = useMemo(() => {
     const maxima = (partidosExistentes ?? []).reduce((max, p) => Math.max(max, p.semana), 0);
     return maxima + 1;
@@ -546,6 +561,20 @@ export default function ArmarFase() {
               <span>
                 Como el número de clasificados es impar, <span className="font-semibold">{equipoConBye.nombre}</span>{' '}
                 (posición {equipoConBye.posicion}) pasa directo a la siguiente ronda: no le tocó rival en esta.
+              </span>
+            </div>
+          )}
+
+          {repechajesPendientes.length > 0 && (
+            <div className="flex items-start gap-2 text-sm bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 rounded-md p-3">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                {repechajesPendientes.length === 1 ? 'Falta jugar el repechaje' : `Faltan jugar ${repechajesPendientes.length} repechajes`}
+                {': '}
+                {repechajesPendientes.map((p) => `${p.localNombre} vs ${p.visitanteNombre}`).join(', ')}. Ahí se define el último
+                equipo que pasa, así que las tablas de arriba todavía pueden cambiar y esta fase podría quedar sembrada con el
+                equipo equivocado. Puedes armarla igual si necesitas dejar el calendario listo, pero revísala después del
+                repechaje.
               </span>
             </div>
           )}

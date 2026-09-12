@@ -4,6 +4,7 @@ import {
   useGetPartidos,
   useGetAjustes,
   useGetArbitros,
+  useGetFases,
   useGuardarMesa,
   useCambiarEstadoMesa,
   useUpdatePartido,
@@ -88,6 +89,11 @@ const CASILLA_TERNA_POR_FASE: Record<string, keyof Ajustes> = {
 /** Lo que se le paga al árbitro según la fase (el gasto, no lo que entra). */
 const ARBITRO_POR_FASE: Record<string, { simple: keyof Ajustes; terna?: keyof Ajustes }> = {
   'Primera vuelta': { simple: 'valorArbitrajePrimeraVuelta' },
+  // En Ajustes este valor se llama "Fase de grupos": es el que cobra el
+  // árbitro en la segunda parte del torneo, que hoy se juega por grupos.
+  // El campo guardado sigue llamándose ...SegundaVuelta por compatibilidad
+  // con lo que ya está cargado; el nombre viejo se deja mapeado para los
+  // torneos que sí tienen una "Segunda vuelta" como tal.
   'Segunda vuelta': { simple: 'valorArbitrajeSegundaVuelta' },
   'Final liguilla': { simple: 'valorArbitrajeFinalLiguilla', terna: 'valorTernaFinalLiguilla' },
   'Muerte súbita': { simple: 'valorArbitrajeMuerteSubita', terna: 'valorTernaMuerteSubita' },
@@ -108,10 +114,23 @@ function valorMesaDelPartido(partido: Partido, ajustes?: Ajustes): number {
   return hayTerna(partido.fase, ajustes) ? base * 2 : base;
 }
 
-/** Lo que se le paga al árbitro de ese partido, según la fase. */
-function valorArbitroDelPartido(partido: Partido, ajustes?: Ajustes): number {
+/** true si esa fase es una fase de grupos (Grupo A, Zona 1, como se llame). */
+function esFaseDeGrupos(fase: string, tiposPorFase?: Map<string, string>): boolean {
+  return tiposPorFase?.get(fase) === 'grupos';
+}
+
+/**
+ * Lo que se le paga al árbitro de ese partido, según la fase.
+ *
+ * Las fases de grupos no se pueden listar por nombre (cada torneo les pone
+ * el suyo: "Grupo A", "Zona 1"...), así que se reconocen por su tipo en el
+ * catálogo de fases y cobran el valor de "Fase de grupos".
+ */
+function valorArbitroDelPartido(partido: Partido, ajustes?: Ajustes, tiposPorFase?: Map<string, string>): number {
   if (!partido.fase || !ajustes) return 0;
-  const campos = ARBITRO_POR_FASE[partido.fase];
+  const campos =
+    ARBITRO_POR_FASE[partido.fase] ??
+    (esFaseDeGrupos(partido.fase, tiposPorFase) ? { simple: 'valorArbitrajeSegundaVuelta' as keyof Ajustes } : undefined);
   if (!campos) return 0;
   const usarTerna = hayTerna(partido.fase, ajustes) && campos.terna;
   const campo = usarTerna ? campos.terna! : campos.simple;
@@ -161,6 +180,14 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
 
   const { data: partidos } = useGetPartidos();
   const { data: ajustes } = useGetAjustes();
+  // El tipo de cada fase (grupos, liguilla, eliminación): con esto la mesa
+  // sabe que "Grupo A" cobra el arbitraje de fase de grupos, sin tener que
+  // adivinar por el nombre.
+  const { data: fasesDelTorneo } = useGetFases();
+  const tiposPorFase = useMemo(
+    () => new Map((fasesDelTorneo ?? []).map((f) => [f.nombre, f.tipo])),
+    [fasesDelTorneo],
+  );
 
   // Los días con partidos programados: son los días que pueden tener mesa.
   const fechasDisponibles = useMemo(() => {
@@ -283,7 +310,7 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
           enfrentamiento: `${p.localNombre} vs ${p.visitanteNombre}`,
           fase: p.fase ?? null,
           arbitroId: p.arbitroId ?? null,
-          valor: guardado?.valor ?? valorArbitroDelPartido(p, ajustes),
+          valor: guardado?.valor ?? valorArbitroDelPartido(p, ajustes, tiposPorFase),
         };
       }),
     );
@@ -305,7 +332,7 @@ export default function Mesa({ embebido }: { embebido?: boolean } = {}) {
         )
         .map((e, i) => ({ clave: `o-${e.id}-${i}`, descripcion: e.descripcion, valor: e.valor })),
     );
-  }, [fecha, detalle, partidosDelDia, ajustes]);
+  }, [fecha, detalle, partidosDelDia, ajustes, tiposPorFase]);
 
   // ── Totales ───────────────────────────────────────────────────────────────
   const valorCinta = ajustes?.valorCintaCapitan ?? 0;
