@@ -340,11 +340,16 @@ export function PlanillaPartido({
   const [filas, setFilas] = useState<Fila[]>([]);
   const [arbitroId, setArbitroId] = useState<number | null>(null);
   const [mesa, setMesa] = useState('');
+  // Quien recibe los carnes y la copia de la planilla, por equipo.
+  const [recibeLocal, setRecibeLocal] = useState('');
+  const [recibeVisitante, setRecibeVisitante] = useState('');
 
   useEffect(() => {
     if (!data) return;
     setArbitroId(data.arbitroId ?? null);
     setMesa(data.mesa ?? '');
+    setRecibeLocal(data.recibioCarnetLocal ?? '');
+    setRecibeVisitante(data.recibioCarnetVisitante ?? '');
     setFilas(
       data.jugadores.map((j) => ({
         jugadorId: j.jugadorId,
@@ -464,6 +469,8 @@ export function PlanillaPartido({
       {
         arbitroId,
         mesa,
+        recibioCarnetLocal: recibeLocal,
+        recibioCarnetVisitante: recibeVisitante,
         jugadores: filas.map((f) => ({
           jugadorId: f.jugadorId,
           jugo: f.jugo,
@@ -577,6 +584,46 @@ export function PlanillaPartido({
           </p>
         </div>
       )}
+
+      {/* Constancia de entrega. En el papel el delegado firmaba al pie, pero
+          una firma manuscrita no dice quien es: acá se escribe el nombre
+          para que quede legible y guardado, y en el impreso queda la línea
+          para que esa misma persona firme de su puño y letra. */}
+      <div className="rounded-lg border overflow-hidden">
+        <div className="bg-muted/40 px-3 py-2 border-b">
+          <p className="font-bold text-sm">Entrega de carnés y planilla</p>
+          <p className="text-xs text-muted-foreground">
+            Quién recibe los carnés de cada equipo. El nombre sale impreso en la planilla de ese
+            equipo, con la línea al lado para que firme.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3">
+          <div className="space-y-1">
+            <label htmlFor="recibe-local" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {partido.localNombre}
+            </label>
+            <Input
+              id="recibe-local"
+              value={recibeLocal}
+              disabled={readOnly}
+              placeholder="Nombre de quien recibe"
+              onChange={(e) => setRecibeLocal(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="recibe-visitante" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {partido.visitanteNombre}
+            </label>
+            <Input
+              id="recibe-visitante"
+              value={recibeVisitante}
+              disabled={readOnly}
+              placeholder="Nombre de quien recibe"
+              onChange={(e) => setRecibeVisitante(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
       <AbonosMesa partido={partido} readOnly={readOnly} />
 

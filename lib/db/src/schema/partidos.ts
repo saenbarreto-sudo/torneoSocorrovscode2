@@ -26,6 +26,13 @@ export const partidosTable = pgTable("partidos", {
   arbitroId: integer("arbitro_id").references(() => arbitrosTable.id, { onDelete: "set null" }),
   // Oficial de mesa que llenó la planilla del partido.
   mesa: text("mesa"),
+  // Quién recibió los carnés y la copia de la planilla, por equipo. Es la
+  // constancia de entrega: en el papel el delegado firmaba al pie, pero la
+  // firma manuscrita no dice quién es. Acá se escribe el nombre para que
+  // quede legible y guardado, y en el impreso queda la línea para que esa
+  // misma persona firme de su puño y letra al lado.
+  recibioCarnetLocal: text("recibio_carnet_local"),
+  recibioCarnetVisitante: text("recibio_carnet_visitante"),
   // W.O. (Art. 23 del reglamento): el marcador oficial de un walkover es
   // 6-0. Esos goles cuentan para la tabla de posiciones pero NO deben
   // registrarse goleadores individuales (por eso no hay una tabla "goles"

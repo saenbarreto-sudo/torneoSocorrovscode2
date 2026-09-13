@@ -162,6 +162,8 @@ router.get("/partidos/:id/planilla", requiereSesion, async (req, res): Promise<v
       arbitroId: partido.arbitroId,
       arbitroNombre,
       mesa: partido.mesa,
+      recibioCarnetLocal: partido.recibioCarnetLocal,
+      recibioCarnetVisitante: partido.recibioCarnetVisitante,
       jugadores,
     }),
   );
@@ -358,6 +360,14 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
         // el árbitro asignado al programar el partido.
         ...(parsed.data.arbitroId !== undefined ? { arbitroId: parsed.data.arbitroId } : {}),
         ...(parsed.data.mesa !== undefined ? { mesa: parsed.data.mesa || null } : {}),
+        // La constancia de entrega de carnes, por equipo. Igual que el
+        // arbitro y la mesa: solo se toca si viene en la peticion.
+        ...(parsed.data.recibioCarnetLocal !== undefined
+          ? { recibioCarnetLocal: parsed.data.recibioCarnetLocal || null }
+          : {}),
+        ...(parsed.data.recibioCarnetVisitante !== undefined
+          ? { recibioCarnetVisitante: parsed.data.recibioCarnetVisitante || null }
+          : {}),
       })
       .where(eq(partidosTable.id, partidoId));
   });

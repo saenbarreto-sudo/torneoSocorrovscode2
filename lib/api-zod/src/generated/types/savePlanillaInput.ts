@@ -11,5 +11,7 @@ export interface SavePlanillaInput {
   /** @nullable */
   arbitroId?: number | null;
   mesa?: string;
+  recibioCarnetLocal?: string;
+  recibioCarnetVisitante?: string;
   jugadores: SavePlanillaInputJugadoresItem[];
 }

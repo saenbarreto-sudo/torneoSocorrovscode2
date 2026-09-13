@@ -17,5 +17,9 @@ export interface Planilla {
   arbitroNombre?: string | null;
   /** @nullable */
   mesa?: string | null;
+  /** @nullable */
+  recibioCarnetLocal?: string | null;
+  /** @nullable */
+  recibioCarnetVisitante?: string | null;
   jugadores: PlanillaJugador[];
 }

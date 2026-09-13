@@ -1740,6 +1740,8 @@ export const GetPlanillaResponse = zod.object({
   "arbitroId": zod.number().nullish(),
   "arbitroNombre": zod.string().nullish(),
   "mesa": zod.string().nullish(),
+  "recibioCarnetLocal": zod.string().nullish(),
+  "recibioCarnetVisitante": zod.string().nullish(),
   "jugadores": zod.array(zod.object({
   "jugadorId": zod.number(),
   "jugadorNombre": zod.string(),
@@ -1780,6 +1782,8 @@ export const savePlanillaBodyJugadoresItemFechasSancionMax = 20;
 export const SavePlanillaBody = zod.object({
   "arbitroId": zod.number().nullish(),
   "mesa": zod.string().optional(),
+  "recibioCarnetLocal": zod.string().optional(),
+  "recibioCarnetVisitante": zod.string().optional(),
   "jugadores": zod.array(zod.object({
   "jugadorId": zod.number(),
   "jugo": zod.boolean(),

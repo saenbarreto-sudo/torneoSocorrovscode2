@@ -187,12 +187,46 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
-function Firma({ titulo, nombre }: { titulo: string; nombre?: string }) {
+/**
+ * La constancia de entrega: quien recibio los carnes y esta planilla.
+ *
+ * En el papel el delegado firmaba al pie y ya; el problema es que una firma
+ * manuscrita no dice quien es. Aqui el nombre va impreso en letra clara (lo
+ * escribe el Comite al llenar la planilla) y al lado queda la linea en
+ * blanco para que esa misma persona firme de su puno y letra. El nombre no
+ * reemplaza a la firma: sin el trazo de la persona esto no prueba nada.
+ */
+function ConstanciaDeEntrega({ equipo, recibe }: { equipo: string; recibe?: string | null }) {
   return (
-    <div className="text-center">
-      <div className="border-t border-[hsl(273_45%_25%)] pt-1 mx-1">
-        <div className="text-[8px] uppercase tracking-wide text-[hsl(273_15%_45%)]">{titulo}</div>
-        {nombre && <div className="text-[9px] font-bold truncate">{nombre}</div>}
+    <div className="rounded-md border border-[hsl(273_20%_85%)] overflow-hidden">
+      <div className="bg-[hsl(340_74%_27%)] text-white text-[9px] font-bold uppercase tracking-wide px-2.5 py-1">
+        Constancia de entrega
+      </div>
+      <div className="px-3 py-2.5">
+        <p className="text-[10px] leading-snug mb-4">
+          Recibí los carnés de <strong>{equipo}</strong> y esta copia de la planilla del partido.
+        </p>
+        <div className="grid grid-cols-[1.2fr_1fr] gap-5 items-end">
+          <div>
+            <div className="border-t border-[hsl(273_45%_25%)] pt-1">
+              <div className="text-[8px] uppercase tracking-wide text-[hsl(273_15%_45%)]">Firma</div>
+            </div>
+          </div>
+          <div>
+            <div className="border-t border-[hsl(273_45%_25%)] pt-1">
+              <div className="text-[8px] uppercase tracking-wide text-[hsl(273_15%_45%)]">
+                Nombre y cédula
+              </div>
+              {recibe ? (
+                <div className="text-[10px] font-bold leading-tight">{recibe}</div>
+              ) : (
+                <div className="text-[9px] text-[hsl(273_15%_60%)] leading-tight">
+                  Escribir a mano
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -202,13 +236,21 @@ export function PlanillaImprimible({
   partido,
   planilla,
   abonos = [],
+  paraEquipoId,
   colorLocal,
   colorVisitante,
 }: {
   partido: Partido;
   planilla: Planilla;
-  /** Los recibos que los dos equipos abonaron en la mesa esa fecha. */
+  /** Los recibos que los equipos abonaron en la mesa esa fecha. */
   abonos?: Pago[];
+  /**
+   * De que equipo es esta copia. Se imprime una por equipo: las nominas
+   * salen completas en las dos (eso es deportivo, lo ven todos), pero la
+   * plata y la constancia de entrega son solo del dueno de la hoja — si no,
+   * cada delegado se llevaria a casa los abonos del rival.
+   */
+  paraEquipoId: number;
   colorLocal?: string | null;
   colorVisitante?: string | null;
 }) {
@@ -230,7 +272,13 @@ export function PlanillaImprimible({
   const locales = deEquipo(planilla.localId);
   const visitantes = deEquipo(planilla.visitanteId);
   const esWalkover = partido.walkover === true;
-  const totalAbonos = abonos.reduce((s, p) => s + p.monto, 0);
+
+  const esLocal = paraEquipoId === planilla.localId;
+  const equipoDeLaCopia = esLocal ? partido.localNombre : partido.visitanteNombre;
+  const recibeLaCopia = esLocal ? planilla.recibioCarnetLocal : planilla.recibioCarnetVisitante;
+  // Solo la plata del dueno de la hoja.
+  const susAbonos = abonos.filter((p) => p.equipoId === paraEquipoId);
+  const totalAbonos = susAbonos.reduce((s, p) => s + p.monto, 0);
 
   const hayPenales = partido.penalesLocal != null && partido.penalesVisitante != null;
   const [ano, mes, dia] = new Date().toISOString().slice(0, 10).split('-');
@@ -250,6 +298,10 @@ export function PlanillaImprimible({
           <div className="text-[10px] text-white/80 tracking-wide">SENIOR MASTER PLUS 40</div>
           <div className="text-[10px] font-bold mt-1 bg-white/15 inline-block px-2 py-0.5 rounded">
             PLANILLA DEL PARTIDO · FECHA {partido.semana}
+          </div>
+          {/* De quien es esta hoja: se imprime una por equipo. */}
+          <div className="text-[10px] font-bold mt-1 text-white/90">
+            COPIA PARA {equipoDeLaCopia.toUpperCase()}
           </div>
         </div>
         <div className="text-right shrink-0 justify-self-end">
@@ -319,23 +371,22 @@ export function PlanillaImprimible({
             número de recibo de cada abono. */}
         <div className="rounded-md border border-[hsl(273_20%_85%)] overflow-hidden">
           <div className="bg-[hsl(340_74%_27%)] text-white text-[9px] font-bold uppercase tracking-wide px-2.5 py-1 flex items-center justify-between">
-            <span>Dato financiero · abonos recibidos en la mesa</span>
+            <span>Dato financiero · {equipoDeLaCopia}</span>
             {totalAbonos > 0 && <span className="font-mono">{formatMoney(totalAbonos)}</span>}
           </div>
-          {abonos.length === 0 ? (
+          {susAbonos.length === 0 ? (
             <div className="px-2.5 py-2 text-[9px] text-[hsl(273_15%_50%)]">
-              No se recibió ningún abono de estos equipos en esta fecha.
+              {equipoDeLaCopia} no abonó nada en la mesa en esta fecha.
             </div>
           ) : (
             <table className="w-full text-[10px] border-collapse">
               <tbody>
-                {abonos.map((p, i) => (
+                {susAbonos.map((p, i) => (
                   <tr key={p.id} className={i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'}>
                     <td className="py-0.5 px-2 font-mono text-[hsl(273_15%_45%)] w-16 border-t border-[hsl(273_20%_90%)]">
                       {p.codigoRecibo ?? `#${p.id}`}
                     </td>
-                    <td className="py-0.5 px-2 font-medium border-t border-[hsl(273_20%_90%)]">{p.equipoNombre}</td>
-                    <td className="py-0.5 px-2 text-[hsl(273_15%_45%)] border-t border-[hsl(273_20%_90%)]">
+                    <td className="py-0.5 px-2 font-medium border-t border-[hsl(273_20%_90%)]">
                       {CONCEPTO_LABEL[p.concepto] ?? p.concepto}
                     </td>
                     <td className="py-0.5 px-2 text-right font-mono font-bold border-t border-[hsl(273_20%_90%)]">
@@ -348,18 +399,15 @@ export function PlanillaImprimible({
           )}
         </div>
 
-        {/* Firmas. */}
-        <div className="grid grid-cols-4 gap-2 pt-7">
-          <Firma titulo={`Delegado ${partido.localNombre}`} />
-          <Firma titulo={`Delegado ${partido.visitanteNombre}`} />
-          <Firma titulo="Árbitro" nombre={planilla.arbitroNombre || partido.arbitroNombre || undefined} />
-          <Firma titulo="Oficial de mesa" nombre={planilla.mesa || partido.mesa || undefined} />
-        </div>
+        {/* La firma es solo del delegado: es la constancia de que él recibió
+            sus carnés y su planilla. El árbitro y la mesa ya salen arriba,
+            en Información general — son dato, no firmantes. */}
+        <ConstanciaDeEntrega equipo={equipoDeLaCopia} recibe={recibeLaCopia} />
       </div>
 
       <p className="text-[9px] text-[hsl(273_15%_50%)] text-center px-5 pb-3">
-        Torneo Socorro Senior Master Plus 40 · A = amarillas, R = rojas, G = goles. Copia del acta para el
-        delegado; los reclamos se presentan ante el Comité Organizador.
+        Torneo Socorro Senior Master Plus 40 · A = amarillas, R = rojas, G = goles. Copia para el delegado
+        de {equipoDeLaCopia}; los reclamos se presentan ante el Comité Organizador.
       </p>
     </div>
   );
@@ -413,12 +461,26 @@ export function ImpresionPlanilla({
 
   if (!data || cargandoPagos) return null;
 
+  // Una hoja por equipo: cada delegado se lleva la suya, con su plata y su
+  // constancia de entrega. El salto de página va entre las dos, no después
+  // de la última, para no sacar una hoja en blanco al final.
   return (
     <ImprimirPortal activo>
+      <div className="break-after-page">
+        <PlanillaImprimible
+          partido={partido}
+          planilla={data}
+          abonos={abonos}
+          paraEquipoId={data.localId}
+          colorLocal={colorLocal}
+          colorVisitante={colorVisitante}
+        />
+      </div>
       <PlanillaImprimible
         partido={partido}
         planilla={data}
         abonos={abonos}
+        paraEquipoId={data.visitanteId}
         colorLocal={colorLocal}
         colorVisitante={colorVisitante}
       />

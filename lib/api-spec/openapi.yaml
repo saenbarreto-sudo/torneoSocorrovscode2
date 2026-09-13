@@ -3322,6 +3322,13 @@ components:
           type: ["string", "null"]
         mesa:
           type: ["string", "null"]
+        # Quien recibio los carnes y la copia de la planilla, por equipo.
+        # Es la constancia de entrega: en el impreso se escribe el nombre
+        # para que quede legible y al lado va la linea para firmar a mano.
+        recibioCarnetLocal:
+          type: ["string", "null"]
+        recibioCarnetVisitante:
+          type: ["string", "null"]
         jugadores:
           type: array
           items:
@@ -3334,6 +3341,10 @@ components:
         arbitroId:
           type: ["number", "null"]
         mesa:
+          type: string
+        recibioCarnetLocal:
+          type: string
+        recibioCarnetVisitante:
           type: string
         # Ya no se manda valorAmarilla/valorRoja desde acá: el valor de cada
         # tarjeta nueva se asigna solo, tomándolo de /ajustes en el momento

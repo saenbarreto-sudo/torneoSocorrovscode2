@@ -39,6 +39,16 @@ export interface Planilla {
   arbitroNombre?: string | null;
   /** @nullable */
   mesa?: string | null;
+  /**
+   * Quien recibio los carnes y la copia de la planilla, por equipo. Es la
+   * constancia de entrega: el nombre se escribe para que quede legible y
+   * guardado, y en el impreso queda la linea para que esa misma persona
+   * firme de su puno y letra.
+   * @nullable
+   */
+  recibioCarnetLocal?: string | null;
+  /** @nullable */
+  recibioCarnetVisitante?: string | null;
   jugadores: PlanillaJugador[];
 }
 
@@ -46,6 +56,8 @@ export interface SavePlanillaInput {
   /** @nullable */
   arbitroId?: number | null;
   mesa?: string;
+  recibioCarnetLocal?: string;
+  recibioCarnetVisitante?: string;
   // Ya no se manda valorAmarilla/valorRoja: el backend le asigna a cada
   // tarjeta nueva el valor configurado en Ajustes, automáticamente.
   jugadores: {
