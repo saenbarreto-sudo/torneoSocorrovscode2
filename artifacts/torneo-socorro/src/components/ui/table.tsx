@@ -1,12 +1,36 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
+/**
+ * `variant="torneo"`: el mismo look de las tablas impresas (ver
+ * components/tabla-imprimible.tsx) — encabezado morado con letras blancas y
+ * filas alternadas. Es para las tablas que se leen (posiciones, goleadores,
+ * plantilla, sancionados...), no para las de administrar, que llevan
+ * filtros y controles dentro del encabezado y ahí el morado estorba.
+ *
+ * Los colores salen de los tokens del tema, así que en modo oscuro se
+ * adaptan solos en vez de quedar un morado claro sobre fondo negro.
+ */
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  variant?: "torneo"
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, variant, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
       <table
         ref={ref}
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          // La zebra vive en index.css (.tabla-torneo): necesita un selector
+          // que respete el fondo propio de ciertas filas.
+          variant === "torneo" && [
+            "tabla-torneo",
+            "[&_thead_tr]:bg-primary [&_thead_tr]:border-b-0 [&_thead_tr:hover]:bg-primary",
+            "[&_thead_th]:text-primary-foreground [&_thead_th]:uppercase [&_thead_th]:text-[11px] [&_thead_th]:tracking-wide",
+          ],
+          className
+        )}
         {...props}
       />
     </div>

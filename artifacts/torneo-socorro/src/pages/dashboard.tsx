@@ -6,30 +6,53 @@ import { formatMoney } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Link } from 'wouter';
 import { useAuth, canAccessRoute } from '@/lib/auth';
+import { NombreEquipo } from '@/components/nombre-equipo';
 
-/** Tarjeta de cifra: rótulo arriba, número grande en mono, ícono al costado. */
+/** El ícono de cada cifra, con el color del tono que le corresponde. */
+const TONOS = {
+  neutro: 'bg-primary/10 text-primary',
+  bueno: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+  ojo: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+} as const;
+
+/**
+ * Tarjeta de cifra: el número grande con su ícono en color y, debajo, una
+ * línea que dice qué significa — un "1.260" solo no dice si eso está bien o
+ * mal, y esa línea es la que convierte el dato en información.
+ *
+ * El número usa `break-all` y un tamaño que cede en pantallas angostas: sin
+ * eso, una cifra larga (1.260 jugadores, un recaudo de millones) se salía
+ * de la tarjeta en el celular.
+ */
 function StatCard({
   label,
   value,
   suffix,
+  detalle,
+  tono = 'neutro',
   icon: Icon,
 }: {
   label: string;
   value: string | number;
   suffix?: string;
+  detalle?: string;
+  tono?: keyof typeof TONOS;
   icon: ElementType;
 }) {
   return (
     <Card>
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-          <Icon className="h-4 w-4 text-primary/60 shrink-0" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground leading-tight">{label}</p>
+          <span className={`p-1.5 rounded-md shrink-0 ${TONOS[tono]}`}>
+            <Icon className="h-4 w-4" />
+          </span>
         </div>
-        <p className="mt-2 font-mono font-bold text-2xl sm:text-3xl leading-none tabular-nums">
+        <p className="mt-2 font-mono font-bold text-xl sm:text-2xl lg:text-3xl leading-none tabular-nums break-all">
           {value}
           {suffix && <span className="text-sm text-muted-foreground font-normal ml-1">{suffix}</span>}
         </p>
+        {detalle && <p className="mt-1.5 text-xs text-muted-foreground leading-tight">{detalle}</p>}
       </CardContent>
     </Card>
   );
@@ -106,18 +129,41 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Equipos" value={resumen.totalEquipos} icon={ShieldAlert} />
-        <StatCard label="Jugadores" value={resumen.totalJugadores} icon={Users} />
+        <StatCard label="Equipos" value={resumen.totalEquipos} detalle="compitiendo" icon={ShieldAlert} />
+        <StatCard
+          label="Jugadores"
+          value={resumen.totalJugadores.toLocaleString('es-CO')}
+          detalle="inscritos en el torneo"
+          icon={Users}
+        />
         <StatCard
           label="Partidos jugados"
           value={resumen.totalPartidosJugados}
           suffix={`/ ${resumen.totalPartidosProgramados}`}
+          detalle={
+            resumen.totalPartidosProgramados > 0
+              ? `faltan ${resumen.totalPartidosProgramados - resumen.totalPartidosJugados} por jugar`
+              : 'todavía sin calendario'
+          }
+          tono={resumen.totalPartidosJugados > 0 ? 'bueno' : 'neutro'}
           icon={Swords}
         />
         {vePagos ? (
-          <StatCard label="Recaudo" value={formatMoney(resumen.recaudacionTotal || 0)} icon={HandCoins} />
+          <StatCard
+            label="Recaudo"
+            value={formatMoney(resumen.recaudacionTotal || 0)}
+            detalle="cobrado hasta hoy"
+            tono={(resumen.recaudacionTotal || 0) > 0 ? 'bueno' : 'ojo'}
+            icon={HandCoins}
+          />
         ) : (
-          <StatCard label="Goles del torneo" value={resumen.totalGoles ?? 0} icon={Goal} />
+          <StatCard
+            label="Goles del torneo"
+            value={resumen.totalGoles ?? 0}
+            detalle="anotados en total"
+            tono={(resumen.totalGoles ?? 0) > 0 ? 'bueno' : 'neutro'}
+            icon={Goal}
+          />
         )}
       </div>
 
@@ -183,7 +229,7 @@ export default function Dashboard() {
             </Link>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <Table>
+            <Table variant="torneo">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10 text-center">#</TableHead>
@@ -197,7 +243,9 @@ export default function Dashboard() {
                 {topPosiciones.map((pos) => (
                   <TableRow key={pos.equipoId}>
                     <TableCell className="text-center font-mono font-bold text-muted-foreground">{pos.posicion}</TableCell>
-                    <TableCell className="font-bold">{pos.equipoNombre}</TableCell>
+                    <TableCell className="font-bold">
+                      <NombreEquipo nombre={pos.equipoNombre} />
+                    </TableCell>
                     <TableCell className="text-center font-mono tabular-nums">{pos.pj}</TableCell>
                     <TableCell className="text-center font-mono tabular-nums">{pos.df > 0 ? `+${pos.df}` : pos.df}</TableCell>
                     <TableCell className="text-right font-mono font-bold text-primary text-lg tabular-nums">{pos.pts}</TableCell>

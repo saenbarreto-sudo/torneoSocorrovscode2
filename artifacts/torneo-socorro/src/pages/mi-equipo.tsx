@@ -183,7 +183,7 @@ export default function MiEquipo() {
             </p>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table variant="torneo">
               <TableHeader>
                 <TableRow>
                   <TableHead>Carné</TableHead>

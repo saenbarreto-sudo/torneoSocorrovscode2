@@ -56,7 +56,7 @@ export default function MisPartidos() {
 
   const tabla = (lista: Partido[], vacio: string) => (
     <div className="overflow-x-auto">
-      <Table>
+      <Table variant="torneo">
         <TableHeader>
           <TableRow>
             <TableHead>Fecha</TableHead>

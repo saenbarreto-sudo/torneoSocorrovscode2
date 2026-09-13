@@ -9,6 +9,7 @@ import { useAuth, esDelComite } from '@/lib/auth';
 import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
+import { NombreEquipo } from '@/components/nombre-equipo';
 
 /**
  * Quién está sancionado y cuánto debe por tarjetas: la cartelera que se
@@ -51,7 +52,7 @@ export default function Sancionados({ embebido = false }: { embebido?: boolean }
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table variant="torneo">
             <TableHeader>
               <TableRow>
                 <TableHead>Jugador</TableHead>
@@ -84,7 +85,9 @@ export default function Sancionados({ embebido = false }: { embebido?: boolean }
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="font-normal">{a.equipoNombre}</Badge>
+                        <Badge variant="secondary" className="font-normal">
+                          <NombreEquipo nombre={a.equipoNombre} />
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center font-mono tabular-nums">{a.amarillas || '—'}</TableCell>
                       <TableCell className="text-center font-mono tabular-nums">{a.rojas || '—'}</TableCell>

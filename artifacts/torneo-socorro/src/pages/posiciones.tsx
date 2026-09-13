@@ -10,6 +10,7 @@ import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
 import { useAuth, puedeImprimir } from '@/lib/auth';
+import { NombreEquipo } from '@/components/nombre-equipo';
 
 /**
  * Valor especial para la pestaña "Tabla general": no manda `fase` al
@@ -112,7 +113,7 @@ export default function Posiciones({ embebido = false }: { embebido?: boolean })
               )}
             </div>
           ) : (
-            <Table>
+            <Table variant="torneo">
               <TableHeader>
                 <TableRow className="bg-sidebar text-sidebar-foreground hover:bg-sidebar">
                   <TableHead className="w-12 text-center text-sidebar-foreground">POS</TableHead>
@@ -152,7 +153,9 @@ export default function Posiciones({ embebido = false }: { embebido?: boolean })
                     className={esTablaGeneral && pos.posicion <= 4 ? "bg-accent/60 border-l-2 border-l-primary" : ""}
                   >
                     <TableCell className="text-center font-mono font-bold text-lg">{pos.posicion}</TableCell>
-                    <TableCell className="font-bold text-base whitespace-nowrap">{pos.equipoNombre}</TableCell>
+                    <TableCell className="font-bold text-base whitespace-nowrap">
+                      <NombreEquipo nombre={pos.equipoNombre} />
+                    </TableCell>
                     <TableCell className="text-center font-mono">{pos.pj}</TableCell>
                     <TableCell className="text-center font-mono">{pos.pg}</TableCell>
                     <TableCell className="text-center font-mono">{pos.pe}</TableCell>

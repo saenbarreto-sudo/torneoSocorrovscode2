@@ -8,6 +8,7 @@ import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
 import { useAuth, puedeImprimir } from '@/lib/auth';
+import { NombreEquipo } from '@/components/nombre-equipo';
 
 const NOTA_WO = 'Los goles de partidos ganados por W.O. no se cuentan aquí, según el Art. 23 del reglamento. La valla deja de sumar al terminar la fase de grupos.';
 
@@ -48,7 +49,7 @@ export default function Vallas({ embebido = false }: { embebido?: boolean }) {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table variant="torneo">
             <TableHeader>
               <TableRow className="bg-sidebar text-sidebar-foreground hover:bg-sidebar">
                 <TableHead className="w-16 text-center text-sidebar-foreground">Pos</TableHead>
@@ -69,7 +70,9 @@ export default function Vallas({ embebido = false }: { embebido?: boolean }) {
                      idx === 2 ? <Medal className="h-6 w-6 mx-auto text-amber-700" /> :
                      idx + 1}
                   </TableCell>
-                  <TableCell className="font-bold text-base">{v.equipoNombre}</TableCell>
+                  <TableCell className="font-bold text-base">
+                    <NombreEquipo nombre={v.equipoNombre} />
+                  </TableCell>
                   <TableCell className="text-center font-mono tabular-nums">{v.partidosJugados}</TableCell>
                   <TableCell className="text-center font-mono tabular-nums text-muted-foreground">
                     {(v.promedio ?? 0).toFixed(2)}

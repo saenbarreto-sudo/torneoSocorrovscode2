@@ -189,6 +189,18 @@
   }
 }
 
+/* Tablas de lectura (posiciones, goleadores, plantilla, sancionados...):
+   el mismo look de lo impreso — encabezado morado con letras blancas y
+   filas alternadas. Se activa con <Table variant="torneo">.
+
+   La zebra va acá y no en clases de Tailwind por el ":not([class*=bg-])":
+   sin eso le pasaba por encima al resaltado propio de algunas filas (los 4
+   que clasifican en Posiciones, los sancionados, los totales) y el
+   resaltado solo se veía en las filas impares. */
+.tabla-torneo tbody tr:nth-child(even):not([class*='bg-']) {
+  background: hsl(var(--muted) / 0.4);
+}
+
 /* Imprimir solo un elemento (recibo de pago, extracto de equipo, extracto de
    jugador...), sin nada de la página detrás. Usa components/imprimir-portal.tsx.
 

@@ -154,7 +154,7 @@ export default function MiCuenta() {
             <p className="text-xs text-muted-foreground mt-0.5">Concepto por concepto</p>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table variant="torneo">
               <TableHeader>
                 <TableRow>
                   <TableHead>Concepto</TableHead>
@@ -219,7 +219,7 @@ export default function MiCuenta() {
             </p>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table variant="torneo">
               <TableHeader>
                 <TableRow>
                   <TableHead>N.º</TableHead>

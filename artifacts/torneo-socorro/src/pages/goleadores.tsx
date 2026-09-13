@@ -8,6 +8,7 @@ import { ImprimirPortal } from '@/components/imprimir-portal';
 import { TablaImprimible } from '@/components/tabla-imprimible';
 import { useImprimir } from '@/hooks/use-imprimir';
 import { useAuth, puedeImprimir } from '@/lib/auth';
+import { NombreEquipo } from '@/components/nombre-equipo';
 
 /** `embebido`: va dentro de Tablas del torneo (ver pages/tablas-torneo.tsx), donde el título va compacto. */
 export default function Goleadores({ embebido = false }: { embebido?: boolean }) {
@@ -45,7 +46,7 @@ export default function Goleadores({ embebido = false }: { embebido?: boolean })
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table variant="torneo">
             <TableHeader>
               <TableRow className="bg-sidebar text-sidebar-foreground hover:bg-sidebar">
                 <TableHead className="w-16 text-center text-sidebar-foreground">Pos</TableHead>
@@ -69,7 +70,9 @@ export default function Goleadores({ embebido = false }: { embebido?: boolean })
                   </TableCell>
                   <TableCell className="font-bold text-base">{goleador.jugadorNombre}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{goleador.equipoNombre}</Badge>
+                    <Badge variant="outline" className="font-normal">
+                      <NombreEquipo nombre={goleador.equipoNombre} />
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono font-black text-primary text-2xl">{goleador.totalGoles}</TableCell>
                 </TableRow>
