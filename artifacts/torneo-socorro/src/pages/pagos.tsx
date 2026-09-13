@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 import { ReciboPago } from '@/components/recibo-pago';
 import { ImprimirPortal } from '@/components/imprimir-portal';
-import { CONCEPTOS, CONCEPTO_LABEL } from '@/lib/conceptos-pago';
+import { CONCEPTOS, CONCEPTO_LABEL, esIngresoDeMesa } from '@/lib/conceptos-pago';
 
 const pagoSchema = z.object({
   equipoId: z.coerce.number().min(1, 'Seleccione un equipo'),
@@ -74,7 +74,15 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
     ...(hasta ? { hasta } : {}),
   });
 
-  const totalFiltrado = (pagos ?? []).reduce((suma, p) => suma + p.monto, 0);
+  // Esta pantalla es la LISTA DE RECIBOS, así que deja por fuera lo que
+  // entró en la mesa de un día de juego (el arbitraje de cada equipo, las
+  // cintas de capitán): esa plata no genera un comprobante numerado, se
+  // cuadra en la pantalla de Mesa, y si saliera acá llenaría la lista de
+  // "recibos" sin número, uno por equipo por cada fecha jugada.
+  // Sigue contando como ingreso en Tesorería, que suma /pagos completo.
+  const recibos = (pagos ?? []).filter((p) => !esIngresoDeMesa(p));
+  const ingresosDeMesaOcultos = (pagos?.length ?? 0) - recibos.length;
+  const totalFiltrado = recibos.reduce((suma, p) => suma + p.monto, 0);
   const hayFiltro = filtroEquipo !== 'all' || filtroConcepto !== 'all' || !!desde || !!hasta;
   // Para el saldo de inscripción que se muestra en el recibo. Sin params
   // trae el resumen de "Inscripcion" (el default del backend).
@@ -360,7 +368,7 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-6">Cargando...</TableCell></TableRow>
-              ) : pagos?.map((pago) => (
+              ) : recibos.map((pago) => (
                 <TableRow key={pago.id}>
                   <TableCell className="font-mono text-muted-foreground font-bold">
                     {pago.codigoRecibo ?? (pago.nRecibo ? `#${pago.nRecibo.toString().padStart(4, '0')}` : '-')}
@@ -392,25 +400,37 @@ export default function Pagos({ embebido = false }: { embebido?: boolean }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {!isLoading && pagos?.length === 0 && (
+              {!isLoading && recibos.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     {hayFiltro ? 'Ningún pago coincide con el filtro' : 'No hay pagos registrados'}
                   </TableCell>
                 </TableRow>
               )}
-              {!isLoading && (pagos?.length ?? 0) > 0 && (
+              {!isLoading && recibos.length > 0 && (
                 <TableRow className="border-t-2 bg-muted/40">
                   <TableCell colSpan={4} className="font-bold">
                     {hayFiltro ? 'Total de lo filtrado' : 'Total'}
                     <span className="ml-2 font-normal text-muted-foreground">
-                      ({pagos?.length} {pagos?.length === 1 ? 'recibo' : 'recibos'})
+                      ({recibos.length} {recibos.length === 1 ? 'recibo' : 'recibos'})
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-mono font-black text-green-600">
                     {formatMoney(totalFiltrado)}
                   </TableCell>
                   <TableCell />
+                </TableRow>
+              )}
+              {/* Para que no parezca que falta plata: se dice dónde está la
+                  que no aparece en esta lista. */}
+              {!isLoading && ingresosDeMesaOcultos > 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="py-2 text-xs text-muted-foreground">
+                    Además entraron {ingresosDeMesaOcultos}{' '}
+                    {ingresosDeMesaOcultos === 1 ? 'cobro' : 'cobros'} en la mesa de los días de juego
+                    (arbitraje y cintas de capitán). No llevan recibo: se cuadran en Partidos → Mesa y ya
+                    cuentan en los ingresos de Tesorería.
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

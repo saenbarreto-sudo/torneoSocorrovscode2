@@ -752,6 +752,8 @@ export interface Pago {
   fecha?: string | null;
   /** @nullable */
   tarjetaId?: number | null;
+  /** @nullable */
+  mesaId?: number | null;
   createdAt?: string;
 }
 

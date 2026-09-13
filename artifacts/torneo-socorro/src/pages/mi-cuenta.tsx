@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Landmark, Printer, TrendingUp, Download } from 'lucide-react';
 import { formatMoney, formatFecha } from '@/lib/utils';
-import { CONCEPTOS, CONCEPTO_LABEL, type Concepto } from '@/lib/conceptos-pago';
+import { CONCEPTOS, CONCEPTO_LABEL, esIngresoDeMesa, type Concepto } from '@/lib/conceptos-pago';
 import { ExtractoEquipo } from '@/components/extracto-equipo';
 import { ReciboPago } from '@/components/recibo-pago';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -60,7 +60,11 @@ export default function MiCuenta() {
   if (!mio) return <div className="py-12 text-center text-muted-foreground">No pudimos cargar tu cuenta.</div>;
 
   const { equipo, cuenta } = mio;
-  const recibos = pagos ?? [];
+  // "Tus recibos" son los comprobantes numerados que entrega el Comité. Lo
+  // que el equipo paga en la mesa el día del partido (arbitraje, cinta de
+  // capitán) no genera comprobante, así que no va en esta lista — tampoco
+  // hay nada que descargar. Ver esIngresoDeMesa en lib/conceptos-pago.ts.
+  const recibos = (pagos ?? []).filter((p) => !esIngresoDeMesa(p));
   const alDia = cuenta.saldoInscripcion <= 0;
 
   // Los comprobantes (recibo suelto y extracto) piden un Equipo completo,

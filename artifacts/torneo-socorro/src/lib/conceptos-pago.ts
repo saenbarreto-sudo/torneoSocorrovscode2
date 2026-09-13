@@ -17,3 +17,18 @@ export const CONCEPTO_LABEL: Record<string, string> = {
   FOFI: 'FOFI',
   Traspaso: 'Traspaso',
 };
+
+/**
+ * true si esa plata entró en la mesa de un día de juego (el arbitraje que
+ * paga cada equipo, o una cinta de capitán) en vez de ser un recibo.
+ *
+ * Esos ingresos los crea la pantalla de Mesa al guardar el cuadre del día y
+ * a propósito NO llevan consecutivo de recibo (ver routes/mesas.ts): no se
+ * le entrega un comprobante numerado al equipo por los $70.000 del
+ * arbitraje. Por eso las listas de recibos los dejan fuera — igual siguen
+ * contando como ingreso en Tesorería y en la cuenta del equipo, que es
+ * donde tienen que estar.
+ */
+export function esIngresoDeMesa(pago: { mesaId?: number | null }): boolean {
+  return pago.mesaId != null;
+}

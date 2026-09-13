@@ -2584,6 +2584,12 @@ components:
         # Cuando el pago corresponde a una multa por tarjeta, apunta a ella.
         tarjetaId:
           type: ["number", "null"]
+        # Cuando la plata entró en la mesa de un dia de juego (el arbitraje
+        # que paga cada equipo, o una cinta de capitan), apunta a esa mesa.
+        # Esos ingresos no son recibos: no llevan consecutivo y se cuadran en
+        # la pantalla de Mesa, asi que las vistas de recibos los dejan fuera.
+        mesaId:
+          type: ["number", "null"]
         createdAt:
           type: string
 

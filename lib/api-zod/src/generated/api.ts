@@ -1276,6 +1276,7 @@ export const GetPagosResponseItem = zod.object({
   "mes": zod.string().nullish(),
   "fecha": zod.string().nullish(),
   "tarjetaId": zod.number().nullish(),
+  "mesaId": zod.number().nullish(),
   "createdAt": zod.string().optional()
 })
 export const GetPagosResponse = zod.array(GetPagosResponseItem)
@@ -1306,6 +1307,7 @@ export const CreatePagoResponse = zod.object({
   "mes": zod.string().nullish(),
   "fecha": zod.string().nullish(),
   "tarjetaId": zod.number().nullish(),
+  "mesaId": zod.number().nullish(),
   "createdAt": zod.string().optional()
 })
 
@@ -1337,6 +1339,7 @@ export const UpdatePagoResponse = zod.object({
   "mes": zod.string().nullish(),
   "fecha": zod.string().nullish(),
   "tarjetaId": zod.number().nullish(),
+  "mesaId": zod.number().nullish(),
   "createdAt": zod.string().optional()
 })
 

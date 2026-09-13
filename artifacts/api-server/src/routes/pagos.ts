@@ -61,6 +61,10 @@ function mapPago(row: Record<string, unknown>) {
     mes: row.mes ?? null,
     fecha: row.fecha ?? null,
     tarjetaId: row.tarjeta_id ?? row.tarjetaId ?? null,
+    // Marca de dónde entró la plata: si viene de la mesa de un día de juego
+    // no es un recibo (no lleva consecutivo), y las vistas de recibos lo
+    // dejan fuera. Ver el comentario en schema/pagos.ts.
+    mesaId: row.mesa_id ?? row.mesaId ?? null,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
   };
 }
