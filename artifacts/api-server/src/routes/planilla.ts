@@ -191,12 +191,6 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
     res.status(404).json({ error: "Partido not found" });
     return;
   }
-  if (partido.walkover) {
-    res.status(409).json({
-      error: "Este partido está marcado como W.O.: su marcador es 6-0 y no lleva planilla de goleadores.",
-    });
-    return;
-  }
 
   // Solo se aceptan jugadores que realmente pertenecen a alguno de los dos equipos.
   const idsValidos = new Set(
@@ -235,7 +229,11 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
   const MINIMO_JUGADORES = 6;
   const jugoLocal = filas.filter((j) => j.jugo && equipoDeJugador.get(j.jugadorId) === partido.localId).length;
   const jugoVisitante = filas.filter((j) => j.jugo && equipoDeJugador.get(j.jugadorId) === partido.visitanteId).length;
-  if (jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES) {
+  // El W.O. es la excepción y por eso va antes del mínimo: ahí la planilla
+  // sirve justo para dejar constancia de quién SÍ se presentó. Al equipo que
+  // no completó los 6 se le cobra la FOFI, y al que sí completó no — sin la
+  // planilla no habría con qué sustentar ni lo uno ni lo otro.
+  if (!partido.walkover && (jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES)) {
     const faltantes: string[] = [];
     if (jugoLocal < MINIMO_JUGADORES) faltantes.push(`al local le faltan ${MINIMO_JUGADORES - jugoLocal}`);
     if (jugoVisitante < MINIMO_JUGADORES) faltantes.push(`al visitante le faltan ${MINIMO_JUGADORES - jugoVisitante}`);
@@ -294,7 +292,8 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
       );
     }
 
-    const conGoles = participantes.filter((j) => (j.goles ?? 0) > 0);
+    // En un W.O. no hay goleadores: el 6-0 es de reglamento, no de cancha.
+    const conGoles = partido.walkover ? [] : participantes.filter((j) => (j.goles ?? 0) > 0);
     if (conGoles.length > 0) {
       await tx.insert(golesTable).values(
         conGoles.map((j) => ({
@@ -350,8 +349,10 @@ router.put("/partidos/:id/planilla", requireAuth, writeAccess.partidos, async (r
     await tx
       .update(partidosTable)
       .set({
-        golesLocal,
-        golesVisitante,
+        // En un W.O. el marcador oficial es 6-0 (Art. 23) y ya quedó puesto
+        // al marcarlo como tal: la planilla registra la presentación, no un
+        // partido jugado, así que no lo recalcula.
+        ...(partido.walkover ? {} : { golesLocal, golesVisitante }),
         jugado: true,
         // Solo se sobreescriben si vienen en la petición, para no borrar
         // el árbitro asignado al programar el partido.

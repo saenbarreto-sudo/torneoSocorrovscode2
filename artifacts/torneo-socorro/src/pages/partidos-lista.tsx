@@ -472,17 +472,15 @@ export default function Partidos({
                 </TabsList>
 
                 <TabsContent value="planilla" className="pt-4">
-                  {esWalkover ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">
-                      Este partido está marcado como W.O.: el marcador es 6-0 y no lleva planilla.
-                    </p>
-                  ) : (
-                    <PlanillaPartido
-                      partido={activePartido}
-                      readOnly={readOnly}
-                      onGuardado={() => setOpenResult(false)}
-                    />
-                  )}
+                  {/* El W.O. también lleva planilla: es la constancia de
+                      quién se presentó, que es lo que decide a cuál de los
+                      dos equipos le toca la FOFI. */}
+                  <PlanillaPartido
+                    partido={activePartido}
+                    readOnly={readOnly}
+                    esWalkover={esWalkover}
+                    onGuardado={() => setOpenResult(false)}
+                  />
                 </TabsContent>
 
                 <TabsContent value="marcador" className="pt-4">
@@ -624,8 +622,8 @@ export default function Partidos({
                   <TableCell className="text-right space-x-1 whitespace-nowrap">
                     {/* La copia del acta para cada delegado. Solo cuando el
                         partido ya está diligenciado: antes de eso no hay nada
-                        que imprimir. Un W.O. tampoco lleva planilla. */}
-                    {esDelComite(role) && partido.jugado && !partido.walkover && (
+                        que imprimir. */}
+                    {esDelComite(role) && partido.jugado && (
                       <Button
                         variant="ghost"
                         size="icon"

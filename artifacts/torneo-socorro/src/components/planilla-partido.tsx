@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { Loader2 } from 'lucide-react';
 import { SelectorArbitro } from '@/components/selector-arbitro';
+import { AbonosMesa } from '@/components/abonos-mesa';
 
 /** Fila editable de la planilla, en memoria mientras la mesa la llena. */
 type Fila = Pick<PlanillaJugador, 'jugadorId' | 'jugadorNombre' | 'equipoId' | 'nCarnet'> & {
@@ -23,6 +24,9 @@ type Fila = Pick<PlanillaJugador, 'jugadorId' | 'jugadorNombre' | 'equipoId' | '
 const PUNTOS_AMARILLA = 10;
 const PUNTOS_ROJA = 20;
 const MINIMO_JUGADORES = 6;
+/** El formato del torneo: 9 en cancha y hasta 11 en la banca. */
+const TITULARES = 9;
+const MAXIMO_SUPLENTES = 11;
 
 function NominaEquipo({
   titulo,
@@ -30,6 +34,7 @@ function NominaEquipo({
   golesEquipo,
   fairPlay,
   readOnly,
+  permiteIncompleto,
   onChange,
 }: {
   titulo: string;
@@ -37,20 +42,34 @@ function NominaEquipo({
   golesEquipo: number;
   fairPlay: number;
   readOnly: boolean;
+  /** En un W.O. el equipo que no se presentó puede quedar con menos de 6. */
+  permiteIncompleto: boolean;
   onChange: (jugadorId: number, cambios: Partial<Fila>) => void;
 }) {
-  const jugaron = filas.filter((f) => f.jugo).length;
-  const faltan = jugaron < MINIMO_JUGADORES;
+  const alineados = filas.filter((f) => f.jugo);
+  const titulares = alineados.filter((f) => f.titular).length;
+  const suplentes = alineados.length - titulares;
+  const faltan = !permiteIncompleto && alineados.length < MINIMO_JUGADORES;
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="bg-sidebar text-sidebar-foreground px-3 py-2 flex items-center justify-between gap-2">
         <span className="font-bold truncate">{titulo}</span>
         <span className="flex items-center gap-3 text-xs shrink-0">
           <span
-            className={faltan ? 'font-bold text-destructive' : 'text-sidebar-foreground/70'}
-            title={`Jugadores marcados como "Jugó" (mínimo ${MINIMO_JUGADORES})`}
+            className={
+              faltan || titulares > TITULARES
+                ? 'font-bold text-destructive'
+                : 'text-sidebar-foreground/70'
+            }
+            title={`Titulares en cancha (son ${TITULARES})`}
           >
-            {jugaron}/{MINIMO_JUGADORES}
+            Tit. {titulares}/{TITULARES}
+          </span>
+          <span
+            className={suplentes > MAXIMO_SUPLENTES ? 'font-bold text-destructive' : 'text-sidebar-foreground/70'}
+            title={`Suplentes en la banca (hasta ${MAXIMO_SUPLENTES})`}
+          >
+            Sup. {suplentes}/{MAXIMO_SUPLENTES}
           </span>
           <span title="Puntos de juego limpio (amarilla 10, roja 20)">FP {fairPlay}</span>
           <span className="font-mono font-bold text-lg leading-none">{golesEquipo}</span>
@@ -150,8 +169,8 @@ function NominaEquipo({
                     className="h-8 w-16 text-center font-mono"
                     inputMode="numeric"
                     value={f.goles === 0 ? '' : f.goles}
-                    placeholder="0"
-                    disabled={readOnly || !f.jugo}
+                    placeholder={permiteIncompleto ? '—' : '0'}
+                    disabled={readOnly || !f.jugo || permiteIncompleto}
                     onChange={(e) => onChange(f.jugadorId, { goles: Number(e.target.value) || 0 })}
                     aria-label={`Goles de ${f.jugadorNombre}`}
                   />
@@ -190,10 +209,21 @@ function NominaEquipo({
 export function PlanillaPartido({
   partido,
   readOnly,
+  esWalkover = false,
   onGuardado,
 }: {
-  partido: { id: number; localId: number; localNombre: string; visitanteId: number; visitanteNombre: string };
+  partido: {
+    id: number;
+    semana: number;
+    fecha?: string | null;
+    localId: number;
+    localNombre: string;
+    visitanteId: number;
+    visitanteNombre: string;
+  };
   readOnly: boolean;
+  /** Partido ganado por W.O.: se registra quién se presentó, sin goles. */
+  esWalkover?: boolean;
   onGuardado?: () => void;
 }) {
   const { toast } = useToast();
@@ -226,20 +256,34 @@ export function PlanillaPartido({
   }, [data]);
 
   const actualizar = (jugadorId: number, cambios: Partial<Fila>) => {
-    setFilas((prev) =>
-      prev.map((f) => {
+    setFilas((prev) => {
+      const yo = prev.find((f) => f.jugadorId === jugadorId);
+      // Al marcar "jugó", el jugador entra de titular mientras su equipo no
+      // complete los 9 de cancha; del décimo en adelante entra a la banca.
+      // Así la mesa solo va marcando quién jugó, en orden, sin tener que
+      // acordarse de destildar el "Tit." — y si hace falta, igual lo puede
+      // cambiar a mano.
+      let titularAutomatico: boolean | undefined;
+      if (cambios.jugo === true && yo) {
+        const titularesDelEquipo = prev.filter(
+          (f) => f.equipoId === yo.equipoId && f.jugo && f.titular && f.jugadorId !== jugadorId,
+        ).length;
+        titularAutomatico = titularesDelEquipo < TITULARES;
+      }
+      return prev.map((f) => {
         if (f.jugadorId !== jugadorId) return f;
         const siguiente = { ...f, ...cambios };
         // Si se desmarca "jugó", se limpia todo lo demás de ese jugador.
         if (cambios.jugo === false) {
           return { ...siguiente, goles: 0, amarillas: 0, rojas: 0, fechasSancion: 0, dorsal: '' };
         }
+        if (titularAutomatico !== undefined) siguiente.titular = titularAutomatico;
         // Dos amarillas implican expulsión.
         if (cambios.amarillas === 2) siguiente.rojas = 1;
         if (siguiente.rojas === 0) siguiente.fechasSancion = 0;
         return siguiente;
-      }),
-    );
+      });
+    });
   };
 
   const locales = useMemo(() => filas.filter((f) => f.equipoId === partido.localId), [filas, partido.localId]);
@@ -263,7 +307,14 @@ export function PlanillaPartido({
 
   const jugoLocal = locales.filter((f) => f.jugo).length;
   const jugoVisitante = visitantes.filter((f) => f.jugo).length;
-  const faltanJugadores = jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES;
+  // En un W.O. justamente uno de los dos no completó: la planilla existe
+  // para dejarlo por escrito, así que ahí el mínimo no bloquea.
+  const faltanJugadores = !esWalkover && (jugoLocal < MINIMO_JUGADORES || jugoVisitante < MINIMO_JUGADORES);
+  // A quién le toca FOFI por no completar los 6 (Art. del reglamento).
+  const conFofi = [
+    ...(jugoLocal < MINIMO_JUGADORES ? [{ nombre: partido.localNombre, cuantos: jugoLocal }] : []),
+    ...(jugoVisitante < MINIMO_JUGADORES ? [{ nombre: partido.visitanteNombre, cuantos: jugoVisitante }] : []),
+  ];
 
   const guardar = () => {
     if (faltanJugadores) {
@@ -362,11 +413,21 @@ export function PlanillaPartido({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4 py-2">
-        <span className="font-mono font-bold text-3xl tabular-nums">{resLocal.goles}</span>
-        <span className="text-muted-foreground text-sm">marcador calculado</span>
-        <span className="font-mono font-bold text-3xl tabular-nums">{resVisitante.goles}</span>
-      </div>
+      {esWalkover ? (
+        <div className="rounded-lg border-2 border-amber-500/40 bg-amber-500/5 px-3 py-2 text-center">
+          <p className="text-sm font-bold">Partido ganado por W.O. · marcador oficial 6-0 (Art. 23)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Marca quién se presentó de cada equipo: al que no complete {MINIMO_JUGADORES} le corresponde FOFI, y al
+            que sí completó no. El marcador no se toca y no se registran goleadores.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-4 py-2">
+          <span className="font-mono font-bold text-3xl tabular-nums">{resLocal.goles}</span>
+          <span className="text-muted-foreground text-sm">marcador calculado</span>
+          <span className="font-mono font-bold text-3xl tabular-nums">{resVisitante.goles}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <NominaEquipo
@@ -375,6 +436,7 @@ export function PlanillaPartido({
           golesEquipo={resLocal.goles}
           fairPlay={resLocal.fairPlay}
           readOnly={readOnly}
+          permiteIncompleto={esWalkover}
           onChange={actualizar}
         />
         <NominaEquipo
@@ -383,9 +445,26 @@ export function PlanillaPartido({
           golesEquipo={resVisitante.goles}
           fairPlay={resVisitante.fairPlay}
           readOnly={readOnly}
+          permiteIncompleto={esWalkover}
           onChange={actualizar}
         />
       </div>
+
+      {/* A quién le toca FOFI: se avisa, no se cobra solo. El cobro se hace
+          abajo, en el dato financiero, para que quede su recibo. */}
+      {conFofi.length > 0 && (
+        <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 px-3 py-2">
+          <p className="text-sm font-bold text-destructive">
+            {conFofi.length === 1 ? 'Este equipo no completó los 6:' : 'Estos equipos no completaron los 6:'}{' '}
+            {conFofi.map((e) => `${e.nombre} (${e.cuantos})`).join(' y ')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Le corresponde FOFI. Se puede cobrar aquí mismo, abajo, eligiendo el concepto FOFI.
+          </p>
+        </div>
+      )}
+
+      <AbonosMesa partido={partido} readOnly={readOnly} />
 
       {!readOnly && (
         <div className="flex justify-end">
@@ -397,8 +476,10 @@ export function PlanillaPartido({
       )}
 
       <p className="text-xs text-muted-foreground">
-        El marcador sale de los goles de cada jugador, no se escribe a mano. Dos amarillas marcan
-        automáticamente la roja. Las tarjetas ya pagadas no se borran al volver a guardar.
+        El marcador sale de los goles de cada jugador, no se escribe a mano. Los primeros {TITULARES} que marques
+        entran de titulares y del décimo en adelante van a la banca (hasta {MAXIMO_SUPLENTES}); igual lo puedes
+        cambiar a mano. Dos amarillas marcan automáticamente la roja. Las tarjetas ya pagadas no se borran al
+        volver a guardar.
       </p>
     </div>
   );

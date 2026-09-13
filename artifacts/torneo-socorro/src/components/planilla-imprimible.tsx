@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
-import { useGetPlanilla } from '@workspace/api-client-react';
-import type { Partido, Planilla, PlanillaJugador } from '@workspace/api-client-react';
+import { Fragment, useEffect } from 'react';
+import { useGetPlanilla, useGetPagos } from '@workspace/api-client-react';
+import type { Partido, Planilla, PlanillaJugador, Pago } from '@workspace/api-client-react';
 import { ImprimirPortal } from '@/components/imprimir-portal';
-import { formatFechaConDia, formatHora12 } from '@/lib/utils';
+import { formatFechaConDia, formatHora12, formatMoney } from '@/lib/utils';
+import { CONCEPTO_LABEL } from '@/lib/conceptos-pago';
 import { colorDeEquipo } from '@/lib/color-equipo';
 
 /**
@@ -18,13 +19,17 @@ import { colorDeEquipo } from '@/lib/color-equipo';
  * blanco que se llena en la cancha, es el acta de lo que pasó — quién jugó,
  * quién marcó y quién quedó sancionado.
  *
- * No lleva el bloque de "dato financiero" que sí tiene la planilla de papel:
- * la plata del torneo ya vive en Pagos, Mi cuenta y Sancionados, y repetirla
- * acá solo abre la puerta a que dos papeles digan cosas distintas.
+ * Lleva el "dato financiero" de la planilla de papel, pero con los abonos
+ * que de verdad se registraron en la mesa ese día (cada uno con su número de
+ * recibo), no una cifra escrita a mano: así el papel que se lleva el delegado
+ * y la cuenta del equipo no pueden decir cosas distintas.
  */
 
 const PUNTOS_AMARILLA = 10;
 const PUNTOS_ROJA = 20;
+/** El formato del torneo: 9 en cancha, hasta 11 en la banca, mínimo 6 para no tener FOFI. */
+const TITULARES = 9;
+const MINIMO_JUGADORES = 6;
 
 /** Una celda de conteo: en blanco cuando es cero, para que el ojo solo vea lo que pasó. */
 function Conteo({ valor }: { valor: number }) {
@@ -32,19 +37,41 @@ function Conteo({ valor }: { valor: number }) {
   return <span className="font-bold">{valor}</span>;
 }
 
+/** Fila de separación entre los que arrancaron y los de la banca. */
+function Separador({ texto }: { texto: string }) {
+  return (
+    <tr>
+      <td
+        colSpan={6}
+        className="py-0.5 px-1 bg-[hsl(273_51%_94%)] text-[hsl(273_51%_32%)] text-[7px] font-bold uppercase tracking-widest border-t border-[hsl(273_20%_82%)]"
+      >
+        {texto}
+      </td>
+    </tr>
+  );
+}
+
 function NominaImpresa({
   nombre,
   color,
-  jugadores,
+  titulares,
+  suplentes,
   goles,
+  esWalkover,
 }: {
   nombre: string;
   color?: string | null;
-  jugadores: PlanillaJugador[];
+  titulares: PlanillaJugador[];
+  suplentes: PlanillaJugador[];
   goles: number;
+  esWalkover: boolean;
 }) {
+  const jugadores = [...titulares, ...suplentes];
   const fairPlay = jugadores.reduce((s, j) => s + j.amarillas * PUNTOS_AMARILLA + j.rojas * PUNTOS_ROJA, 0);
   const expulsados = jugadores.filter((j) => j.rojas > 0);
+  // Menos de 6 presentados = FOFI. Solo tiene sentido advertirlo en el W.O.,
+  // que es el único caso en el que se puede guardar un equipo incompleto.
+  const conFofi = esWalkover && jugadores.length < MINIMO_JUGADORES;
 
   return (
     <div className="rounded-md overflow-hidden border border-[hsl(273_20%_82%)] break-inside-avoid">
@@ -56,7 +83,13 @@ function NominaImpresa({
           />
           <span className="font-bold text-[11px] uppercase tracking-wide truncate">{nombre}</span>
         </span>
-        <span className="font-mono font-bold text-base leading-none shrink-0">{goles}</span>
+        {esWalkover ? (
+          <span className="text-[9px] font-bold uppercase tracking-wide shrink-0 bg-white/20 rounded px-1.5 py-0.5">
+            W.O.
+          </span>
+        ) : (
+          <span className="font-mono font-bold text-base leading-none shrink-0">{goles}</span>
+        )}
       </div>
 
       <table className="w-full text-[10px] border-collapse">
@@ -71,7 +104,12 @@ function NominaImpresa({
           </tr>
         </thead>
         <tbody>
+          {titulares.length > 0 && <Separador texto={`Titulares (${titulares.length} de ${TITULARES})`} />}
           {jugadores.map((j, i) => (
+            <Fragment key={j.jugadorId}>
+              {i === titulares.length && suplentes.length > 0 && (
+                <Separador texto={`Suplentes (${suplentes.length})`} />
+              )}
             <tr
               key={j.jugadorId}
               className={
@@ -90,17 +128,17 @@ function NominaImpresa({
               </td>
               <td className="py-0.5 px-1 font-medium border-t border-[hsl(273_20%_90%)]">
                 {j.jugadorNombre}
-                {!j.titular && <span className="ml-1 text-[7px] text-[hsl(273_15%_55%)] uppercase">supl.</span>}
               </td>
               <td className="py-0.5 px-1 text-center border-t border-[hsl(273_20%_90%)]"><Conteo valor={j.amarillas} /></td>
               <td className="py-0.5 px-1 text-center border-t border-[hsl(273_20%_90%)]"><Conteo valor={j.rojas} /></td>
               <td className="py-0.5 px-1 text-center border-t border-[hsl(273_20%_90%)]"><Conteo valor={j.goles} /></td>
             </tr>
+            </Fragment>
           ))}
           {jugadores.length === 0 && (
             <tr>
               <td colSpan={6} className="py-3 text-center text-[hsl(273_15%_50%)]">
-                No quedó nadie alineado por este equipo.
+                No se presentó ningún jugador de este equipo.
               </td>
             </tr>
           )}
@@ -108,9 +146,19 @@ function NominaImpresa({
       </table>
 
       <div className="flex items-center justify-between gap-2 px-2 py-1 bg-[hsl(273_40%_97%)] border-t border-[hsl(273_20%_85%)] text-[8px] uppercase tracking-wide text-[hsl(273_15%_45%)]">
-        <span>Alineados: <strong className="text-[hsl(273_45%_12%)]">{jugadores.length}</strong></span>
+        <span>
+          {esWalkover ? 'Presentados' : 'Alineados'}:{' '}
+          <strong className="text-[hsl(273_45%_12%)]">{jugadores.length}</strong>
+        </span>
         <span>Juego limpio: <strong className="text-[hsl(273_45%_12%)]">{fairPlay}</strong></span>
       </div>
+
+      {conFofi && (
+        <div className="px-2 py-1.5 bg-[hsl(340_74%_96%)] border-t-2 border-[hsl(340_74%_45%)] text-[9px] text-[hsl(340_74%_27%)] leading-snug">
+          <strong className="uppercase">FOFI ·</strong> presentó {jugadores.length} de los {MINIMO_JUGADORES}{' '}
+          jugadores mínimos.
+        </div>
+      )}
 
       {/* Lo que de verdad le interesa al delegado que se lleva la copia: a
           quién no puede alinear la próxima fecha, y por cuántas. */}
@@ -153,28 +201,36 @@ function Firma({ titulo, nombre }: { titulo: string; nombre?: string }) {
 export function PlanillaImprimible({
   partido,
   planilla,
+  abonos = [],
   colorLocal,
   colorVisitante,
 }: {
   partido: Partido;
   planilla: Planilla;
+  /** Los recibos que los dos equipos abonaron en la mesa esa fecha. */
+  abonos?: Pago[];
   colorLocal?: string | null;
   colorVisitante?: string | null;
 }) {
   const alineados = planilla.jugadores.filter((j) => j.jugo);
+  // Por dorsal, y sin dorsal al final por nombre. La separación entre
+  // titulares y banca la hace el impreso, no el orden.
   const ordenar = (lista: PlanillaJugador[]) =>
     [...lista].sort((a, b) => {
-      // Primero los titulares, y dentro de cada grupo por dorsal; los que no
-      // tienen dorsal van al final, por nombre.
-      if (a.titular !== b.titular) return a.titular ? -1 : 1;
       if (a.dorsal != null && b.dorsal != null) return a.dorsal - b.dorsal;
       if (a.dorsal != null) return -1;
       if (b.dorsal != null) return 1;
       return a.jugadorNombre.localeCompare(b.jugadorNombre);
     });
 
-  const locales = ordenar(alineados.filter((j) => j.equipoId === planilla.localId));
-  const visitantes = ordenar(alineados.filter((j) => j.equipoId === planilla.visitanteId));
+  const deEquipo = (equipoId: number) => {
+    const suyos = alineados.filter((j) => j.equipoId === equipoId);
+    return { titulares: ordenar(suyos.filter((j) => j.titular)), suplentes: ordenar(suyos.filter((j) => !j.titular)) };
+  };
+  const locales = deEquipo(planilla.localId);
+  const visitantes = deEquipo(planilla.visitanteId);
+  const esWalkover = partido.walkover === true;
+  const totalAbonos = abonos.reduce((s, p) => s + p.monto, 0);
 
   const hayPenales = partido.penalesLocal != null && partido.penalesVisitante != null;
   const [ano, mes, dia] = new Date().toISOString().slice(0, 10).split('-');
@@ -244,15 +300,52 @@ export function PlanillaImprimible({
           <NominaImpresa
             nombre={partido.localNombre}
             color={colorLocal}
-            jugadores={locales}
-            goles={partido.walkover ? 0 : (partido.golesLocal ?? 0)}
+            titulares={locales.titulares}
+            suplentes={locales.suplentes}
+            goles={esWalkover ? 0 : (partido.golesLocal ?? 0)}
+            esWalkover={esWalkover}
           />
           <NominaImpresa
             nombre={partido.visitanteNombre}
             color={colorVisitante}
-            jugadores={visitantes}
-            goles={partido.walkover ? 0 : (partido.golesVisitante ?? 0)}
+            titulares={visitantes.titulares}
+            suplentes={visitantes.suplentes}
+            goles={esWalkover ? 0 : (partido.golesVisitante ?? 0)}
+            esWalkover={esWalkover}
           />
+        </div>
+
+        {/* Dato financiero: lo que se recibió en la mesa ese día, con el
+            número de recibo de cada abono. */}
+        <div className="rounded-md border border-[hsl(273_20%_85%)] overflow-hidden">
+          <div className="bg-[hsl(340_74%_27%)] text-white text-[9px] font-bold uppercase tracking-wide px-2.5 py-1 flex items-center justify-between">
+            <span>Dato financiero · abonos recibidos en la mesa</span>
+            {totalAbonos > 0 && <span className="font-mono">{formatMoney(totalAbonos)}</span>}
+          </div>
+          {abonos.length === 0 ? (
+            <div className="px-2.5 py-2 text-[9px] text-[hsl(273_15%_50%)]">
+              No se recibió ningún abono de estos equipos en esta fecha.
+            </div>
+          ) : (
+            <table className="w-full text-[10px] border-collapse">
+              <tbody>
+                {abonos.map((p, i) => (
+                  <tr key={p.id} className={i % 2 === 1 ? 'bg-[hsl(273_40%_97%)]' : 'bg-white'}>
+                    <td className="py-0.5 px-2 font-mono text-[hsl(273_15%_45%)] w-16 border-t border-[hsl(273_20%_90%)]">
+                      {p.codigoRecibo ?? `#${p.id}`}
+                    </td>
+                    <td className="py-0.5 px-2 font-medium border-t border-[hsl(273_20%_90%)]">{p.equipoNombre}</td>
+                    <td className="py-0.5 px-2 text-[hsl(273_15%_45%)] border-t border-[hsl(273_20%_90%)]">
+                      {CONCEPTO_LABEL[p.concepto] ?? p.concepto}
+                    </td>
+                    <td className="py-0.5 px-2 text-right font-mono font-bold border-t border-[hsl(273_20%_90%)]">
+                      {formatMoney(p.monto)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Firmas. */}
@@ -296,13 +389,19 @@ export function ImpresionPlanilla({
   onTerminado: () => void;
 }) {
   const { data, isError } = useGetPlanilla(partido.id);
+  // Los abonos van en la misma hoja, así que hay que esperarlos igual que a
+  // la planilla: si se imprimiera antes, el dato financiero saldría vacío.
+  const { data: pagos, isLoading: cargandoPagos } = useGetPagos();
+  const abonos = (pagos ?? []).filter(
+    (p: Pago) => p.semana === partido.semana && (p.equipoId === partido.localId || p.equipoId === partido.visitanteId),
+  );
 
   useEffect(() => {
     if (isError) onTerminado();
   }, [isError, onTerminado]);
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || cargandoPagos) return;
     // El mismo respiro que usa hooks/use-imprimir.ts: darle a React el tick
     // que necesita para montar el portal antes de llamar a print().
     const id = window.setTimeout(() => {
@@ -310,15 +409,16 @@ export function ImpresionPlanilla({
       onTerminado();
     }, 60);
     return () => window.clearTimeout(id);
-  }, [data, onTerminado]);
+  }, [data, cargandoPagos, onTerminado]);
 
-  if (!data) return null;
+  if (!data || cargandoPagos) return null;
 
   return (
     <ImprimirPortal activo>
       <PlanillaImprimible
         partido={partido}
         planilla={data}
+        abonos={abonos}
         colorLocal={colorLocal}
         colorVisitante={colorVisitante}
       />
