@@ -8,6 +8,7 @@ import {
   useDeletePartido,
   getGetPartidosQueryKey,
 } from '@workspace/api-client-react';
+import type { Partido as PartidoApi } from '@workspace/api-client-react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,16 +36,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, Printer } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, canWrite } from '@/lib/auth';
+import { useAuth, canWrite, esDelComite } from '@/lib/auth';
 import { extractErrorMessage } from '@/lib/api-errors';
 import { formatHora12 } from '@/lib/utils';
 import { PlanillaPartido } from '@/components/planilla-partido';
+import { ImpresionPlanilla } from '@/components/planilla-imprimible';
 import { SelectorArbitro } from '@/components/selector-arbitro';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -151,6 +153,10 @@ export default function Partidos({
   const [openResult, setOpenResult] = useState(false);
   const [activePartido, setActivePartido] = useState<any>(null);
   const [esWalkover, setEsWalkover] = useState(false);
+  // Cuál partido se está mandando a la impresora. La planilla no viene con
+  // la lista (hay que pedirla por partido), así que se guarda acá y el
+  // componente de impresión la pide y la manda a imprimir solo.
+  const [partidoAImprimir, setPartidoAImprimir] = useState<PartidoApi | null>(null);
   const [walkoverGanadorId, setWalkoverGanadorId] = useState<string>('');
 
   const form = useForm<z.infer<typeof partidoSchema>>({
@@ -563,6 +569,15 @@ export default function Partidos({
         </DialogContent>
       </Dialog>
 
+      {partidoAImprimir && (
+        <ImpresionPlanilla
+          partido={partidoAImprimir}
+          colorLocal={equipos?.find((eq) => eq.id === partidoAImprimir.localId)?.color}
+          colorVisitante={equipos?.find((eq) => eq.id === partidoAImprimir.visitanteId)?.color}
+          onTerminado={() => setPartidoAImprimir(null)}
+        />
+      )}
+
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <Table>
@@ -607,6 +622,20 @@ export default function Partidos({
                     )}
                   </TableCell>
                   <TableCell className="text-right space-x-1 whitespace-nowrap">
+                    {/* La copia del acta para cada delegado. Solo cuando el
+                        partido ya está diligenciado: antes de eso no hay nada
+                        que imprimir. Un W.O. tampoco lleva planilla. */}
+                    {esDelComite(role) && partido.jugado && !partido.walkover && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setPartidoAImprimir(partido)}
+                        aria-label={`Imprimir planilla de ${partido.localNombre} vs ${partido.visitanteNombre}`}
+                        title="Imprimir la planilla del partido"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    )}
                     {!readOnly && (
                       <>
                         <Button variant={partido.jugado ? 'ghost' : 'default'} size="sm" onClick={() => openRegisterResult(partido)}>
