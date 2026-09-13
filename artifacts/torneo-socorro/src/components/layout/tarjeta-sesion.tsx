@@ -48,8 +48,9 @@ export function TarjetaSesion() {
     e.preventDefault()
     setError(null)
 
-    if (nueva.length < 4) {
-      setError("La contraseña nueva debe tener al menos 4 caracteres")
+    // El mismo mínimo que exige el servidor (api-server/src/lib/password.ts).
+    if (nueva.length < 8) {
+      setError("La contraseña nueva debe tener al menos 8 caracteres")
       return
     }
     if (nueva !== confirmacion) {

@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Login from '@/pages/login';
+import { CambioObligatorio } from '@/components/cambio-obligatorio';
 import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthProvider, canAccessRoute, rutaInicial, useAuth } from '@/lib/auth';
@@ -118,7 +119,7 @@ function Router() {
 }
 
 function Gate() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -129,6 +130,10 @@ function Gate() {
   }
 
   if (!isAuthenticated) return <Login />;
+  // Entró con una contraseña temporal: hasta que no se ponga una propia no
+  // ve nada más. El servidor tampoco le responde otra cosa, así que esto no
+  // es lo que protege — es lo que lo explica.
+  if (user?.debeCambiarPassword) return <CambioObligatorio />;
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Router />

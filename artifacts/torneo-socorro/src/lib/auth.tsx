@@ -47,6 +47,13 @@ export interface AuthUser {
   nombre: string
   rol: Exclude<Role, "publico">
   equipoId: number | null
+  /**
+   * true cuando la contraseña con la que entró es TEMPORAL: se la puso quien
+   * le creó la cuenta (o quien se la reasignó porque se le olvidó). Hasta que
+   * no ponga una propia, la aplicación solo le muestra esa pantalla y el
+   * servidor no le responde nada más.
+   */
+  debeCambiarPassword?: boolean
 }
 
 /**
@@ -168,6 +175,8 @@ interface AuthState {
   login: (username: string, password: string) => Promise<LoginResult>
   loginPublico: () => void
   logout: () => void
+  /** Vuelve a preguntarle al servidor quién es uno y refresca la sesión. */
+  sesionActualizada: () => Promise<void>
 }
 
 const AuthContext = React.createContext<AuthState | undefined>(undefined)
@@ -287,6 +296,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Se usa después de cambiar la contraseña temporal: el servidor ya quitó la
+  // marca, y con esto la aplicación se entera sin tener que salir y entrar.
+  const sesionActualizada = React.useCallback(async () => {
+    try {
+      const me = await customFetch<AuthUser>("/api/auth/me")
+      setUser(me)
+      setRole(me.rol)
+    } catch {
+      // Si ni siquiera se puede preguntar quién es, la sesión ya no sirve.
+      tokenRef.current = null
+      try {
+        sessionStorage.removeItem(TOKEN_KEY)
+      } catch {
+        // no-op
+      }
+      setUser(null)
+      setRole(null)
+    }
+  }, [])
+
   const logout = React.useCallback(() => {
     tokenRef.current = null
     setUser(null)
@@ -311,6 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     loginPublico,
     logout,
+    sesionActualizada,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

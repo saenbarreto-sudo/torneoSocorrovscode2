@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usuariosTable, ROLES_USUARIO } from "@workspace/db";
-import { hashPassword } from "../lib/password";
+import { hashPassword, motivoContrasenaInvalida } from "../lib/password";
 import { requireAuth, requireRole } from "../lib/require-auth";
 
 const router: IRouter = Router();
@@ -14,6 +14,7 @@ function toPublic(u: typeof usuariosTable.$inferSelect) {
     rol: u.rol,
     equipoId: u.equipoId,
     activo: u.activo,
+    debeCambiarPassword: u.debeCambiarPassword,
     createdAt: u.createdAt.toISOString(),
   };
 }
@@ -67,12 +68,13 @@ router.post("/usuarios", async (req, res): Promise<void> => {
     return;
   }
   if (bloqueaTocarElSistema(req, res, { rolPedido: rol })) return;
-  if (String(password).length < 4) {
-    res.status(400).json({ error: "La contraseña debe tener al menos 4 caracteres" });
+  const normalizedUsername = String(username).trim().toLowerCase();
+  const motivo = motivoContrasenaInvalida(String(password), normalizedUsername);
+  if (motivo) {
+    res.status(400).json({ error: motivo });
     return;
   }
 
-  const normalizedUsername = String(username).trim().toLowerCase();
   const [existing] = await db.select().from(usuariosTable).where(eq(usuariosTable.username, normalizedUsername));
   if (existing) {
     res.status(409).json({ error: "Ya existe un usuario con ese nombre de usuario" });
@@ -88,6 +90,9 @@ router.post("/usuarios", async (req, res): Promise<void> => {
       rol: rol as string,
       equipoId: typeof equipoId === "number" ? equipoId : null,
       activo: activo === undefined ? true : Boolean(activo),
+      // La que acaba de poner el Comité es temporal: su dueño tiene que
+      // ponerse una propia al entrar (ver el comentario en schema/usuarios).
+      debeCambiarPassword: true,
     })
     .returning();
 
@@ -124,11 +129,16 @@ router.patch("/usuarios/:id", async (req, res): Promise<void> => {
   if (equipoId !== undefined) updates.equipoId = equipoId;
   if (activo !== undefined) updates.activo = Boolean(activo);
   if (password) {
-    if (String(password).length < 4) {
-      res.status(400).json({ error: "La contraseña debe tener al menos 4 caracteres" });
+    const motivo = motivoContrasenaInvalida(String(password));
+    if (motivo) {
+      res.status(400).json({ error: motivo });
       return;
     }
     updates.passwordHash = hashPassword(String(password));
+    // Reasignarle la contraseña a alguien (el caso "se me olvidó") es lo
+    // mismo que crearle la cuenta: la que pone el Comité es temporal y su
+    // dueño se pone una propia al entrar.
+    updates.debeCambiarPassword = true;
   }
 
   const [usuario] = await db.update(usuariosTable).set(updates).where(eq(usuariosTable.id, id)).returning();

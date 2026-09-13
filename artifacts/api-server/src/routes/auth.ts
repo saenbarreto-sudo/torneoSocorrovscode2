@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usuariosTable } from "@workspace/db";
-import { hashPassword, verifyPassword } from "../lib/password";
+import { hashPassword, verifyPassword, motivoContrasenaInvalida } from "../lib/password";
 import { signToken, verifyToken } from "../lib/auth-token";
 import { requireAuth } from "../lib/require-auth";
 import { segundosDePausa, registrarFallo, olvidarFallos, intentosRestantes } from "../lib/limite-intentos";
@@ -15,6 +15,9 @@ function toPublicUser(u: typeof usuariosTable.$inferSelect) {
     nombre: u.nombre,
     rol: u.rol,
     equipoId: u.equipoId,
+    // Si viene en true, la aplicacion le pide ponerse una contrasena propia
+    // antes de dejarlo hacer cualquier otra cosa.
+    debeCambiarPassword: u.debeCambiarPassword,
   };
 }
 
@@ -97,11 +100,6 @@ router.patch("/auth/password", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: "La contraseña actual y la nueva son requeridas" });
     return;
   }
-  if (passwordNueva.length < 4) {
-    res.status(400).json({ error: "La contraseña nueva debe tener al menos 4 caracteres" });
-    return;
-  }
-
   const [usuario] = await db.select().from(usuariosTable).where(eq(usuariosTable.id, req.user!.sub));
   if (!usuario || !usuario.activo) {
     res.status(401).json({ error: "No autenticado" });
@@ -111,10 +109,22 @@ router.patch("/auth/password", requireAuth, async (req, res): Promise<void> => {
     res.status(401).json({ error: "La contraseña actual no es correcta" });
     return;
   }
+  // La regla se revisa despues de confirmar la contraseña actual, para no
+  // darle pistas a quien esta probando cuentas ajenas.
+  const motivo = motivoContrasenaInvalida(passwordNueva, usuario.username);
+  if (motivo) {
+    res.status(400).json({ error: motivo });
+    return;
+  }
+  if (passwordNueva === passwordActual) {
+    res.status(400).json({ error: "La contraseña nueva tiene que ser distinta de la actual." });
+    return;
+  }
 
   await db
     .update(usuariosTable)
-    .set({ passwordHash: hashPassword(passwordNueva) })
+    // Se puso una propia: ya no hay nada temporal pendiente.
+    .set({ passwordHash: hashPassword(passwordNueva), debeCambiarPassword: false })
     .where(eq(usuariosTable.id, usuario.id));
 
   res.json({ ok: true });

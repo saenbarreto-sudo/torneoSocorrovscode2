@@ -25,11 +25,18 @@ export const usuariosTable = pgTable("usuarios", {
   // Solo aplica para el rol "delegado": a qué equipo pertenece.
   equipoId: integer("equipo_id").references(() => equiposTable.id),
   activo: boolean("activo").notNull().default(true),
+  // El Comite crea la cuenta con una contrasena TEMPORAL y se la pasa al
+  // delegado; con esta marca en true, al entrar lo primero que ve es la
+  // pantalla de ponerse una propia, y hasta que no lo haga el servidor no le
+  // deja hacer nada mas. Asi la contrasena del delegado es solo suya: quien
+  // creo la cuenta no la conoce, y si manana hay un reclamo de "alguien
+  // entro con mi usuario" la respuesta es clara.
+  debeCambiarPassword: boolean("debe_cambiar_password").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertUsuarioSchema = createInsertSchema(usuariosTable)
   .omit({ id: true, createdAt: true, passwordHash: true })
-  .extend({ password: z.string().min(4) });
+  .extend({ password: z.string().min(8) });
 export type InsertUsuario = z.infer<typeof insertUsuarioSchema>;
 export type Usuario = typeof usuariosTable.$inferSelect;

@@ -12,6 +12,16 @@ declare global {
   }
 }
 
+/**
+ * Lo único que se le permite a quien todavía tiene contraseña temporal:
+ * cambiarla, y consultar su propio usuario (que es lo que la aplicación pide
+ * al arrancar para saber que tiene que mostrarle esa pantalla).
+ */
+function esDelCambioDeContrasena(req: Request): boolean {
+  const ruta = (req.originalUrl ?? "").split("?")[0];
+  return ruta === "/api/auth/password" || ruta === "/api/auth/me";
+}
+
 function getToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) return null;
@@ -38,12 +48,30 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       }
 
       const [usuario] = await db
-        .select({ id: usuariosTable.id, rol: usuariosTable.rol, activo: usuariosTable.activo })
+        .select({
+          id: usuariosTable.id,
+          rol: usuariosTable.rol,
+          activo: usuariosTable.activo,
+          debeCambiarPassword: usuariosTable.debeCambiarPassword,
+        })
         .from(usuariosTable)
         .where(eq(usuariosTable.id, payload.sub));
 
       if (!usuario || !usuario.activo) {
         res.status(401).json({ error: "Tu sesión ya no es válida. Vuelve a entrar." });
+        return;
+      }
+
+      // Con una contraseña temporal pendiente no se puede hacer nada más que
+      // ponerse una propia (o preguntar quién es uno, que es lo que la
+      // aplicación necesita para mostrar esa misma pantalla). Se corta acá y
+      // no solo en la interfaz: esconder el formulario no impide que alguien
+      // le pegue directo a la API con la contraseña temporal que le pasaron.
+      if (usuario.debeCambiarPassword && !esDelCambioDeContrasena(req)) {
+        res.status(403).json({
+          error: "Tienes una contraseña temporal. Ponte una propia para poder continuar.",
+          debeCambiarPassword: true,
+        });
         return;
       }
 
