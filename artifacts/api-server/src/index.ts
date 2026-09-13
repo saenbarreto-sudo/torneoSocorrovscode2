@@ -4,6 +4,7 @@ import "./lib/load-env";
 
 import app from "./app";
 import { logger } from "./lib/logger";
+import { avisarSiElSecretoEsDePrueba } from "./lib/auth-token";
 
 // Por defecto usa 4000 en local (VSCode); Replit inyecta su propio PORT.
 const rawPort = process.env["PORT"] ?? "4000";
@@ -21,4 +22,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  // Se avisa al arrancar, no al firmar un token: así el mensaje se ve en el
+  // log de puesta en marcha y no se pierde entre las peticiones.
+  avisarSiElSecretoEsDePrueba();
 });

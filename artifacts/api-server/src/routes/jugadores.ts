@@ -101,6 +101,21 @@ async function cedulaRepetida(cedula: string, excluirId?: number): Promise<boole
   return encontrados.some((j) => j.id !== excluirId);
 }
 
+/**
+ * El carné es único en todo el torneo (hay un índice único en la base). Se
+ * revisa acá antes de escribir para poder decir CUÁL jugador lo tiene: sin
+ * esto, Postgres rechaza la fila y el usuario solo ve un error de servidor
+ * sin pistas de qué arreglar.
+ */
+async function carnetRepetido(nCarnet: number, excluirId?: number): Promise<{ nombre: string } | null> {
+  const encontrados = await db
+    .select({ id: jugadoresTable.id, nombre: jugadoresTable.nombre })
+    .from(jugadoresTable)
+    .where(eq(jugadoresTable.nCarnet, nCarnet));
+  const otro = encontrados.find((j) => j.id !== excluirId);
+  return otro ? { nombre: otro.nombre } : null;
+}
+
 /** Valida cédula obligatoria y edad mínima. Devuelve el mensaje de error o null. */
 /**
  * El esquema de zod generado del openapi.yaml solo revisa que los campos
@@ -202,6 +217,15 @@ router.post("/jugadores", requireAuth, writeAccess.jugadores, async (req, res): 
     res.status(409).json({ error: `Ya hay un jugador registrado con la cédula ${parsed.data.cedula!.trim()}` });
     return;
   }
+  if (parsed.data.nCarnet != null) {
+    const duenoDelCarnet = await carnetRepetido(parsed.data.nCarnet);
+    if (duenoDelCarnet) {
+      res.status(409).json({
+        error: `El carné ${parsed.data.nCarnet} ya es de ${duenoDelCarnet.nombre}. Cada jugador tiene su propio número.`,
+      });
+      return;
+    }
+  }
   const [inserted] = await db.insert(jugadoresTable).values(parsed.data).returning();
   await db.insert(jugadorEquipoHistorialTable).values({
     jugadorId: inserted.id,
@@ -284,6 +308,15 @@ router.patch("/jugadores/:id", requireAuth, writeAccess.jugadores, async (req, r
   if (parsed.data.cedula && (await cedulaRepetida(parsed.data.cedula, params.data.id))) {
     res.status(409).json({ error: `Ya hay otro jugador registrado con la cédula ${parsed.data.cedula.trim()}` });
     return;
+  }
+  if (parsed.data.nCarnet != null) {
+    const duenoDelCarnet = await carnetRepetido(parsed.data.nCarnet, params.data.id);
+    if (duenoDelCarnet) {
+      res.status(409).json({
+        error: `El carné ${parsed.data.nCarnet} ya es de ${duenoDelCarnet.nombre}. Cada jugador tiene su propio número.`,
+      });
+      return;
+    }
   }
   const [antes] = await db.select({ equipoId: jugadoresTable.equipoId }).from(jugadoresTable).where(eq(jugadoresTable.id, params.data.id));
   if (!antes) {

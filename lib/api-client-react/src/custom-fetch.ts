@@ -48,6 +48,26 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
 
+type ManejadorSesionCaducada = () => void;
+let _sesionCaducada: ManejadorSesionCaducada | null = null;
+
+/**
+ * Registra qué hacer cuando el servidor responde 401 a una consulta que SÍ
+ * llevaba token.
+ *
+ * Hace falta desde que las sesiones vencen: antes un token servía para
+ * siempre, así que un 401 con token no podía pasar. Ahora sí — se cumplen
+ * las doce horas, o borran al usuario mientras tiene la pantalla abierta — y
+ * sin esto la aplicación se quedaría mostrando errores sueltos en cada tabla
+ * sin decir que hay que volver a entrar.
+ *
+ * Solo se dispara si la consulta llevaba token: un 401 del login (que no
+ * lleva ninguno) es "contraseña incorrecta", no una sesión caída.
+ */
+export function setSesionCaducadaHandler(fn: ManejadorSesionCaducada | null): void {
+  _sesionCaducada = fn;
+}
+
 /**
  * Registra de qué torneo se están consultando los datos.
  *
@@ -393,10 +413,12 @@ export async function customFetch<T = unknown>(
 
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
+  let llevabaToken = headers.has("authorization");
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+      llevabaToken = true;
     }
   }
 
@@ -405,6 +427,10 @@ export async function customFetch<T = unknown>(
   const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
+    // La sesión se cayó (venció, o borraron/desactivaron al usuario): se le
+    // avisa a la aplicación para que lleve a la pantalla de ingreso en vez
+    // de dejar cada tabla con un error suelto.
+    if (response.status === 401 && llevabaToken) _sesionCaducada?.();
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }

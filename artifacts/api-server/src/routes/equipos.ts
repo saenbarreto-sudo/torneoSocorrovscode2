@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { db, equiposTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
+import { sesionOpcional } from "../lib/alcance";
 import { respondIfDeleteBlocked } from "../lib/delete-errors";
 import {
   CreateEquipoBody,
@@ -47,9 +48,34 @@ async function nombreEquipoRepetido(nombre: string, excluirId?: number): Promise
 }
 
 
-router.get("/equipos", async (_req, res): Promise<void> => {
+/**
+ * La ficha del equipo tal como puede verla quien NO tiene sesion.
+ *
+ * El nombre, el color y los puntos de bonificacion son de la cartelera: la
+ * tabla de posiciones y el cuadro final los necesitan sin cuenta. El
+ * delegado, su suplente, el telefono y la deuda de inscripcion no: son datos
+ * personales de gente del torneo y plata del equipo, y no tienen por que
+ * quedar al alcance de cualquiera que abra la direccion de la API.
+ */
+function equipoParaElPublico(e: typeof equiposTable.$inferSelect) {
+  return {
+    id: e.id,
+    nombre: e.nombre,
+    color: e.color,
+    activo: e.activo,
+    puntosBonificacion: e.puntosBonificacion,
+    createdAt: e.createdAt.toISOString(),
+  };
+}
+
+function equipoCompleto(e: typeof equiposTable.$inferSelect) {
+  return { ...e, createdAt: e.createdAt.toISOString() };
+}
+
+router.get("/equipos", sesionOpcional, async (req, res): Promise<void> => {
   const equipos = await db.select().from(equiposTable).orderBy(equiposTable.nombre);
-  res.json(GetEquiposResponse.parse(equipos.map(e => ({ ...e, createdAt: e.createdAt.toISOString() }))));
+  const mapear = req.user ? equipoCompleto : equipoParaElPublico;
+  res.json(GetEquiposResponse.parse(equipos.map(mapear)));
 });
 
 router.post("/equipos", requireAuth, writeAccess.equipos, async (req, res): Promise<void> => {
@@ -71,7 +97,7 @@ router.post("/equipos", requireAuth, writeAccess.equipos, async (req, res): Prom
   res.status(201).json(CreateEquipoResponse.parse({ ...equipo, createdAt: equipo.createdAt.toISOString() }));
 });
 
-router.get("/equipos/:id", async (req, res): Promise<void> => {
+router.get("/equipos/:id", sesionOpcional, async (req, res): Promise<void> => {
   const params = GetEquipoParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -82,7 +108,7 @@ router.get("/equipos/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Equipo not found" });
     return;
   }
-  res.json(GetEquipoResponse.parse({ ...equipo, createdAt: equipo.createdAt.toISOString() }));
+  res.json(GetEquipoResponse.parse(req.user ? equipoCompleto(equipo) : equipoParaElPublico(equipo)));
 });
 
 router.patch("/equipos/:id", requireAuth, writeAccess.equipos, async (req, res): Promise<void> => {

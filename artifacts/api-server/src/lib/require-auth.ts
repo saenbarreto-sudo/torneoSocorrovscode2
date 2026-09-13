@@ -1,4 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
+import { eq } from "drizzle-orm";
+import { db, usuariosTable } from "@workspace/db";
 import { verifyToken, type TokenPayload } from "./auth-token";
 
 declare global {
@@ -16,16 +18,42 @@ function getToken(req: Request): string | null {
   return header.slice("Bearer ".length);
 }
 
-/** Exige un token válido; adjunta el usuario decodificado a req.user. */
+/**
+ * Exige un token válido y VIGENTE, y lo contrasta contra la base.
+ *
+ * No alcanza con que la firma cuadre: el rol viaja dentro del token, así que
+ * si solo se leyera de ahí, a un usuario borrado le seguiría sirviendo su
+ * token y a uno al que le bajaron el rol le quedaría el viejo hasta que
+ * volviera a entrar. Por eso el rol que vale es el que dice la base en este
+ * momento, no el que traiga el papel.
+ */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  const token = getToken(req);
-  const payload = token ? verifyToken(token) : null;
-  if (!payload) {
-    res.status(401).json({ error: "No autenticado" });
-    return;
-  }
-  req.user = payload;
-  next();
+  void (async () => {
+    try {
+      const token = getToken(req);
+      const payload = token ? verifyToken(token) : null;
+      if (!payload) {
+        res.status(401).json({ error: "No autenticado" });
+        return;
+      }
+
+      const [usuario] = await db
+        .select({ id: usuariosTable.id, rol: usuariosTable.rol, activo: usuariosTable.activo })
+        .from(usuariosTable)
+        .where(eq(usuariosTable.id, payload.sub));
+
+      if (!usuario || !usuario.activo) {
+        res.status(401).json({ error: "Tu sesión ya no es válida. Vuelve a entrar." });
+        return;
+      }
+
+      req.user = { ...payload, rol: usuario.rol };
+      next();
+    } catch (error) {
+      console.error("Error validando la sesión:", error);
+      res.status(500).json({ error: "No se pudo validar la sesión" });
+    }
+  })();
 }
 
 /**

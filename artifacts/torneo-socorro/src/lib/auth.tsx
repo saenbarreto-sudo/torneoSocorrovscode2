@@ -1,5 +1,5 @@
 import * as React from "react"
-import { customFetch, setAuthTokenGetter, ApiError } from "@workspace/api-client-react"
+import { customFetch, setAuthTokenGetter, ApiError, setSesionCaducadaHandler } from "@workspace/api-client-react"
 
 /**
  * Roles del sistema. "publico" es el único que no tiene cuenta en la base
@@ -196,6 +196,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     setAuthTokenGetter(() => tokenRef.current)
     return () => setAuthTokenGetter(null)
+  }, [])
+
+  // Si el servidor dice que la sesión ya no vale (venció a las 12 horas, o
+  // borraron/desactivaron al usuario con la pantalla abierta), se cierra
+  // sola y se vuelve a la pantalla de ingreso. Sin esto la aplicación se
+  // quedaría mostrando tablas vacías con errores, sin explicar por qué.
+  React.useEffect(() => {
+    setSesionCaducadaHandler(() => {
+      if (!tokenRef.current) return
+      tokenRef.current = null
+      try {
+        sessionStorage.removeItem(TOKEN_KEY)
+      } catch {
+        // no-op
+      }
+      setUser(null)
+      setRole(null)
+    })
+    return () => setSesionCaducadaHandler(null)
   }, [])
 
   // Al cargar la app, intenta restaurar la sesión guardada (token válido o

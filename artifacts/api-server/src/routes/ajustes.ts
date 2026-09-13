@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, ajustesTable } from "@workspace/db";
 import { requireAuth, writeAccess } from "../lib/permissions";
+import { requiereSesion } from "../lib/alcance";
 import { GetAjustesResponse, UpdateAjustesBody, UpdateAjustesResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -24,7 +25,12 @@ function formatAjustes(a: typeof ajustesTable.$inferSelect) {
   return { ...a, updatedAt: a.updatedAt.toISOString() };
 }
 
-router.get("/ajustes", async (_req, res): Promise<void> => {
+// La tarifa del torneo (arbitraje por fase, mesa, cinta, multas, carne, FOFI)
+// es informacion del torneo, no de la cartelera: la ven los equipos y el
+// Comite, no cualquiera que abra la direccion de la API. Las pantallas
+// publicas no la usan — el valor que deben las tarjetas lo calcula el
+// servidor dentro de /amonestados.
+router.get("/ajustes", requiereSesion, async (_req, res): Promise<void> => {
   const ajustes = await obtenerOCrearAjustes();
   res.json(GetAjustesResponse.parse(formatAjustes(ajustes)));
 });

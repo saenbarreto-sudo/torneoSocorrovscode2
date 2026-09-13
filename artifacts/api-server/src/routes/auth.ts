@@ -4,6 +4,7 @@ import { db, usuariosTable } from "@workspace/db";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { signToken, verifyToken } from "../lib/auth-token";
 import { requireAuth } from "../lib/require-auth";
+import { segundosDePausa, registrarFallo, olvidarFallos, intentosRestantes } from "../lib/limite-intentos";
 
 const router: IRouter = Router();
 
@@ -25,16 +26,39 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  // Freno a la adivinanza de contraseñas: ver lib/limite-intentos.ts. Se
+  // revisa ANTES de tocar la base, para que ni siquiera valga la pena
+  // seguir mandando intentos.
+  const pausa = segundosDePausa(username);
+  if (pausa !== null) {
+    const minutos = Math.ceil(pausa / 60);
+    res.status(429).json({
+      error:
+        `Demasiados intentos fallidos con este usuario. Espera ${minutos === 1 ? "1 minuto" : `${minutos} minutos`} ` +
+        "antes de volver a intentar.",
+    });
+    return;
+  }
+
   const [usuario] = await db
     .select()
     .from(usuariosTable)
     .where(eq(usuariosTable.username, username.trim().toLowerCase()));
 
   if (!usuario || !usuario.activo || !verifyPassword(password, usuario.passwordHash)) {
-    res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+    registrarFallo(username);
+    const quedan = intentosRestantes(username);
+    res.status(401).json({
+      // No se dice si falló el usuario o la contraseña: eso le confirmaría a
+      // quien busca cuáles usuarios existen.
+      error:
+        "Usuario o contraseña incorrectos." +
+        (quedan > 0 && quedan <= 2 ? ` Te ${quedan === 1 ? "queda 1 intento" : `quedan ${quedan} intentos`}.` : ""),
+    });
     return;
   }
 
+  olvidarFallos(username);
   const token = signToken({ sub: usuario.id, username: usuario.username, rol: usuario.rol });
   res.json({ token, user: toPublicUser(usuario) });
 });

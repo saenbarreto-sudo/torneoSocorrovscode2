@@ -1,6 +1,6 @@
 export * from "./generated/api";
 export * from "./generated/api.schemas";
-export { setBaseUrl, setAuthTokenGetter, setTemporadaGetter, customFetch, ApiError } from "./custom-fetch";
+export { setBaseUrl, setAuthTokenGetter, setSesionCaducadaHandler, setTemporadaGetter, customFetch, ApiError } from "./custom-fetch";
 export type { AuthTokenGetter, TemporadaGetter } from "./custom-fetch";
 export * from "./custom/auth";
 export * from "./custom/goles";

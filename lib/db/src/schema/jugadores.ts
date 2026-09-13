@@ -9,7 +9,12 @@ export const jugadoresTable = pgTable("jugadores", {
   nombre: text("nombre").notNull(),
   fechaNacimiento: date("fecha_nacimiento", { mode: "string" }),
   equipoId: integer("equipo_id").notNull().references(() => equiposTable.id),
-  nCarnet: integer("n_carnet"),
+  // Unico en todo el torneo: el carne es la llave con la que la mesa llama a
+  // los jugadores y con la que se ordena y se busca la planilla. Dos
+  // jugadores con el mismo numero serian un error mudo — se alinearia a uno
+  // creyendo que es el otro. Postgres permite varios NULL en un indice
+  // unico, asi que un jugador todavia sin carne no estorba.
+  nCarnet: integer("n_carnet").unique(),
   // Data URL (base64) de la foto de carnet. Se guarda directo en la fila
   // porque el volumen de fotos de un torneo local es pequeño; evita tener
   // que montar almacenamiento de archivos aparte.

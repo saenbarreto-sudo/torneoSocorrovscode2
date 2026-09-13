@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db, usuariosTable } from "@workspace/db";
 import { requireAuth } from "./require-auth";
+import { verifyToken } from "./auth-token";
 
 /**
  * Hasta dónde puede mirar quien está preguntando.
@@ -123,4 +124,22 @@ declare global {
       quien?: Quien;
     }
   }
+}
+
+/**
+ * Deja pasar a todos, pero marca si quien pregunta tiene sesion.
+ *
+ * Se usa en las pantallas de la cartelera publica (posiciones, equipos): la
+ * pagina tiene que abrir sin cuenta, pero no por eso debe entregar los datos
+ * privados de cada equipo. Con esto la ruta decide que campos manda.
+ *
+ * No rechaza nunca: un token vencido o invento simplemente cuenta como "sin
+ * sesion", igual que no mandar nada.
+ */
+export function sesionOpcional(req: Request, _res: Response, next: NextFunction): void {
+  const header = req.headers.authorization;
+  const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (payload) req.user = payload;
+  next();
 }
