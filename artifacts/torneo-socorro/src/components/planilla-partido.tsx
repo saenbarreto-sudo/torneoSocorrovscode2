@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/lib/api-errors';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
 import { SelectorArbitro } from '@/components/selector-arbitro';
 import { AbonosMesa } from '@/components/abonos-mesa';
 
@@ -28,6 +28,31 @@ const MINIMO_JUGADORES = 6;
 const TITULARES = 9;
 const MAXIMO_SUPLENTES = 11;
 
+/**
+ * Texto comparable: sin tildes, sin mayúsculas y sin espacios de sobra.
+ *
+ * Los nombres del torneo vienen del carné y traen tildes y ñ ("Beleño",
+ * "Zuñiga", "Viáña"). Sin normalizar, buscar "belenio" o "beleno" no
+ * encuentra nada y la mesa termina bajando a mano por una lista de 58.
+ */
+function paraBuscar(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/** true si el jugador coincide con lo buscado, por nombre o por carné. */
+function coincide(fila: Fila, busqueda: string): boolean {
+  const q = paraBuscar(busqueda);
+  if (!q) return true;
+  if (paraBuscar(fila.jugadorNombre).includes(q)) return true;
+  // El carné se busca por lo que empieza: escribir "31" tiene que traer el
+  // 315 y el 312, no todos los que lleven un 31 en la mitad.
+  return fila.nCarnet != null && String(fila.nCarnet).startsWith(q);
+}
+
 function NominaEquipo({
   titulo,
   filas,
@@ -46,10 +71,19 @@ function NominaEquipo({
   permiteIncompleto: boolean;
   onChange: (jugadorId: number, cambios: Partial<Fila>) => void;
 }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [soloMarcados, setSoloMarcados] = useState(false);
+
+  // Los contadores se calculan SIEMPRE sobre la nómina completa: el
+  // buscador solo esconde filas, no cambia quién está alineado.
   const alineados = filas.filter((f) => f.jugo);
   const titulares = alineados.filter((f) => f.titular).length;
   const suplentes = alineados.length - titulares;
   const faltan = !permiteIncompleto && alineados.length < MINIMO_JUGADORES;
+
+  const visibles = filas.filter((f) => (soloMarcados ? f.jugo : true) && coincide(f, busqueda));
+  const escondidos = filas.length - visibles.length;
+
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="bg-sidebar text-sidebar-foreground px-3 py-2 flex items-center justify-between gap-2">
@@ -76,6 +110,42 @@ function NominaEquipo({
         </span>
       </div>
 
+      {/* Buscador propio de cada equipo: las nóminas llegan a pasar de 50
+          jugadores, y en la mesa se va llamando uno por uno por el carné. */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/20">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            className="h-8 pl-7 pr-7 text-sm"
+            placeholder="Buscar por nombre o carné"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            aria-label={`Buscar jugador de ${titulo}`}
+          />
+          {busqueda && (
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setBusqueda('')}
+              aria-label="Limpiar la búsqueda"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setSoloMarcados((v) => !v)}
+          aria-pressed={soloMarcados}
+          className={`shrink-0 rounded border px-2 py-1 text-xs font-medium transition-colors ${
+            soloMarcados ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'
+          }`}
+          title="Ver solo los que ya marcaste como que jugaron"
+        >
+          Solo los {alineados.length} marcados
+        </button>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -91,7 +161,7 @@ function NominaEquipo({
             </tr>
           </thead>
           <tbody>
-            {filas.map((f) => (
+            {visibles.map((f) => (
               <tr key={f.jugadorId} className={`border-t ${f.jugo ? '' : 'opacity-50'}`}>
                 <td className="p-2">
                   <input
@@ -196,6 +266,24 @@ function NominaEquipo({
               <tr>
                 <td colSpan={8} className="p-6 text-center text-muted-foreground text-sm">
                   Este equipo no tiene jugadores registrados.
+                </td>
+              </tr>
+            )}
+            {filas.length > 0 && visibles.length === 0 && (
+              <tr>
+                <td colSpan={8} className="p-6 text-center text-muted-foreground text-sm">
+                  {soloMarcados && alineados.length === 0
+                    ? 'Todavía no has marcado a nadie de este equipo.'
+                    : `Ningún jugador de ${titulo} coincide con “${busqueda}”.`}
+                </td>
+              </tr>
+            )}
+            {/* Que no parezca que el equipo se quedó sin jugadores: se dice
+                cuántos está escondiendo el filtro. */}
+            {escondidos > 0 && visibles.length > 0 && (
+              <tr>
+                <td colSpan={8} className="px-3 py-1.5 text-center text-xs text-muted-foreground bg-muted/20 border-t">
+                  {escondidos === 1 ? '1 jugador oculto por el filtro' : `${escondidos} jugadores ocultos por el filtro`}
                 </td>
               </tr>
             )}
