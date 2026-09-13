@@ -53,6 +53,21 @@ function coincide(fila: Fila, busqueda: string): boolean {
   return fila.nCarnet != null && String(fila.nCarnet).startsWith(q);
 }
 
+/**
+ * Orden de la nómina: por número de carné.
+ *
+ * Es el orden en que la mesa tiene los carnés en la mano, así que buscar en
+ * pantalla se vuelve el mismo movimiento que buscar en el taco de carnés.
+ * Los que todavía no tienen carné asignado van al final, por nombre, para
+ * que no se pierdan en la mitad de la lista.
+ */
+function porCarnet(a: Fila, b: Fila): number {
+  if (a.nCarnet != null && b.nCarnet != null) return a.nCarnet - b.nCarnet;
+  if (a.nCarnet != null) return -1;
+  if (b.nCarnet != null) return 1;
+  return a.jugadorNombre.localeCompare(b.jugadorNombre);
+}
+
 function NominaEquipo({
   titulo,
   filas,
@@ -152,7 +167,7 @@ function NominaEquipo({
             <tr>
               <th className="p-2 text-left font-bold">Jugó</th>
               <th className="p-2 text-left font-bold">N°</th>
-              <th className="p-2 text-left font-bold">Jugador</th>
+              <th className="p-2 text-left font-bold">Carné y jugador</th>
               <th className="p-2 text-center font-bold">Tit.</th>
               <th className="p-2 text-center font-bold" title="Amarillas (máx. 2)">A</th>
               <th className="p-2 text-center font-bold" title="Roja">R</th>
@@ -190,6 +205,13 @@ function NominaEquipo({
                   />
                 </td>
                 <td className="p-2">
+                  {/* El carné va primero porque es la llave con la que se
+                      ordena y se busca la lista: al final del nombre (y más
+                      con nombres que se parten en dos renglones) el orden no
+                      se alcanza a ver. */}
+                  <span className="font-mono text-xs text-muted-foreground mr-1.5 tabular-nums">
+                    {f.nCarnet != null ? String(f.nCarnet).padStart(4, '0') : '—'}
+                  </span>
                   <span className="font-medium">{f.jugadorNombre}</span>
                   {f.fechasPendientes > 0 && (
                     <span
@@ -199,9 +221,7 @@ function NominaEquipo({
                       Sancionado · {f.fechasPendientes === 1 ? 'falta 1 fecha' : `faltan ${f.fechasPendientes} fechas`}
                     </span>
                   )}
-                  {f.nCarnet != null && (
-                    <span className="text-xs text-muted-foreground ml-2 font-mono">#{f.nCarnet}</span>
-                  )}
+
                 </td>
                 <td className="p-2 text-center">
                   <input
@@ -374,9 +394,15 @@ export function PlanillaPartido({
     });
   };
 
-  const locales = useMemo(() => filas.filter((f) => f.equipoId === partido.localId), [filas, partido.localId]);
+  // El servidor las manda por nombre; acá se reordenan por carné (ver
+  // porCarnet). sort() muta, pero el filter() de antes ya devuelve un
+  // arreglo nuevo, así que el estado "filas" no se toca.
+  const locales = useMemo(
+    () => filas.filter((f) => f.equipoId === partido.localId).sort(porCarnet),
+    [filas, partido.localId],
+  );
   const visitantes = useMemo(
-    () => filas.filter((f) => f.equipoId === partido.visitanteId),
+    () => filas.filter((f) => f.equipoId === partido.visitanteId).sort(porCarnet),
     [filas, partido.visitanteId],
   );
 
